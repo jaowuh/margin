@@ -1,0 +1,193 @@
+import { describe, expect, it } from 'vitest';
+import type { AppData } from '../types';
+import { accountBalance, categoryBreakdown, monthElapsedPct, monthSummary, statusFor, upcomingItems, workspaceBalance } from './calc';
+import * as A from './actions';
+import { addMonths, nextMonthlyDate, peso, todayStr } from './format';
+import { createInitialData } from './seed';
+import { normalizeData } from './storage';
+
+function fixture() {
+  let d = createInitialData();
+  const ws = d.workspaces[0].id;
+  const cafe = d.workspaces[1].id;
+  const cat = (name: string, w = ws) => d.categories.find(c => c.workspaceId === w && c.name === name)!;
+  const accs = d.accounts.filter(a => a.workspaceId === ws);
+  d = A.updateCategory(d, cat('Food').id, { monthlyLimit: 1000 });
+  d = A.updateCategory(d, cat('Transport').id, { monthlyLimit: 500 });
+  return { d, ws, cafe, cat, accs };
+}
+
+describe('statusFor', () => {
+  it('uses 80% / 100% thresholds', () => {
+    expect(statusFor(10, 0)).toBe('none');
+    expect(statusFor(799, 1000)).toBe('ok');
+    expect(statusFor(800, 1000)).toBe('warn');
+    expect(statusFor(1000, 1000)).toBe('warn');
+    expect(statusFor(1000.01, 1000)).toBe('over');
+  });
+});
+
+describe('balances', () => {
+  it('handles income, expense and transfers without changing the combined total', () => {
+    const { d: d0, ws, accs } = fixture();
+    let d = A.updateAccount(d0, accs[0].id, { openingBalance: 1000 });
+    d = A.addTransaction(d, { workspaceId: ws, type: 'income', amount: 500, date: '2026-11-02', accountId: accs[0].id, categoryId: null, note: '' });
+    d = A.addTransaction(d, { workspaceId: ws, type: 'expense', amount: 200.5, date: '2026-11-03', accountId: accs[0].id, categoryId: null, note: '' });
+    const before = workspaceBalance(d, ws, 'all', []);
+    d = A.addTransaction(d, { workspaceId: ws, type: 'transfer', amount: 300, date: '2026-11-04', accountId: accs[0].id, toAccountId: accs[1].id, categoryId: null, note: '' });
+    const fresh = (id: string) => d.accounts.find(a => a.id === id)!;
+    expect(accountBalance(d, fresh(accs[0].id))).toBe(1000 + 500 - 200.5 - 300);
+    expect(accountBalance(d, fresh(accs[1].id))).toBe(300);
+    expect(workspaceBalance(d, ws, 'all', [])).toBe(before);
+    expect(workspaceBalance(d, ws, 'primary', [])).toBe(999.5);
+    expect(before).toBe(1299.5);
+    expect(workspaceBalance(d, ws, 'selected', [accs[1].id])).toBe(300);
+  });
+
+  it('keeps workspaces separate', () => {
+    const { d: d0, ws, cafe } = fixture();
+    const cafeAcc = d0.accounts.find(a => a.workspaceId === cafe)!;
+    const d = A.addTransaction(d0, { workspaceId: cafe, type: 'income', amount: 999, date: '2026-11-02', accountId: cafeAcc.id, categoryId: null, note: '' });
+    expect(workspaceBalance(d, ws, 'all', [])).toBe(0);
+    expect(workspaceBalance(d, cafe, 'all', [])).toBe(999);
+    expect(monthSummary(d, ws, '2026-11').income).toBe(0);
+  });
+});
+
+describe('month summary / category breakdown', () => {
+  it('computes budget used, remaining, unbudgeted and uncategorized spending', () => {
+    const { d: d0, ws, cat, accs } = fixture();
+    const tx = (amount: number, categoryId: string | null, date = '2026-11-05') =>
+      ({ workspaceId: ws, type: 'expense' as const, amount, date, accountId: accs[0].id, categoryId, note: '' });
+    let d = A.addTransaction(d0, tx(400, cat('Food').id));
+    d = A.addTransaction(d, tx(550, cat('Transport').id));           // 110% of 500 -> over
+    d = A.addTransaction(d, tx(120, cat('Household').id));           // category with no limit
+    d = A.addTransaction(d, tx(30, null));                           // uncategorized
+    d = A.addTransaction(d, tx(9999, cat('Food').id, '2026-10-31')); // other month: ignored
+    const s = monthSummary(d, ws, '2026-11');
+    expect(s.budget).toBe(1500);
+    expect(s.spent).toBe(1100);
+    expect(s.remaining).toBe(400);
+    expect(s.usedPct).toBeCloseTo(73.33, 1);
+    expect(s.status).toBe('ok');
+    expect(s.unbudgetedSpent).toBe(150);
+    const rows = categoryBreakdown(d, ws, '2026-11');
+    expect(rows.find(r => r.name === 'Transport')!.status).toBe('over');
+    expect(rows.find(r => r.name === 'Uncategorized')!.spent).toBe(30);
+    expect(rows.find(r => r.name === 'Food')!.pct).toBe(40);
+  });
+
+  it('subtracts upcoming planned bills from what is left', () => {
+    const { d: d0, ws, cat } = fixture();
+    let d = A.addScheduled(d0, { workspaceId: ws, type: 'expense', title: 'Internet', amount: 300, dueDate: '2026-11-20', categoryId: cat('Food').id, accountId: null, repeat: 'none' });
+    d = A.addScheduled(d, { workspaceId: ws, type: 'expense', title: 'Next month', amount: 700, dueDate: '2026-12-02', categoryId: null, accountId: null, repeat: 'none' });
+    const s = monthSummary(d, ws, '2026-11');
+    expect(s.upcomingExpenses).toBe(300);
+    expect(s.leftAfterUpcoming).toBe(1500 - 0 - 300);
+    expect(upcomingItems(d, ws, '2026-11')).toHaveLength(1);
+  });
+
+  it('reports month progress only for the current month', () => {
+    expect(monthElapsedPct('2026-11', '2026-11-15')).toBe(50);
+    expect(monthElapsedPct('2026-10', '2026-11-15')).toBeNull();
+  });
+});
+
+describe('planner', () => {
+  it('pays a bill once, records the expense, and plans the next monthly one', () => {
+    const { d: d0, ws, cat, accs } = fixture();
+    let d = A.addScheduled(d0, { workspaceId: ws, type: 'expense', title: 'Loan', amount: 5000, dueDate: '2026-01-31', categoryId: cat('Bills').id, accountId: null, repeat: 'monthly' });
+    const id = d.scheduled[0].id;
+    d = A.payScheduled(d, id, accs[0].id, '2026-01-30');
+    d = A.payScheduled(d, id, accs[0].id, '2026-01-30'); // double tap -> no duplicate
+    expect(d.transactions).toHaveLength(1);
+    expect(d.transactions[0]).toMatchObject({ amount: 5000, type: 'expense', note: 'Loan', accountId: accs[0].id });
+    expect(d.scheduled).toHaveLength(2);
+    expect(d.scheduled[1]).toMatchObject({ status: 'planned', dueDate: '2026-02-28' });
+  });
+
+  it('deleting the payment puts a one-off bill back to planned', () => {
+    const { d: d0, ws, accs } = fixture();
+    let d = A.addScheduled(d0, { workspaceId: ws, type: 'expense', title: 'Tax', amount: 100, dueDate: '2026-11-10', categoryId: null, accountId: null, repeat: 'none' });
+    d = A.payScheduled(d, d.scheduled[0].id, accs[0].id, '2026-11-10');
+    d = A.deleteTransaction(d, d.transactions[0].id);
+    expect(d.scheduled[0].status).toBe('planned');
+    expect(d.transactions).toHaveLength(0);
+  });
+});
+
+describe('accounts & categories', () => {
+  it('archives accounts with history, removes empty ones, keeps one primary', () => {
+    const { d: d0, ws, accs } = fixture();
+    let d = A.addTransaction(d0, { workspaceId: ws, type: 'expense', amount: 10, date: '2026-11-01', accountId: accs[0].id, categoryId: null, note: '' });
+    d = A.removeAccount(d, accs[0].id); // primary with history -> archived
+    expect(d.accounts.find(a => a.id === accs[0].id)!.isActive).toBe(false);
+    expect(d.accounts.filter(a => a.workspaceId === ws && a.isPrimary && a.isActive)).toHaveLength(1);
+    d = A.removeAccount(d, accs[2].id); // empty -> removed
+    expect(d.accounts.find(a => a.id === accs[2].id)).toBeUndefined();
+  });
+
+  it('deleting a category keeps its transactions as uncategorized', () => {
+    const { d: d0, ws, cat, accs } = fixture();
+    let d = A.addTransaction(d0, { workspaceId: ws, type: 'expense', amount: 10, date: '2026-11-01', accountId: accs[0].id, categoryId: cat('Food').id, note: '' });
+    d = A.deleteCategory(d, cat('Food').id);
+    expect(d.transactions[0].categoryId).toBeNull();
+    expect(categoryBreakdown(d, ws, '2026-11').find(r => r.name === 'Uncategorized')!.spent).toBe(10);
+  });
+
+  it('refuses to delete the last workspace and cascades otherwise', () => {
+    const { d, cafe } = fixture();
+    const after = A.deleteWorkspace(d, cafe);
+    expect(after.workspaces).toHaveLength(1);
+    expect(after.accounts.some(a => a.workspaceId === cafe)).toBe(false);
+    expect(A.deleteWorkspace(after, after.workspaces[0].id).workspaces).toHaveLength(1);
+  });
+});
+
+describe('format helpers', () => {
+  it('formats pesos and dates', () => {
+    expect(peso(1234)).toContain('1,234');
+    expect(peso(1234.5)).toContain('1,234.50');
+    expect(addMonths('2026-12', 1)).toBe('2027-01');
+    expect(addMonths('2026-01', -1)).toBe('2025-12');
+    expect(nextMonthlyDate('2026-12-15')).toBe('2027-01-15');
+    expect(todayStr(new Date(2026, 10, 11, 23, 59))).toBe('2026-11-11');
+  });
+});
+
+describe('backup validation', () => {
+  it('round-trips real data and rejects non-backups', () => {
+    const { d } = fixture();
+    const res = normalizeData(JSON.parse(JSON.stringify(d)));
+    expect(res?.dropped).toBe(0);
+    expect(res?.data.workspaces).toHaveLength(2);
+    expect(normalizeData({ hello: 1 })).toBeNull();
+    expect(normalizeData('x')).toBeNull();
+  });
+
+  it('drops malformed rows instead of crashing', () => {
+    const { d, ws, accs } = fixture();
+    const bad = JSON.parse(JSON.stringify(d)) as AppData;
+    bad.transactions.push(
+      { id: 't1', workspaceId: ws, type: 'expense', amount: -5, date: '2026-11-01', accountId: accs[0].id, categoryId: null, note: '' },
+      { id: 't2', workspaceId: ws, type: 'expense', amount: 5, date: 'yesterday', accountId: accs[0].id, categoryId: null, note: '' },
+      { id: 't3', workspaceId: 'nope', type: 'expense', amount: 5, date: '2026-11-01', accountId: accs[0].id, categoryId: null, note: '' },
+      { id: 't4', workspaceId: ws, type: 'expense', amount: 5, date: '2026-11-01', accountId: accs[0].id, categoryId: null, note: '' },
+    );
+    const res = normalizeData(bad)!;
+    expect(res.dropped).toBe(3);
+    expect(res.data.transactions.map(t => t.id)).toEqual(['t4']);
+  });
+});
+
+describe('sample data', () => {
+  it('adds budgets, transactions and bills to a workspace', () => {
+    const { d: d0, ws } = fixture();
+    const d = A.addSampleData(d0, ws, '2026-11-15');
+    expect(d.transactions.length).toBeGreaterThan(0);
+    const s = monthSummary(d, ws, '2026-11');
+    expect(s.budget).toBeGreaterThan(0);
+    expect(s.spent).toBeGreaterThan(0);
+    expect(A.clearWorkspaceTransactions(d, ws).transactions).toHaveLength(0);
+  });
+});
