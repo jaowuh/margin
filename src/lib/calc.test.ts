@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import type { AppData } from '../types';
-import { accountBalance, categoryBreakdown, limitInPeriod, monthElapsedPct, monthlyLimitFor, monthSummary, periodWindow, statusFor, upcomingItems, workspaceBalance } from './calc';
+import { accountBalance, categoryBreakdown, limitInPeriod, monthElapsedPct, monthlyIncome, monthlyLimitFor, monthSummary, periodWindow, splitSavings, statusFor, suggestSplit, upcomingItems, workspaceBalance } from './calc';
 import * as A from './actions';
 import { addMonths, nextMonthlyDate, peso, todayStr } from './format';
 import { createInitialData } from './seed';
@@ -238,5 +238,36 @@ describe('daily / weekly limits and groups', () => {
     expect(c.group).toBe('Food'); expect(c.limitPeriod).toBe('day'); expect(c.limitAmount).toBe(200);
     d = A.setCategoryGroup(d, cat('Food').id, '');
     expect(d.categories.find(x => x.id === cat('Food').id)!.group).toBeUndefined();
+  });
+});
+
+describe('budget wizard', () => {
+  it('turns weekly income into monthly', () => {
+    expect(monthlyIncome(5000, 'week')).toBe(21667);
+    expect(monthlyIncome(30000, 'month')).toBe(30000);
+  });
+  it('splits money to whole pesos that add up', () => {
+    const s = suggestSplit(['Household', 'Food', 'Transport', 'Bills', 'Daughter', 'Personal & other', 'Pets'], 23456);
+    expect(s.reduce((a, b) => a + b, 0)).toBe(23456);
+    expect(splitSavings(3, 6000)).toEqual([3000, 1800, 1200]);
+    expect(splitSavings(3, 6001).reduce((a, b) => a + b, 0)).toBe(6001);
+    expect(suggestSplit([], 100)).toEqual([]);
+  });
+  it('applies the wizard: limits, goals (keeping progress), income', () => {
+    let { d, ws, cat } = fixture();
+    d = A.addGoal(d, ws, 'Emergency fund', 1000, 0);
+    d = A.toggleGoalSaved(d, d.goals[0].id, '2026-11');
+    expect(d.goals[0].saved).toBe(1000);
+    d = A.applyWizard(d, ws, { income: 30000, incomePeriod: 'month', goals: [{ name: 'emergency FUND', monthlyAmount: 2000, target: 60000 }, { name: 'Travel fund', monthlyAmount: 1000, target: 0 }], limits: { [cat('Food').id]: 7000 } });
+    expect(d.goals.map(g => g.name)).toEqual(['Emergency fund', 'Travel fund']);
+    expect(d.goals[0].saved).toBe(1000); expect(d.goals[0].monthlyAmount).toBe(2000); expect(d.goals[0].target).toBe(60000);
+    expect(monthlyLimitFor(d.categories.find(c => c.id === cat('Food').id)!, '2026-11')).toBe(7000);
+    expect(d.prefs.plans![ws]).toEqual({ income: 30000, incomePeriod: 'month' });
+    d = A.toggleGoalSaved(d, d.goals[0].id, '2026-11');          // undo this month's tick
+    expect(d.goals[0].saved).toBe(0 + (1000 - 2000 < 0 ? 0 : 1000 - 2000));
+    d = A.applyWizard(d, ws, { income: 30000, incomePeriod: 'month', goals: [], limits: {} });
+    expect(d.goals).toHaveLength(0);
+    const back = normalizeData(JSON.parse(JSON.stringify(A.addGoal(d, ws, 'X', 1))))!.data;
+    expect(back.goals).toHaveLength(1);
   });
 });

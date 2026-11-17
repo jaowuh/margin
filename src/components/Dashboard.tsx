@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { CalendarClock, Check, Scale } from 'lucide-react';
+import { CalendarClock, Check, Scale, Wand2 } from 'lucide-react';
 import type { BalanceView, LimitPeriod, Transaction } from '../types';
 import * as A from '../lib/actions';
 import { categoryBreakdown, dayOfWeekMon, monthElapsedPct, monthSummary, statusFor, upcomingItems, workspaceBalance } from '../lib/calc';
@@ -7,6 +7,8 @@ import type { CategoryRow } from '../lib/calc';
 import { daysInMonth, monthKeyOf, monthLabel, pct, peso, shortDate, todayStr } from '../lib/format';
 import { useActive, useStore } from '../lib/store';
 import type { View } from '../App';
+import BudgetWizard from './BudgetWizard';
+import { SavingsCard } from './Savings';
 import { Donut, EmptyState, MonthSwitcher, ProgressBar, useUI } from './ui';
 import { TxRow } from './TxRow';
 
@@ -23,6 +25,7 @@ export default function Dashboard({ month, setMonth, go, editTx }: Props) {
   const { toast } = useUI();
   const [showPicker, setShowPicker] = useState(false);
   const [period, setPeriod] = useState<LimitPeriod>('month');
+  const [wizard, setWizard] = useState(false);
 
   const today = todayStr();
   const elapsed = monthElapsedPct(month, today);
@@ -70,6 +73,7 @@ export default function Dashboard({ month, setMonth, go, editTx }: Props) {
 
   return (
     <div className="page">
+      {wizard && <BudgetWizard onClose={() => setWizard(false)} />}
       <div className="page-head">
         <div>
           <div className="eyebrow">{ws.name.toUpperCase()}</div>
@@ -133,7 +137,7 @@ export default function Dashboard({ month, setMonth, go, editTx }: Props) {
         ) : (
           <EmptyState
             title="No budget yet"
-            action={<button className="btn primary" onClick={() => go('budgets')}><Scale size={16} /> Create your budget</button>}
+            action={<div className="btn-row center"><button className="btn primary" onClick={() => setWizard(true)}><Wand2 size={16} /> Help me create a budget</button><button className="btn" onClick={() => go('budgets')}><Scale size={16} /> Set limits myself</button></div>}
           >
             Give each spending category a limit, per day, week or month, and this card will tell you whether you’re still within budget.
             {sum.spent > 0 && <> So far this month you’ve spent <strong>{peso(sum.spent)}</strong>.</>}
@@ -147,6 +151,8 @@ export default function Dashboard({ month, setMonth, go, editTx }: Props) {
         <div><span>Spent{eff === 'day' ? ' today' : eff === 'week' ? ' this week' : ''}</span><strong>{peso(sum.spent)}</strong></div>
         <div><span>{netLabel}</span><strong className={sum.net < 0 ? 'neg' : ''}>{peso(sum.net)}</strong></div>
       </section>
+
+      <SavingsCard month={month} canTick={elapsed != null} />
 
       {/* ---- Balance ---- */}
       <section className="card balance" aria-label="Available balance">

@@ -182,3 +182,36 @@ export function upcomingItems(data: AppData, workspaceId: string, month: string)
 export function categoryById(categories: Category[], id: string | null | undefined): Category | undefined {
   return id ? categories.find(c => c.id === id) : undefined;
 }
+
+// ---------- budget wizard helpers ----------
+/** Income entered per week or per month, as a monthly figure (52 weeks / 12 months). */
+export function monthlyIncome(amount: number, period: 'week' | 'month'): number {
+  return Math.round(period === 'week' ? (amount * 52) / 12 : amount);
+}
+
+const WEIGHTS: Record<string, number> = {
+  household: 25, food: 25, transport: 12, bills: 20, daughter: 8, 'personal & other': 10,
+  ingredients: 35, supplies: 8, utilities: 8, staff: 25, rent: 15, maintenance: 4, 'other expenses': 5,
+};
+
+/** Split `total` across names using sensible default weights (equal-ish for unknown names). Whole pesos, sums to total. */
+export function suggestSplit(names: string[], total: number): number[] {
+  if (names.length === 0 || total <= 0) return names.map(() => 0);
+  const w = names.map(n => WEIGHTS[n.trim().toLowerCase()] ?? 10);
+  const sum = w.reduce((a, b) => a + b, 0);
+  const raw = w.map(x => Math.floor((total * x) / sum / 10) * 10); // nearest lower 10
+  let rest = Math.round(total - raw.reduce((a, b) => a + b, 0));
+  const order = w.map((x, i) => [x, i] as const).sort((a, b) => b[0] - a[0]);
+  for (let k = 0; rest > 0; k = (k + 1) % order.length) { const add = Math.min(10, rest); raw[order[k][1]] += add; rest -= add; }
+  return raw;
+}
+
+/** Split a monthly savings total across goals (default 50 / 30 / 20 for the first three, then equal). */
+export function splitSavings(count: number, total: number): number[] {
+  if (count <= 0 || total <= 0) return Array(Math.max(0, count)).fill(0);
+  const base = count === 1 ? [1] : count === 2 ? [0.6, 0.4] : [0.5, 0.3, 0.2, ...Array(Math.max(0, count - 3)).fill(0.1)];
+  const sum = base.reduce((a, b) => a + b, 0);
+  const out = base.slice(0, count).map(x => Math.floor((total * x) / sum / 10) * 10);
+  out[0] += Math.round(total - out.reduce((a, b) => a + b, 0));
+  return out;
+}

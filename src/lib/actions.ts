@@ -1,5 +1,5 @@
 import type {
-  Account, AppData, BalanceView, Category, LimitPeriod, Scheduled, Transaction, Workspace, WorkspaceType,
+  Account, AppData, BalanceView, Category, LimitPeriod, SavingsGoal, Scheduled, Transaction, Workspace, WorkspaceType,
 } from '../types';
 import { nextMonthlyDate, todayStr, uid } from './format';
 import { CATEGORY_COLORS, starterFor } from './seed';
@@ -37,6 +37,7 @@ export function deleteWorkspace(d: AppData, id: string): AppData {
     categories: d.categories.filter(c => c.workspaceId !== id),
     transactions: d.transactions.filter(t => t.workspaceId !== id),
     scheduled: d.scheduled.filter(s => s.workspaceId !== id),
+    goals: d.goals.filter(g => g.workspaceId !== id),
     prefs: {
       ...d.prefs,
       activeWorkspaceId: d.prefs.activeWorkspaceId === id ? workspaces[0].id : d.prefs.activeWorkspaceId,
@@ -280,4 +281,60 @@ export function addSampleData(d: AppData, workspaceId: string, today = todayStr(
     dueDate: dueDay(n), categoryId: byName(cat), accountId: null, repeat: 'monthly', status: 'planned',
   }));
   return { ...d, categories, transactions: [...d.transactions, ...transactions], scheduled: [...d.scheduled, ...scheduled] };
+}
+
+// ---------- savings goals & budget wizard ----------
+export function addGoal(d: AppData, workspaceId: string, name: string, monthlyAmount = 0, target = 0): AppData {
+  const clean = name.trim();
+  if (!clean) return d;
+  const g: SavingsGoal = { id: uid(), workspaceId, name: clean.slice(0, 40), monthlyAmount: Math.max(0, monthlyAmount || 0), target: Math.max(0, target || 0), saved: 0, savedMonths: [] };
+  return { ...d, goals: [...d.goals, g] };
+}
+
+export function updateGoal(d: AppData, id: string, patch: Partial<Pick<SavingsGoal, 'name' | 'monthlyAmount' | 'target'>>): AppData {
+  const p = { ...patch };
+  if (p.name !== undefined) { p.name = p.name.trim().slice(0, 40); if (!p.name) delete p.name; }
+  if (p.monthlyAmount !== undefined) p.monthlyAmount = Math.max(0, p.monthlyAmount || 0);
+  if (p.target !== undefined) p.target = Math.max(0, p.target || 0);
+  return { ...d, goals: d.goals.map(g => (g.id === id ? { ...g, ...p } : g)) };
+}
+
+export function deleteGoal(d: AppData, id: string): AppData {
+  return { ...d, goals: d.goals.filter(g => g.id !== id) };
+}
+
+/** Tick a goal off for a month (adds this month's amount to what's saved); ticking again undoes it. */
+export function toggleGoalSaved(d: AppData, id: string, month: string): AppData {
+  return {
+    ...d,
+    goals: d.goals.map(g => {
+      if (g.id !== id) return g;
+      if (g.savedMonths.includes(month)) {
+        return { ...g, savedMonths: g.savedMonths.filter(m => m !== month), saved: Math.max(0, Math.round((g.saved - g.monthlyAmount) * 100) / 100) };
+      }
+      return { ...g, savedMonths: [...g.savedMonths, month], saved: Math.round((g.saved + g.monthlyAmount) * 100) / 100 };
+    }),
+  };
+}
+
+export interface WizardResult {
+  income: number;
+  incomePeriod: 'week' | 'month';
+  goals: Array<{ name: string; monthlyAmount: number; target: number }>;
+  /** Monthly limit per expense category id. 0 = no limit. */
+  limits: Record<string, number>;
+}
+
+/** Applies the wizard: sets monthly limits, upserts savings goals by name (keeping progress), remembers the income. */
+export function applyWizard(d: AppData, workspaceId: string, r: WizardResult): AppData {
+  let out = d;
+  for (const [id, amount] of Object.entries(r.limits)) out = setCategoryLimit(out, id, amount, 'month');
+  const wanted = new Set(r.goals.map(g => g.name.trim().toLowerCase()));
+  // goals the user switched off in the wizard are removed
+  out = { ...out, goals: out.goals.filter(g => g.workspaceId !== workspaceId || wanted.has(g.name.trim().toLowerCase())) };
+  for (const g of r.goals) {
+    const existing = out.goals.find(x => x.workspaceId === workspaceId && x.name.trim().toLowerCase() === g.name.trim().toLowerCase());
+    out = existing ? updateGoal(out, existing.id, { monthlyAmount: g.monthlyAmount, target: g.target }) : addGoal(out, workspaceId, g.name, g.monthlyAmount, g.target);
+  }
+  return { ...out, prefs: { ...out.prefs, plans: { ...(out.prefs.plans ?? {}), [workspaceId]: { income: r.income, incomePeriod: r.incomePeriod } } } };
 }

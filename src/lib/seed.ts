@@ -66,6 +66,7 @@ export function createInitialData(): AppData {
     categories: [...p.categories, ...b.categories],
     transactions: [],
     scheduled: [],
+    goals: [],
     prefs: { activeWorkspaceId: personal.id, balanceView: {}, selectedAccountIds: {}, lastExportAt: null },
   };
 }

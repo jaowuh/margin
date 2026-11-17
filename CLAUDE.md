@@ -51,3 +51,7 @@ Hidden coloring game (`src/components/CreditsGame.tsx` = painting card only; `cr
 - Each expense category's limit is entered per day, week or month (`Category.limitPeriod/limitAmount`; missing = month, `monthlyLimit`). `monthlyLimitFor(cat, month)` converts (day x days-in-month, week x days/7); `limitInPeriod` gives the day/week/month figure (whole pesos). Always use these, never read `monthlyLimit` directly for totals.
 - Optional `Category.group` (e.g. Food): Overview rolls grouped categories into one expandable block; totals still sum the individual limits.
 - Overview budget card has a Day / Week / Month toggle (current month only). Week = Monday-Sunday. `monthSummary` / `categoryBreakdown` take `(period, today)`; Day/Week count only transactions in that window and show the month status as a context line.
+
+## Budget wizard + savings goals
+- `AppData.goals: SavingsGoal[]` (name, monthlyAmount, target, saved, savedMonths). Goals are tracked by ticking "Save ₱X" on the Overview (`SavingsCard`); they do NOT count as spending or touch balances. Manage them in Budgets → Savings goals (`Savings.tsx`).
+- `BudgetWizard.tsx` (modal, 4 steps: income per week/month → savings total + split across goals → suggested spending limits per category → review). Opened from Budgets ("Budget wizard") and the Overview empty state. `A.applyWizard` sets monthly limits, upserts goals by name (keeps progress), remembers income in `prefs.plans[workspaceId]`. Helpers in calc.ts: `monthlyIncome` (weekly x 52/12), `suggestSplit`, `splitSavings`.

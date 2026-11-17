@@ -67,11 +67,33 @@ export interface Scheduled {
   transactionId?: string;
 }
 
+/** Something you set money aside for each month (emergency fund, travel, ...). Tracked by ticking it off. */
+export interface SavingsGoal {
+  id: string;
+  workspaceId: string;
+  name: string;
+  /** How much to set aside each month. */
+  monthlyAmount: number;
+  /** Optional goal total. 0 = no target. */
+  target: number;
+  /** Total set aside so far. */
+  saved: number;
+  /** Months (YYYY-MM) already ticked off. */
+  savedMonths: string[];
+}
+
+/** What the budget wizard last used, so it can be re-opened with the same numbers. */
+export interface BudgetPlan {
+  income: number;
+  incomePeriod: 'week' | 'month';
+}
+
 export interface Prefs {
   activeWorkspaceId: string;
   balanceView: Record<string, BalanceView>;
   selectedAccountIds: Record<string, string[]>;
   lastExportAt: string | null;
+  plans?: Record<string, BudgetPlan>;
 }
 
 export interface AppData {
@@ -81,5 +103,6 @@ export interface AppData {
   categories: Category[];
   transactions: Transaction[];
   scheduled: Scheduled[];
+  goals: SavingsGoal[];
   prefs: Prefs;
 }

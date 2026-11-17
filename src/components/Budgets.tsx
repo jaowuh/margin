@@ -1,16 +1,19 @@
 import { useEffect, useState } from 'react';
-import { Plus, Trash2 } from 'lucide-react';
+import { Plus, Trash2, Wand2 } from 'lucide-react';
 import type { Category, LimitPeriod } from '../types';
 import * as A from '../lib/actions';
 import { categoryBreakdown, monthlyLimitFor } from '../lib/calc';
 import { monthLabel, peso, todayStr } from '../lib/format';
 import { useActive, useStore } from '../lib/store';
 import { Field, useUI } from './ui';
+import BudgetWizard from './BudgetWizard';
+import { GoalsEditor } from './Savings';
 
 export default function Budgets() {
   const { data, apply } = useStore();
   const { ws, isBusiness, categories } = useActive();
   const { confirm, toast } = useUI();
+  const [wizard, setWizard] = useState(false);
   const expense = categories.filter(c => c.kind === 'expense');
   const income = categories.filter(c => c.kind === 'income');
   const month = todayStr().slice(0, 7);
@@ -37,7 +40,9 @@ export default function Budgets() {
     <div className="page narrow">
       <div className="page-head">
         <div><div className="eyebrow">{ws.name.toUpperCase()}</div><h1>Budgets</h1></div>
+        <button className="btn" onClick={() => setWizard(true)}><Wand2 size={16} /> Budget wizard</button>
       </div>
+      {wizard && <BudgetWizard onClose={() => setWizard(false)} />}
 
       <section className="card">
         <div className="card-head">
@@ -51,6 +56,8 @@ export default function Budgets() {
         <AddCategory kind="expense" workspaceId={ws.id} groups={groups} />
         <p className="muted-text small">“Spent” shows {monthLabel(month)}.</p>
       </section>
+
+      <GoalsEditor />
 
       <section className="card">
         <div className="card-head"><div><h2>{isBusiness ? 'Sales & income categories' : 'Income categories'}</h2><p>Used to label money coming in. No limits needed.</p></div></div>

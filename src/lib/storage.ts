@@ -38,6 +38,12 @@ export function normalizeData(raw: unknown): NormalizeResult | null {
     isStr(r.id) && inWs(r) && isNum(r.amount) && r.amount > 0 && isStr(r.dueDate) && DATE_RE.test(r.dueDate)
     && (r.type === 'income' || r.type === 'expense') && isStr(r.title) && (r.status === 'planned' || r.status === 'paid'));
 
+  const goals = keep<AppData['goals'][number]>(arr('goals'), r => isStr(r.id) && inWs(r) && isStr(r.name) && isNum(r.monthlyAmount));
+  const plansRaw = isObj((raw.prefs as Record<string, unknown> | undefined)?.plans) ? ((raw.prefs as Record<string, unknown>).plans as Record<string, unknown>) : {};
+  const plans: Record<string, { income: number; incomePeriod: 'week' | 'month' }> = {};
+  for (const [k, v] of Object.entries(plansRaw)) {
+    if (wsIds.has(k) && isObj(v) && isNum(v.income) && v.income > 0) plans[k] = { income: v.income, incomePeriod: v.incomePeriod === 'week' ? 'week' : 'month' };
+  }
   const p = isObj(raw.prefs) ? raw.prefs : {};
   const active = isStr(p.activeWorkspaceId) && wsIds.has(p.activeWorkspaceId) ? p.activeWorkspaceId : workspaces[0].id;
   const data: AppData = {
@@ -58,7 +64,12 @@ export function normalizeData(raw: unknown): NormalizeResult | null {
       ...s, categoryId: isStr(s.categoryId) ? s.categoryId : null, accountId: isStr(s.accountId) ? s.accountId : null,
       repeat: s.repeat === 'monthly' ? 'monthly' : 'none',
     })),
+    goals: goals.map(g => ({
+      ...g, target: isNum(g.target) && g.target > 0 ? g.target : 0, saved: isNum(g.saved) && g.saved > 0 ? g.saved : 0,
+      savedMonths: Array.isArray(g.savedMonths) ? g.savedMonths.filter(isStr) : [],
+    })),
     prefs: {
+      plans,
       activeWorkspaceId: active,
       balanceView: isObj(p.balanceView) ? (p.balanceView as AppData['prefs']['balanceView']) : {},
       selectedAccountIds: isObj(p.selectedAccountIds) ? (p.selectedAccountIds as AppData['prefs']['selectedAccountIds']) : {},
