@@ -72,6 +72,31 @@ export const RELICS: Record<Tier, string[]> = {
   legendary: ['Dragon’s Hoard', 'Crown of Compound Interest', 'Phoenix Ledger'],
 };
 
+export interface RelicFx { dmg?: number; rate?: number; hp?: number; speed?: number; magnet?: number; xp?: number; drop?: number; revive?: number }
+export const RELIC_FX: Record<string, { desc: string; fx: RelicFx }> = {
+  'Rusty Coin': { desc: '+10% XP from gems', fx: { xp: 0.1 } },
+  'Cracked Piggy': { desc: '+20% gem pickup range', fx: { magnet: 0.2 } },
+  'Wooden Charm': { desc: '+15 max health', fx: { hp: 15 } },
+  'Bronze Badge': { desc: '+6% damage', fx: { dmg: 0.06 } },
+  'Copper Ring': { desc: '+6% fire rate', fx: { rate: 0.06 } },
+  'Lucky Penny': { desc: '+25% more drops', fx: { drop: 0.25 } },
+  'Silver Crown': { desc: '+15% XP from gems', fx: { xp: 0.15 } },
+  'Moonlit Purse': { desc: '+40% gem pickup range', fx: { magnet: 0.4 } },
+  'Steady Shield': { desc: '+30 max health', fx: { hp: 30 } },
+  'Golden Goblet': { desc: '+10% damage', fx: { dmg: 0.1 } },
+  'Sunstone Vault': { desc: '+10% fire rate', fx: { rate: 0.1 } },
+  'Hoarder’s Crest': { desc: '+8% move speed', fx: { speed: 0.08 } },
+  'Dragon’s Hoard': { desc: '+15% damage and +20 max health', fx: { dmg: 0.15, hp: 20 } },
+  'Crown of Compound Interest': { desc: '+25% XP from gems', fx: { xp: 0.25 } },
+  'Phoenix Ledger': { desc: 'Once per run, come back at half health', fx: { revive: 1 } },
+};
+export const RELIC_SLOTS = 3;
+export function relicFx(names: string[]): Required<RelicFx> {
+  const t = { dmg: 0, rate: 0, hp: 0, speed: 0, magnet: 0, xp: 0, drop: 0, revive: 0 };
+  for (const n of names.slice(0, RELIC_SLOTS)) { const f = RELIC_FX[n]?.fx; if (f) for (const k in f) (t as any)[k] += (f as any)[k]; }
+  return t;
+}
+
 export function chestFor(profile: Profile, won: boolean, seconds: number, duration: number, kills: number): { tier: Tier; coins: number } {
   let i = TIERS.indexOf(profile.tier);
   if (won && i < 4) i++;                       // finishing the run opens a better chest
@@ -82,13 +107,16 @@ export function chestFor(profile: Profile, won: boolean, seconds: number, durati
   return { tier, coins: Math.round(base * profile.luck * progress + Math.min(40, kills / 10)) };
 }
 
-export interface GameSave { coins: number; relics: string[]; bestSeconds: number; runs: number; job: Job }
+export interface GameSave { coins: number; relics: string[]; equipped: string[]; bestSeconds: number; runs: number; job: Job }
 const KEY = 'margin:game';
 export function loadSave(): GameSave {
   try {
     const v = JSON.parse(localStorage.getItem(KEY) || 'null');
-    if (v && typeof v.coins === 'number') return { coins: v.coins, relics: Array.isArray(v.relics) ? v.relics.filter((x: unknown) => typeof x === 'string') : [], bestSeconds: +v.bestSeconds || 0, runs: +v.runs || 0, job: JOB_IDS.includes(v.job) ? v.job : 'archer' };
+    if (v && typeof v.coins === 'number') {
+      const relics: string[] = Array.isArray(v.relics) ? v.relics.filter((x: unknown) => typeof x === 'string') : [];
+      return { coins: v.coins, relics, equipped: (Array.isArray(v.equipped) ? v.equipped : []).filter((x: unknown) => typeof x === 'string' && relics.includes(x as string)).slice(0, RELIC_SLOTS), bestSeconds: +v.bestSeconds || 0, runs: +v.runs || 0, job: JOB_IDS.includes(v.job) ? v.job : 'archer' };
+    }
   } catch { /* ignore */ }
-  return { coins: 0, relics: [], bestSeconds: 0, runs: 0, job: 'archer' };
+  return { coins: 0, relics: [], equipped: [], bestSeconds: 0, runs: 0, job: 'archer' };
 }
 export function writeSave(s: GameSave) { try { localStorage.setItem(KEY, JSON.stringify(s)); } catch { /* ignore */ } }

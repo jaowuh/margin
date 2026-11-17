@@ -17,8 +17,8 @@ const LV = {
   lightning: [null, 'Lightning strikes and jumps to a nearby monster', '+1 chain', '+1 strike', '+1 chain', '+1 strike', '+1 chain', 'MAX Thunderstorm: double strikes, chains to 6'],
 };
 const GENERIC = [
-  { id: 'dup', name: 'Duplicate', desc: '+1 projectile, blade or strike for all weapons', max: 3 },
-  { id: 'multi', name: 'Multishot', desc: 'Every attack repeats once more right after', max: 3 },
+  { id: 'dup', name: 'Duplicate', desc: '+1 projectile, blade or strike for all weapons', max: 2, rare: 0.22 },
+  { id: 'multi', name: 'Multishot', desc: 'Every attack repeats once more right after', max: 2, rare: 0.22 },
   { id: 'dmg', name: 'Sharper edge', desc: '+25% damage to everything', max: 8 },
   { id: 'rate', name: 'Quick hands', desc: '+20% fire rate (blades spin faster too)', max: 8 },
   { id: 'speed', name: 'Swift boots', desc: '+10% move speed', max: 5 },
@@ -39,7 +39,9 @@ export function startGame(canvas, profile, opts, ui) {
   const resize = () => { const r = canvas.getBoundingClientRect(); W = r.width; H = r.height; canvas.width = Math.round(W * DPR); canvas.height = Math.round(H * DPR); };
   resize(); const ro = new ResizeObserver(resize); ro.observe(canvas);
 
-  const P = { x: 0, y: 0, hp: profile.maxHp, maxHp: profile.maxHp, inv: 0, face: 1, dir: 0, level: 1, xp: 0, need: 8 };
+  const FX = opts.fx || { dmg: 0, rate: 0, hp: 0, speed: 0, magnet: 0, xp: 0, drop: 0, revive: 0 };
+  let revived = false;
+  const P = { x: 0, y: 0, hp: profile.maxHp + FX.hp, maxHp: profile.maxHp + FX.hp, inv: 0, face: 1, dir: 0, level: 1, xp: 0, need: 8 };
   const main = PRIMARY[profile.job] || 'arrow';
   const R = profile.rank, isMain = k => k === main;
   const up = { arrow: 0, magic: 0, sword: 0, potion: 0, lightning: 0, dup: 0, multi: 0, dmg: 0, rate: 0, speed: 0, hp: 0, magnet: 0, heal: 0 };
@@ -71,10 +73,10 @@ export function startGame(canvas, profile, opts, ui) {
   document.addEventListener('visibilitychange', vis);
 
   /* ---------- stats ---------- */
-  const dmg = () => 10 * profile.damage * (1 + 0.25 * up.dmg);
-  const rate = () => 1.1 * (1 + 0.2 * up.rate);
-  const spd = () => 125 * profile.speed * (1 + 0.1 * up.speed) * (buffs.speed > 0 ? 1.5 : 1);
-  const magnet = () => 70 * (1 + 0.4 * up.magnet);
+  const dmg = () => 10 * profile.damage * (1 + 0.25 * up.dmg) * (1 + FX.dmg);
+  const rate = () => 1.1 * (1 + 0.2 * up.rate) * (1 + FX.rate);
+  const spd = () => 125 * profile.speed * (1 + 0.1 * up.speed) * (1 + FX.speed) * (buffs.speed > 0 ? 1.5 : 1);
+  const magnet = () => 70 * (1 + 0.4 * up.magnet) * (1 + FX.magnet);
   const progress = () => clamp(t / D);
 
   /* ---------- spawning ---------- */
@@ -129,7 +131,13 @@ export function startGame(canvas, profile, opts, ui) {
     const slotsFree = owned().length < SLOTS, list = [];
     for (const k of WIDS) if ((up[k] > 0 && up[k] < 7) || (up[k] === 0 && slotsFree)) list.push(wopt(k));
     for (const u of GENERIC) if (up[u.id] < u.max) list.push({ ...u, have: up[u.id] });
-    return list.sort(() => Math.random() - 0.5).slice(0, 3);
+    const out = [];
+    while (out.length < 3 && list.length) {   // weighted draw: Duplicate and Multishot are rare
+      const w = list.map(o => o.rare || 1), sum = w.reduce((a, b) => a + b, 0);
+      let r = Math.random() * sum, i = 0; while (i < list.length - 1 && (r -= w[i]) > 0) i++;
+      out.push(list.splice(i, 1)[0]);
+    }
+    return out;
   }
   function applyChoice(id) {
     up[id]++;
@@ -142,7 +150,7 @@ export function startGame(canvas, profile, opts, ui) {
     ui.levelUp(choices(), id => { applyChoice(id); paused = false; last = performance.now(); }, title);
   }
   function addXp(v) {
-    P.xp += v;
+    P.xp += v * (1 + FX.xp);
     if (P.xp >= P.need) { P.xp -= P.need; P.level++; P.need = Math.round(8 + P.level * 5); showChoices('Level up!'); }
   }
   function openChest() {
@@ -165,8 +173,8 @@ export function startGame(canvas, profile, opts, ui) {
     if (e.mini) { items.push({ x: e.x, y: e.y, type: 'chest', life: 1e9 }); return; }
     if (e.boss) return;
     const low = P.hp < P.maxHp * 0.4;
-    if (Math.random() > (low ? 0.05 : 0.03)) return;
-    const w = [['heart', low ? 0.6 : 0.35], ['magnet', 0.2], ['shield', 0.2], ['boots', 0.2]], sum = w.reduce((s, x) => s + x[1], 0);
+    if (Math.random() > (low ? 0.035 : 0.025) * (1 + FX.drop)) return;
+    const w = [['heart', low ? 0.3 : 0.1], ['magnet', 0.25], ['shield', 0.25], ['boots', 0.25]], sum = w.reduce((s, x) => s + x[1], 0);
     let r = Math.random() * sum, type = 'heart';
     for (const [k, v] of w) { if ((r -= v) <= 0) { type = k; break; } }
     items.push({ x: e.x, y: e.y, type, life: 25 });
@@ -183,14 +191,16 @@ export function startGame(canvas, profile, opts, ui) {
     }
   }
   function fireMagic() {
-    const L = up.magic, n = (L >= 7 ? 6 : 1 + Math.floor((L - 1) / 2)) + up.dup;
+    // like arrows: only fires when a monster is on screen, nearest first, one bolt per monster
+    const L = up.magic, want = (L >= 7 ? 6 : 1 + Math.floor((L - 1) / 2)) + up.dup;
     const near = enemies.filter(e => e.hp > 0 && inView(e)).sort((a, b) => (a.x - P.x) ** 2 + (a.y - P.y) ** 2 - (b.x - P.x) ** 2 - (b.y - P.y) ** 2);
-    if (!near.length) return;
+    const n = Math.min(want, near.length);
     for (let i = 0; i < n; i++) {
-      const e = near[i % near.length], a = Math.atan2(e.y - P.y, e.x - P.x) + rnd(-1.3, 1.3), sp = 240 * (isMain('magic') && R >= 2 ? 1.25 : 1);
-      shots.push({ kind: 'magic', x: P.x, y: P.y, a, sp, target: e, turn: 5.5 * (isMain('magic') && R >= 2 ? 1.25 : 1), life: 3, dmg: dmg() * 3.2 * wmul('magic') * (1 + 0.14 * (L - 1)), reseek: isMain('magic') && R >= 3 ? 1 : 0 });
+      const e = near[i], a = Math.atan2(e.y - P.y, e.x - P.x), up2 = isMain('magic') && R >= 2 ? 1.25 : 1;
+      shots.push({ kind: 'magic', x: P.x, y: P.y, a, sp: 260 * up2, target: e, turn: 5 * up2, life: 2, dmg: dmg() * 3.2 * wmul('magic') * (1 + 0.14 * (L - 1)), reseek: isMain('magic') && R >= 3 ? 1 : 0 });
     }
   }
+  const anyInView = () => enemies.some(e => e.hp > 0 && inView(e));
   function throwPotions() {
     const L = up.potion, n = (1 + Math.floor(L / 3) + up.dup) * (L >= 7 ? 2 : 1);
     const near = enemies.filter(e => e.hp > 0 && inView(e));
@@ -239,7 +249,7 @@ export function startGame(canvas, profile, opts, ui) {
     for (const e of enemies) {
       const dx = P.x - e.x, dy = P.y - e.y, l = Math.hypot(dx, dy) || 1, k = e.slow > t ? 0.45 : 1;
       e.x += (dx / l) * e.sp * k * dt; e.y += (dy / l) * e.sp * k * dt; e.vx = dx; e.hit = Math.max(0, e.hit - dt); e.ph += dt * 6;
-      if (l < e.r + 10 && P.inv <= 0 && buffs.inv <= 0) { P.hp -= e.dmg; P.inv = 0.6; ui.shake(); if (P.hp <= 0) return finish(false); }
+      if (l < e.r + 10 && P.inv <= 0 && buffs.inv <= 0) { P.hp -= e.dmg; P.inv = 0.6; ui.shake(); if (P.hp <= 0) { if (FX.revive && !revived) { revived = true; P.hp = P.maxHp * 0.5; P.inv = 2.5; ui.banner('Phoenix Ledger: back on your feet!'); } else return finish(false); } }
     }
     // soft separation so monsters don't stack into one dot
     for (let i = 0; i < enemies.length; i += 2) {
@@ -256,7 +266,7 @@ export function startGame(canvas, profile, opts, ui) {
     }
     // magic: homing bolts, one monster each. Level 7 = Seeker Swarm
     magicCd -= dt;
-    if (up.magic > 0 && magicCd <= 0) { magicCd = 1.15 / rate(); volley(fireMagic); }
+    if (up.magic > 0 && magicCd <= 0 && anyInView()) { magicCd = 1.15 / rate(); volley(fireMagic); }
     // potion
     potionCd -= dt;
     if (up.potion > 0 && potionCd <= 0) { potionCd = 3 / rate(); volley(throwPotions); }
@@ -266,7 +276,10 @@ export function startGame(canvas, profile, opts, ui) {
 
     for (const s of shots) {
       if (s.kind === 'magic') {
-        if (!s.target || s.target.hp <= 0) { let b = null, bd = 1e9; for (const e of enemies) { if (e.hp <= 0) continue; const d = (e.x - s.x) ** 2 + (e.y - s.y) ** 2; if (d < bd) { bd = d; b = e; } } s.target = b; }
+        if (s.target && s.target.hp <= 0) {   // target already dead: fly on, or seek one new monster (Archmage)
+          s.target = null;
+          if (s.reseek > 0) { s.reseek--; let b = null, bd = 1e9; for (const e of enemies) { if (e.hp <= 0 || !inView(e)) continue; const d = (e.x - s.x) ** 2 + (e.y - s.y) ** 2; if (d < bd) { bd = d; b = e; } } s.target = b; }
+        }
         if (s.target) { const want = Math.atan2(s.target.y - s.y, s.target.x - s.x); let df = want - s.a; df = Math.atan2(Math.sin(df), Math.cos(df)); s.a += clamp(df, -s.turn * dt, s.turn * dt); }
         s.vx = Math.cos(s.a) * s.sp; s.vy = Math.sin(s.a) * s.sp;
       }
@@ -275,9 +288,8 @@ export function startGame(canvas, profile, opts, ui) {
         if (e.hp <= 0 || s.life <= 0) continue;
         if ((e.x - s.x) ** 2 + (e.y - s.y) ** 2 < (e.r + (s.kind === 'magic' ? 6 : 4)) ** 2) {
           if (s.kind === 'magic') {
-            if (e !== s.target && s.target && s.target.hp > 0) continue; // seekers only hit their own target
-            hurt(e, s.dmg);
-            if (e.hp <= 0 && s.reseek > 0) { s.reseek--; s.target = null; s.life = Math.max(s.life, 1.2); } else s.life = 0;
+            if (s.target && e !== s.target) continue; // seekers only hit their own target
+            hurt(e, s.dmg); s.life = 0;
           } else if (!s.hit.includes(e)) { s.hit.push(e); hurt(e, s.dmg); if (--s.pierce <= 0) s.life = 0; }
         }
       }
@@ -420,7 +432,7 @@ export function startGame(canvas, profile, opts, ui) {
       const k = 1.0 + (profile.rank - 1) * 0.08, fi = Math.floor(t * (moving ? 12 : 8)) % AN.frames.length;
       const flip = P.face < 0;
       const aura = ['#B9684D', '#cfd4d8', '#e0a94f'][profile.rank - 1];
-      c.fillStyle = aura + '55'; c.beginPath(); c.ellipse(0, AN.h * k / 2 - 2, AN.w * k * 0.38, 6, 0, 0, 7); c.fill();
+      // no coloured ground shadow: it would show as a brown blob on the dark floor
       c.imageSmoothingEnabled = false; c.save(); if (flip) c.scale(-1, 1);
       if (profile.rank >= 3) { c.shadowColor = aura; c.shadowBlur = 10; }
       c.drawImage(AN.frames[fi] || AN.frames[0], -AN.w * k / 2, -AN.h * k / 2, AN.w * k, AN.h * k); c.restore();

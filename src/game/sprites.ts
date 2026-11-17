@@ -48,6 +48,19 @@ export function loadSprites(): Promise<Sprites> {
             anim[k + '_idle'] = { frames: fr, flash: fr, w, h };
           }
         }
+        // Swordsman: the bare-handed fighter tile (32rogues), animated with a bob and tilt
+        const fighter = (n: number, bob: number[], tilt: number) => {
+          const Z = 1.5, S = Math.round(32 * Z), fr: HTMLCanvasElement[] = [], fl: HTMLCanvasElement[] = [];
+          for (let i = 0; i < n; i++) {
+            const cv = document.createElement('canvas'); cv.width = S; cv.height = S + 4; const x = cv.getContext('2d')!;
+            x.imageSmoothingEnabled = false; x.translate(S / 2, S + 2); x.rotate(Math.sin((i / n) * Math.PI * 2) * tilt);
+            x.drawImage(tile(6), -S / 2, -S - 2 + 4 + bob[i % bob.length], S, S); fr.push(cv);
+            const f = document.createElement('canvas'); f.width = cv.width; f.height = cv.height; const y = f.getContext('2d')!; y.drawImage(cv, 0, 0); y.globalCompositeOperation = 'source-in'; y.fillStyle = '#fff'; y.fillRect(0, 0, f.width, f.height); fl.push(f);
+          }
+          return { frames: fr, flash: fl, w: S, h: S + 4 } as Anim;
+        };
+        anim.swordsman = fighter(8, [0, -2, -3, -2, 0, -2, -3, -2], 0.07);
+        anim.swordsman_idle = fighter(8, [0, 0, -1, -1, 0, 0, -1, -1], 0);
         resolve({ hero, mon, flash, sword: tile(15), anim });
       }).catch(reject);
     };

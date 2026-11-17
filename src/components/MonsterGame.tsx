@@ -3,7 +3,7 @@ import { Pause, Play, Swords, X } from 'lucide-react';
 import type { Job } from '../game/profile';
 import { JOB_IDS, JOBS } from '../game/profile';
 import { useActive, useStore } from '../lib/store';
-import { chestFor, loadSave, profileFor, RELICS, writeSave } from '../game/profile';
+import { chestFor, loadSave, profileFor, RELICS, RELIC_FX, RELIC_SLOTS, relicFx, writeSave } from '../game/profile';
 import type { GameSave, Tier } from '../game/profile';
 import { startGame } from '../game/survivor';
 import { loadSprites } from '../game/sprites';
@@ -74,7 +74,21 @@ export function PlayTab({ month }: { month: string }) {
       </section>
       <section className="card">
         <div className="card-head"><div><h2>Your loot</h2><p>{save.coins} coins · best {save.runs > 0 ? fmt(save.bestSeconds) : '–'} · {save.runs} runs</p></div></div>
-        {save.relics.length > 0 ? <p className="mg-relics">{save.relics.join(' · ')}</p> : <p className="muted">No relics yet. Win or survive a run to find one.</p>}
+        {save.relics.length > 0 ? (
+          <>
+            <p className="muted">Equip up to {RELIC_SLOTS} relics ({save.equipped.length}/{RELIC_SLOTS}). They help in every run.</p>
+            <div className="mg-relicgrid">
+              {save.relics.map(r => {
+                const on = save.equipped.includes(r), full = !on && save.equipped.length >= RELIC_SLOTS;
+                return (
+                  <button key={r} className={`mg-relic ${on ? 'on' : ''}`} disabled={full} onClick={() => { const next = { ...save, equipped: on ? save.equipped.filter(x => x !== r) : [...save.equipped, r] }; writeSave(next); setSave(next); }}>
+                    <strong>{r}</strong><span>{RELIC_FX[r]?.desc}</span><em>{on ? 'Equipped' : 'Tap to equip'}</em>
+                  </button>
+                );
+              })}
+            </div>
+          </>
+        ) : <p className="muted">No relics yet. Win or survive a run to find one.</p>}
       </section>
       <p className="muted mg-credit">Game art: chierit (Elementals), Luiz Melo (Monsters Creatures Fantasy), Seth Boyles (32rogues)</p>
       {running && <MonsterGame month={month} job={save.job} onClose={() => { setRunning(false); setSave(loadSave()); }} />}
@@ -107,7 +121,7 @@ function MonsterGame({ month, job, onClose }: { month: string; job: Job; onClose
     let bt: any, dead = false;
     loadSprites().catch(() => null).then(sprites => {
     if (dead || !canvas.current) return;
-    game.current = startGame(canvas.current, profile, { duration: D, sprites }, {
+    game.current = startGame(canvas.current, profile, { duration: D, sprites, fx: relicFx(loadSave().equipped) }, {
       hud: setHud,
       levelUp: (opts: any[], cb: (id: string) => void, title?: string) => { pick.current = cb; setLvTitle(title || 'Level up!'); setChoices(opts); },
       banner: (m: string) => { setBanner(m); clearTimeout(bt); bt = setTimeout(() => setBanner(''), 2500); },
@@ -117,7 +131,7 @@ function MonsterGame({ month, job, onClose }: { month: string; job: Job; onClose
         const pool = RELICS[c.tier];
         const relic = pool[Math.floor(Math.random() * pool.length)];
         const s = loadSave();
-        const next: GameSave = { coins: s.coins + c.coins, relics: s.relics.includes(relic) ? s.relics : [...s.relics, relic], bestSeconds: Math.max(s.bestSeconds, seconds), runs: s.runs + 1, job: s.job };
+        const next: GameSave = { coins: s.coins + c.coins, relics: s.relics.includes(relic) ? s.relics : [...s.relics, relic], equipped: s.equipped, bestSeconds: Math.max(s.bestSeconds, seconds), runs: s.runs + 1, job: s.job };
         writeSave(next);
         setResult({ won, seconds, kills, tier: c.tier, coins: c.coins, relic, save: next });
         setPhase('result');
