@@ -87,8 +87,8 @@ export function startGame(canvas, profile, opts, ui) {
     skeleton: { r: 13, hp: 26, sp: 48, dmg: 9, xp: 2 },
     mushroom: { r: 12, hp: 44, sp: 44, dmg: 10, xp: 2 },
     ogre: { r: 22, hp: 130, sp: 40, dmg: 20, xp: 6 },
-    king: { r: 40, hp: 1500, sp: 42, dmg: 30, xp: 40, boss: true },
-    dragon: { r: 52, hp: 3800, sp: 52, dmg: 38, xp: 80, boss: true },
+    king: { r: 40, hp: 9000, sp: 42, dmg: 30, xp: 40, boss: true },
+    dragon: { r: 52, hp: 24000, sp: 52, dmg: 38, xp: 80, boss: true },
   };
   function spawn(type, o = {}) {
     const T = TYPES[type], a = o.angle ?? rnd(0, Math.PI * 2), d = o.dist ?? Math.max(W, H) / 2 + 50;
@@ -117,7 +117,7 @@ export function startGame(canvas, profile, opts, ui) {
     if (!bossA && p >= 0.5) { bossA = true; spawn('king'); ui.banner('The Ogre King approaches!'); }
     if (!bossB && p >= 0.9) { bossB = true; spawn('dragon'); ui.banner('The Dragon awakens!'); }
     // a champion every D/5 (2 minutes in a full run); each drops a treasure chest
-    if (t >= nextMini && p < 0.86) { nextMini += D / 5; const ty = ['goblin', 'skeleton', 'mushroom', 'ogre'][miniN++ % 4]; spawn(ty, { mini: true, hp: 14, sp: 0.9 }); ui.banner('A champion appears!'); }
+    if (t >= nextMini && p < 0.86) { nextMini += D / 5; const ty = ['goblin', 'skeleton', 'mushroom', 'ogre'][miniN++ % 4]; spawn(ty, { mini: true, hp: 40, sp: 0.9 }); ui.banner('A champion appears!'); }
     // a swarm every 0.3D (3 minutes in a full run)
     if (t >= nextSwarm && p < 0.86) { nextSwarm += D * 0.3; swarm(); }
   }
@@ -469,6 +469,6 @@ export function startGame(canvas, profile, opts, ui) {
   }
   return {
     stop, pause: v => { paused = v; last = performance.now(); }, isPaused: () => paused,
-    debug: { P, enemies, items, gems, buffs, up, kill: () => { t = D * 0.95; }, setT: v => { t = v; }, lvl: (k, L) => { up[k] = L; }, drop: type => items.push({ x: P.x + 30, y: P.y, type, life: 25 }), swarm, mini: () => spawn('ogre', { mini: true, hp: 14, sp: 0.9 }) },
+    debug: { P, enemies, items, gems, buffs, up, kill: () => { t = D * 0.95; }, setT: v => { t = v; }, lvl: (k, L) => { up[k] = L; }, drop: type => items.push({ x: P.x + 30, y: P.y, type, life: 25 }), swarm, mini: () => spawn('ogre', { mini: true, hp: 40, sp: 0.9 }) },
   };
 }
