@@ -1,5 +1,5 @@
-import type { Account, AppData, BalanceView, Category, Scheduled, Transaction } from '../types';
-import { daysInMonth, monthKeyOf, round2 } from './format';
+import type { Account, AppData, BalanceView, Category, LimitPeriod, Scheduled, Transaction } from '../types';
+import { daysInMonth, monthKeyOf, round2, todayStr } from './format';
 
 export type BudgetStatus = 'none' | 'ok' | 'warn' | 'over';
 
@@ -40,6 +40,44 @@ export function workspaceBalance(data: AppData, workspaceId: string, view: Balan
   return round2(picked.reduce((sum, a) => sum + accountBalance(data, a), 0));
 }
 
+/** A category's limit expressed per month (day/week limits scale with the month's length). */
+export function monthlyLimitFor(c: Category, month: string): number {
+  if (!c.limitPeriod || c.limitPeriod === 'month') return c.monthlyLimit;
+  const amt = c.limitAmount ?? 0;
+  const dim = daysInMonth(month);
+  return round2(c.limitPeriod === 'day' ? amt * dim : (amt * dim) / 7);
+}
+
+/** The same limit for a day, a week (7 days) or the month. */
+export function limitInPeriod(c: Category, month: string, period: LimitPeriod): number {
+  const m = monthlyLimitFor(c, month);
+  if (period === 'month') return m;
+  const dim = daysInMonth(month);
+  return Math.round(period === 'day' ? m / dim : (m * 7) / dim); // whole pesos
+}
+
+function ymd(d: Date): string {
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+}
+
+/** Inclusive date window for a view. Weeks run Monday to Sunday. */
+export function periodWindow(period: LimitPeriod, month: string, today: string): { start: string; end: string } {
+  if (period === 'month') return { start: `${month}-01`, end: `${month}-${String(daysInMonth(month)).padStart(2, '0')}` };
+  if (period === 'day') return { start: today, end: today };
+  const [y, m, d] = today.split('-').map(Number);
+  const dt = new Date(y, m - 1, d);
+  const back = (dt.getDay() + 6) % 7; // Monday = 0
+  const start = new Date(y, m - 1, d - back);
+  const end = new Date(y, m - 1, d - back + 6);
+  return { start: ymd(start), end: ymd(end) };
+}
+
+/** 1-7, Monday = 1. */
+export function dayOfWeekMon(today: string): number {
+  const [y, m, d] = today.split('-').map(Number);
+  return ((new Date(y, m - 1, d).getDay() + 6) % 7) + 1;
+}
+
 export function monthTransactions(data: AppData, workspaceId: string, month: string): Transaction[] {
   return data.transactions.filter(t => t.workspaceId === workspaceId && monthKeyOf(t.date) === month);
 }
@@ -53,22 +91,30 @@ export interface CategoryRow {
   /** spent / limit * 100, or 0 when there's no limit */
   pct: number;
   status: BudgetStatus;
+  group?: string;
 }
 
 export const UNCATEGORIZED_COLOR = '#78716C';
 
 /** Spending per expense category for a month, plus an "Uncategorized" row if needed. */
-export function categoryBreakdown(data: AppData, workspaceId: string, month: string): CategoryRow[] {
+export function categoryBreakdown(data: AppData, workspaceId: string, month: string, period: LimitPeriod = 'month', today = todayStr()): CategoryRow[] {
   const cats = inWorkspace(data.categories, workspaceId).filter(c => c.kind === 'expense');
-  const txs = monthTransactions(data, workspaceId, month).filter(t => t.type === 'expense');
+  const txs = txsInPeriod(data, workspaceId, month, period, today).filter(t => t.type === 'expense');
   const rows: CategoryRow[] = cats.map(c => {
     const spent = round2(txs.filter(t => t.categoryId === c.id).reduce((s, t) => s + t.amount, 0));
-    return rowFor(c.id, c.name, c.color, spent, c.monthlyLimit);
+    return { ...rowFor(c.id, c.name, c.color, spent, limitInPeriod(c, month, period)), group: c.group || undefined };
   });
   const knownIds = new Set(cats.map(c => c.id));
   const loose = round2(txs.filter(t => !t.categoryId || !knownIds.has(t.categoryId)).reduce((s, t) => s + t.amount, 0));
   if (loose > 0) rows.push(rowFor(null, 'Uncategorized', UNCATEGORIZED_COLOR, loose, 0));
   return rows.sort((a, b) => b.spent - a.spent || a.name.localeCompare(b.name));
+}
+
+/** Transactions in the month, or in today's day/week window for the Day and Week views. */
+export function txsInPeriod(data: AppData, workspaceId: string, month: string, period: LimitPeriod, today: string): Transaction[] {
+  if (period === 'month') return monthTransactions(data, workspaceId, month);
+  const w = periodWindow(period, month, today);
+  return data.transactions.filter(t => t.workspaceId === workspaceId && t.date >= w.start && t.date <= w.end);
 }
 
 function rowFor(id: string | null, name: string, color: string, spent: number, limit: number): CategoryRow {
@@ -92,11 +138,11 @@ export interface MonthSummary {
   leftAfterUpcoming: number;
 }
 
-export function monthSummary(data: AppData, workspaceId: string, month: string): MonthSummary {
-  const txs = monthTransactions(data, workspaceId, month);
+export function monthSummary(data: AppData, workspaceId: string, month: string, period: LimitPeriod = 'month', today = todayStr()): MonthSummary {
+  const txs = txsInPeriod(data, workspaceId, month, period, today);
   const income = round2(txs.filter(t => t.type === 'income').reduce((s, t) => s + t.amount, 0));
   const spent = round2(txs.filter(t => t.type === 'expense').reduce((s, t) => s + t.amount, 0));
-  const rows = categoryBreakdown(data, workspaceId, month);
+  const rows = categoryBreakdown(data, workspaceId, month, period, today);
   const budget = round2(rows.reduce((s, r) => s + r.limit, 0));
   const unbudgetedSpent = round2(rows.filter(r => r.limit <= 0).reduce((s, r) => s + r.spent, 0));
   const upcomingExpenses = round2(

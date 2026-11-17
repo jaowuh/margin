@@ -1,5 +1,5 @@
 import type {
-  Account, AppData, BalanceView, Category, Scheduled, Transaction, Workspace, WorkspaceType,
+  Account, AppData, BalanceView, Category, LimitPeriod, Scheduled, Transaction, Workspace, WorkspaceType,
 } from '../types';
 import { nextMonthlyDate, todayStr, uid } from './format';
 import { CATEGORY_COLORS, starterFor } from './seed';
@@ -107,15 +107,42 @@ export function restoreAccount(d: AppData, id: string): AppData {
 }
 
 // ---------- categories ----------
-export function addCategory(d: AppData, workspaceId: string, name: string, kind: Category['kind'], monthlyLimit = 0): AppData {
+export function addCategory(d: AppData, workspaceId: string, name: string, kind: Category['kind'], limit = 0, period: LimitPeriod = 'month', group = ''): AppData {
   const clean = name.trim();
   if (!clean) return d;
   const used = d.categories.filter(c => c.workspaceId === workspaceId && c.kind === 'expense').length;
   const cat: Category = {
-    id: uid(), workspaceId, name: clean, kind, monthlyLimit: kind === 'expense' ? monthlyLimit : 0,
+    id: uid(), workspaceId, name: clean, kind, monthlyLimit: 0,
     color: kind === 'expense' ? CATEGORY_COLORS[used % CATEGORY_COLORS.length] : '#6F8F7F',
   };
-  return { ...d, categories: [...d.categories, cat] };
+  let out: AppData = { ...d, categories: [...d.categories, cat] };
+  if (kind === 'expense') {
+    if (limit > 0) out = setCategoryLimit(out, cat.id, limit, period);
+    if (group.trim()) out = setCategoryGroup(out, cat.id, group);
+  }
+  return out;
+}
+
+/** Set a limit entered per day, week or month. */
+export function setCategoryLimit(d: AppData, id: string, amount: number, period: LimitPeriod): AppData {
+  const v = Math.max(0, Math.round((amount || 0) * 100) / 100);
+  return {
+    ...d,
+    categories: d.categories.map(c => {
+      if (c.id !== id) return c;
+      if (period === 'month') { const { limitAmount: _a, ...rest } = c; return { ...rest, monthlyLimit: v, limitPeriod: 'month' as const }; }
+      return { ...c, limitPeriod: period, limitAmount: v, monthlyLimit: Math.round(v * (period === 'day' ? 30 : 30 / 7) * 100) / 100 };
+    }),
+  };
+}
+
+export function setCategoryGroup(d: AppData, id: string, group: string): AppData {
+  const g = group.trim().slice(0, 30);
+  return { ...d, categories: d.categories.map(c => {
+    if (c.id !== id) return c;
+    if (!g) { const { group: _g, ...rest } = c; return rest; }
+    return { ...c, group: g };
+  }) };
 }
 
 export function updateCategory(d: AppData, id: string, patch: Partial<Pick<Category, 'name' | 'monthlyLimit'>>): AppData {

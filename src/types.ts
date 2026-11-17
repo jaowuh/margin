@@ -28,8 +28,15 @@ export interface Category {
   kind: CategoryKind;
   /** Monthly budget limit in pesos. 0 = no limit set. Only used for expense categories. */
   monthlyLimit: number;
+  /** How the limit was entered. Missing = 'month'. For 'day'/'week', the amount is limitAmount. */
+  limitPeriod?: LimitPeriod;
+  limitAmount?: number;
+  /** Optional group name (e.g. Food) so related budgets roll up together. */
+  group?: string;
   color: string;
 }
+
+export type LimitPeriod = 'day' | 'week' | 'month';
 
 export interface Transaction {
   id: string;

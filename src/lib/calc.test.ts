@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import type { AppData } from '../types';
-import { accountBalance, categoryBreakdown, monthElapsedPct, monthSummary, statusFor, upcomingItems, workspaceBalance } from './calc';
+import { accountBalance, categoryBreakdown, limitInPeriod, monthElapsedPct, monthlyLimitFor, monthSummary, periodWindow, statusFor, upcomingItems, workspaceBalance } from './calc';
 import * as A from './actions';
 import { addMonths, nextMonthlyDate, peso, todayStr } from './format';
 import { createInitialData } from './seed';
@@ -189,5 +189,54 @@ describe('sample data', () => {
     expect(s.budget).toBeGreaterThan(0);
     expect(s.spent).toBeGreaterThan(0);
     expect(A.clearWorkspaceTransactions(d, ws).transactions).toHaveLength(0);
+  });
+});
+
+describe('daily / weekly limits and groups', () => {
+  it('derives monthly and per-period limits', () => {
+    let { d, ws, cat } = fixture();
+    d = A.setCategoryLimit(d, cat('Food').id, 200, 'day');
+    const c = d.categories.find(x => x.id === cat('Food').id)!;
+    expect(monthlyLimitFor(c, '2026-11')).toBe(6000);     // 30 days
+    expect(monthlyLimitFor(c, '2026-02')).toBe(5600);     // 28 days
+    expect(limitInPeriod(c, '2026-11', 'day')).toBe(200);
+    expect(limitInPeriod(c, '2026-11', 'week')).toBe(1400);
+    d = A.setCategoryLimit(d, c.id, 700, 'week');
+    const w = d.categories.find(x => x.id === c.id)!;
+    expect(limitInPeriod(w, '2026-11', 'week')).toBe(700);
+    expect(monthlyLimitFor(w, '2026-11')).toBe(3000);     // 700 * 30 / 7
+    d = A.setCategoryLimit(d, c.id, 900, 'month');
+    expect(monthlyLimitFor(d.categories.find(x => x.id === c.id)!, '2026-11')).toBe(900);
+    expect(ws).toBeTruthy();
+  });
+
+  it('week window runs Monday to Sunday', () => {
+    expect(periodWindow('week', '2026-11', '2026-11-18')).toEqual({ start: '2026-11-16', end: '2026-11-22' }); // Wed
+    expect(periodWindow('week', '2026-11', '2026-11-22')).toEqual({ start: '2026-11-16', end: '2026-11-22' }); // Sun
+    expect(periodWindow('week', '2026-11', '2026-11-30')).toEqual({ start: '2026-11-30', end: '2026-12-06' }); // Mon
+  });
+
+  it('day and week summaries only count their window', () => {
+    let { d, ws, cat, accs } = fixture();
+    d = A.setCategoryLimit(d, cat('Food').id, 200, 'day');
+    const add = (date: string, amount: number) => { d = A.addTransaction(d, { workspaceId: ws, type: 'expense', amount, date, accountId: accs[0].id, categoryId: cat('Food').id, note: '' }); };
+    add('2026-11-18', 150); add('2026-11-17', 100); add('2026-11-10', 400);
+    const day = monthSummary(d, ws, '2026-11', 'day', '2026-11-18');
+    expect(day.spent).toBe(150); expect(day.budget).toBe(217); // 200 + round(500 / 30)
+    const week = monthSummary(d, ws, '2026-11', 'week', '2026-11-18');
+    expect(week.spent).toBe(250);
+    expect(monthSummary(d, ws, '2026-11').spent).toBe(650);
+    expect(categoryBreakdown(d, ws, '2026-11', 'day', '2026-11-18').find(r => r.name === 'Food')!.limit).toBe(200);
+  });
+
+  it('groups survive normalisation and can be cleared', () => {
+    let { d, cat } = fixture();
+    d = A.setCategoryGroup(d, cat('Food').id, '  Food  ');
+    d = A.setCategoryLimit(d, cat('Food').id, 200, 'day');
+    const back = normalizeData(JSON.parse(JSON.stringify(d)))!.data;
+    const c = back.categories.find(x => x.id === cat('Food').id)!;
+    expect(c.group).toBe('Food'); expect(c.limitPeriod).toBe('day'); expect(c.limitAmount).toBe(200);
+    d = A.setCategoryGroup(d, cat('Food').id, '');
+    expect(d.categories.find(x => x.id === cat('Food').id)!.group).toBeUndefined();
   });
 });

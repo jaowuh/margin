@@ -44,7 +44,15 @@ export function normalizeData(raw: unknown): NormalizeResult | null {
     version: 1,
     workspaces,
     accounts: accounts.map(a => ({ ...a, isPrimary: !!a.isPrimary, isActive: a.isActive !== false })),
-    categories: categories.map(c => ({ ...c, color: isStr(c.color) ? c.color : '#A8A29E' })),
+    categories: categories.map(c => {
+      const per = c.limitPeriod === 'day' || c.limitPeriod === 'week' ? c.limitPeriod : undefined;
+      const { limitPeriod: _p, limitAmount: _a, group: _g, ...rest } = c;
+      return {
+        ...rest, color: isStr(c.color) ? c.color : '#A8A29E',
+        ...(per && isNum(c.limitAmount) && c.limitAmount >= 0 ? { limitPeriod: per, limitAmount: c.limitAmount } : {}),
+        ...(isStr(c.group) && c.group.trim() ? { group: c.group.trim().slice(0, 30) } : {}),
+      };
+    }),
     transactions: transactions.map(t => ({ ...t, note: isStr(t.note) ? t.note : '', categoryId: isStr(t.categoryId) ? t.categoryId : null })),
     scheduled: scheduled.map(s => ({
       ...s, categoryId: isStr(s.categoryId) ? s.categoryId : null, accountId: isStr(s.accountId) ? s.accountId : null,
