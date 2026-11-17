@@ -132,10 +132,10 @@ export default function Dashboard({ month, setMonth, go, editTx }: Props) {
           </>
         ) : (
           <EmptyState
-            title="Set your monthly budget"
-            action={<button className="btn primary" onClick={() => go('budgets')}><Scale size={16} /> Set category limits</button>}
+            title="No budget set yet"
+            action={<button className="btn primary" onClick={() => go('budgets')}><Scale size={16} /> Set your budget</button>}
           >
-            Give each spending category a monthly limit and this card will tell you whether you’re still within budget.
+            Give each spending category a limit, per day, week or month, and this card will tell you whether you’re still within budget.
             {sum.spent > 0 && <> So far this month you’ve spent <strong>{peso(sum.spent)}</strong>.</>}
           </EmptyState>
         )}
