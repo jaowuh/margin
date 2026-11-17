@@ -201,7 +201,10 @@ function drawStage(now,dt){
   const c=fctx;c.setTransform(k,0,0,k,0,0);c.clearRect(0,0,w,h);
   const el=logoEl(),b=el.getBoundingClientRect(),s=b.width/WMW,ox=b.left,oy=b.top,u=b.width/640;
   const WD={x:ox+1315.5*s,y:oy+241*s,r:50.5*s*.95};
-  const crW=Math.max(b.width*1.5,120),crs=crW/CI.w,crH=CI.h*crs,crX=ox,crY=oy+b.height/2-crH/2;
+  const below=innerWidth>900,sel=document.querySelector('.mobile-top .ws-select');
+  const avail=sel?sel.getBoundingClientRect().left-b.right-22:80;
+  const crW=below?b.width*.6:Math.max(40,Math.min(b.width*.8,avail)),crs=crW/CI.w,crH=CI.h*crs;
+  const crX=below?ox:b.right+10,crY=below?b.bottom+6:oy+b.height/2-crH/2;
   const CD={x:crX+CI.dotx*crs,y:crY+CI.doty*crs,r:CI.dotr*crs};
   const wt=S.won?(now-S.winT0)/1000:-1;
   const Tl=dur(cfg.lightSpeed),Th=Tl+(RM?.01:.5),Tf=dur(cfg.flight),Ta=Th+Tf,Tc=dur(cfg.creditsFade),Tout=RM?.01:.7,Troll=dur(cfg.flight)*1.3;
@@ -211,8 +214,7 @@ function drawStage(now,dt){
   dimAmt+=clamp((active?1:0)-dimAmt,-dt*4,dt*4);
   const showCanvasLogo=S.won||runActive||dimAmt>.02;
   holdEls.forEach(e=>{e.style.opacity=showCanvasLogo?'0':''});
-  let la=1;if(S.won){if(wt<Th)la=1;else if(wt<Tb)la=1-clamp((wt-Th)/Tout);else la=clamp((wt-(Tb+.3))/Tout)}
-  const litA=(S.won&&wt>=Tb)?0:la;
+  const la=1,litA=1;
   const base=lerp(1,.2,dimAmt)*la;
   if(showCanvasLogo){
     for(let i=0;i<6;i++){
@@ -230,23 +232,22 @@ function drawStage(now,dt){
       for(let i=0;i<26;i++){const t=wt-t0,ang=(i*2.399)%(Math.PI*2),sp=(60+((i*37)%70))*u*.7,life=.8+((i*13)%5)*.09;
         if(t>0&&t<life){c.globalAlpha=1-t/life;c.fillStyle=i%3?'#F2B48C':'#F5F5F4';c.beginPath();c.arc(WD.x+Math.cos(ang)*sp*t,WD.y+Math.sin(ang)*sp*t+24*u*t*t,1.2+(i%3)*.7,0,7);c.fill()}}
       c.globalAlpha=1}
-    // dot
-    const dl=S.won?clamp(wt/Tl):0;let pos=WD,r=WD.r,rollA=0,rollAng=0;
-    if(S.won&&wt>=Th){
-      if(wt<Tb){const f=ease(clamp((wt-Th)/Tf)),P0=WD,P2=CD,Cc={x:(P0.x+P2.x)/2+10*u,y:Math.min(P0.y,P2.y)-95*u};
-        pos={x:(1-f)*(1-f)*P0.x+2*(1-f)*f*Cc.x+f*f*P2.x,y:(1-f)*(1-f)*P0.y+2*(1-f)*f*Cc.y+f*f*P2.y};r=lerp(P0.r,P2.r,f)}
-      else{const f=ease(clamp((wt-Tb)/Troll));pos={x:lerp(CD.x,WD.x,f),y:lerp(CD.y,WD.y,f)};r=lerp(CD.r,WD.r,f);
-        rollAng=Math.hypot(pos.x-CD.x,pos.y-CD.y)/((CD.r+WD.r)/2)-Math.PI/2;rollA=clamp(f*8)*clamp((1-f)*8)}}
-    const mf=S.won?S.margin:1,glowK=cfg.glow*(.3+.7*mf)*.4;
+    // main dot stays on the logo; a small dot hops out to the credits and rolls back
+    const mf=S.won?S.margin:1,glowK=cfg.glow*(.3+.7*mf)*.4,dl=S.won?clamp(wt/Tl):0;
     const gf=S.won?(wt<Tb+Troll?1:1-clamp((wt-Tb-Troll)/.5)):0;
     c.save();c.globalAlpha=lerp(1,.2+.8*dl,dimAmt);c.fillStyle=DOT;if(dl>0&&glowK>0){c.shadowColor=DOT;c.shadowBlur=glowK*k*dl*gf}
-    c.beginPath();c.arc(pos.x,pos.y,r,0,Math.PI*2);c.fill();c.restore();
-    if(rollA>0){c.save();c.globalAlpha=rollA*.7;c.fillStyle='#FFE9D6';c.beginPath();c.arc(pos.x+Math.cos(rollAng)*r*.55,pos.y+Math.sin(rollAng)*r*.55,r*.2,0,7);c.fill();c.restore()}
+    c.beginPath();c.arc(WD.x,WD.y,WD.r,0,Math.PI*2);c.fill();c.restore();
+    if(S.won&&wt>=Th&&wt<Tb+Troll){
+      let pos,r=CD.r,al=1;
+      if(wt<Tb){const f=ease(clamp((wt-Th)/Tf)),P0=WD,P2=CD,Cc={x:(P0.x+P2.x)/2,y:Math.min(P0.y,P2.y)-30*u};
+        pos={x:(1-f)*(1-f)*P0.x+2*(1-f)*f*Cc.x+f*f*P2.x,y:(1-f)*(1-f)*P0.y+2*(1-f)*f*Cc.y+f*f*P2.y}}
+      else{const f=ease(clamp((wt-Tb)/Troll));pos={x:lerp(CD.x,WD.x,f),y:lerp(CD.y,WD.y,f)};al=1-clamp((f-.7)/.3)}
+      c.save();c.globalAlpha=al;c.fillStyle=DOT;c.shadowColor=DOT;c.shadowBlur=glowK*k*.6;c.beginPath();c.arc(pos.x,pos.y,r,0,Math.PI*2);c.fill();c.restore()}
     // credits
     if(S.won&&wt>=Ta){const out=wt>=Tb?1-clamp((wt-Tb)/Tout):1;c.globalAlpha=clamp((wt-Ta)/Tc)*out;c.drawImage(crImg,crX,crY,crW,crH);c.globalAlpha=1}
     if(S.won&&wt>=Ta+Tc&&wt<Tb){
       const txt='Emergency fund '+Math.round(S.margin*100)+'%  ·  Over budget '+Math.round(S.waste*100)+'%';
-      c.font='600 12px system-ui,-apple-system,sans-serif';const tw=c.measureText(txt).width,ty=b.bottom+34;
+      c.font='600 12px system-ui,-apple-system,sans-serif';const tw=c.measureText(txt).width,ty=below?crY+crH+22:b.bottom+34;
       c.globalAlpha=clamp((wt-Ta-Tc)/.4)*(wt>Tb-.4?clamp((Tb-wt)/.4):1);c.fillStyle='#292524';c.strokeStyle='#3F3A37';
       c.beginPath();c.roundRect?c.roundRect(ox-6,ty-14,tw+24,26,13):c.rect(ox-6,ty-14,tw+24,26);c.fill();c.stroke();
       c.fillStyle='#DCA289';c.textBaseline='middle';c.fillText(txt,ox+6,ty-1);c.globalAlpha=1}}
