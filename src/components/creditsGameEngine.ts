@@ -93,6 +93,20 @@ function layoutPlay(){
 function openDrawer(){if(drawerOpen)return;drawerOpen=true;layoutPlay()}
 function closeDrawer(){drawerOpen=false;painting=false;brushPos=null;layoutPlay()}
 
+/* trophy ring around the header logo (length = best emergency fund) */
+const NS='http://www.w3.org/2000/svg';
+const rings=holdEls.map(()=>{const sv=document.createElementNS(NS,'svg'),r=document.createElementNS(NS,'rect');
+  sv.setAttribute('aria-hidden','true');sv.style.cssText='position:fixed;pointer-events:none;overflow:visible;z-index:31;display:none';
+  r.setAttribute('fill','none');r.setAttribute('stroke',COP);r.setAttribute('stroke-width','2');r.setAttribute('stroke-linecap','round');r.setAttribute('pathLength','1');
+  sv.appendChild(r);document.body.appendChild(sv);disp.push(()=>sv.remove());return [sv,r]});
+function trophyDraw(){
+  const frac=clamp(S.best),show=(S.played||S.best>0)&&frac>.01&&!root.classList.contains('cg-on');
+  holdEls.forEach((el,i)=>{const[sv,r]=rings[i],b=el.getBoundingClientRect();
+    if(!show||b.width<2){sv.style.display='none';return}
+    const P=6,w=b.width+2*P,h=b.height+2*P;
+    sv.style.display='';sv.style.left=(b.left-P)+'px';sv.style.top=(b.top-P)+'px';sv.setAttribute('width',w);sv.setAttribute('height',h);
+    r.setAttribute('x',1);r.setAttribute('y',1);r.setAttribute('width',w-2);r.setAttribute('height',h-2);r.setAttribute('rx',Math.min(14,(h-2)/2));
+    r.setAttribute('stroke-dasharray',frac+' 2');sv.style.filter='drop-shadow(0 0 '+(cfg.glow*(.3+.7*frac)/3)+'px '+COP+')'})}
 /* hold on logo */
 const onH=(ev,fn)=>holdEls.forEach(el=>on(el,ev,fn));
 onH('contextmenu',e=>e.preventDefault());
@@ -300,7 +314,7 @@ function tick(now){
   if(completing){const e=now-completing.t0;
     if(!completing.filled&&e>250){completing.filled=true;startFx(now);lctx.setTransform(1,0,0,1,0,0);lctx.clearRect(0,0,layer.width,layer.height);lctx.drawImage(letterCop,0,0);coverage=1}
     if(e>(RM?300:1600)){completing=null;advance()}}
-  {const onNow=holding||drawerOpen||S.done>0||!!completing||!!retract||S.won||dimAmt>.02;root.classList.toggle('cg-on',onNow);holdEls.forEach(el=>{el.classList.toggle('cg-trophy',S.played||S.best>0);el.style.setProperty('--cg-best',String(Math.max(S.best,.15)))})}
+  {const onNow=holding||drawerOpen||S.done>0||!!completing||!!retract||S.won||dimAmt>.02;root.classList.toggle('cg-on',onNow);trophyDraw()}
   layoutPlay();drawPaint(now);drawInk();drawFx(now);drawStage(now,dt);
   $('covFill').style.width=(clamp(coverage/(cfg.threshold/100))*100)+'%';
   const rv2=$('resV');if(rv2)rv2.textContent=Math.round(clamp(S.ink/(maxInk()*(reserveFrac||.1)))*100)+'%';

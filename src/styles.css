@@ -323,7 +323,6 @@ input[type='date'] { color-scheme: dark; }
 .cg-card.cg-on{opacity:1;visibility:visible;pointer-events:auto;transition:opacity .2s}
 @media (max-width:900px){.cg-card{top:calc(62px + env(safe-area-inset-top));left:50%;width:min(520px,calc(100vw - 24px))}}
 .cg-hold{touch-action:none;user-select:none;-webkit-user-select:none;-webkit-touch-callout:none;-webkit-user-drag:none;cursor:pointer;border-radius:10px}
-.cg-hold.cg-trophy{box-shadow:0 0 0 1.5px rgba(185,104,77,calc(.25 + .75 * var(--cg-best,.15))),0 0 8px rgba(217,137,95,calc(.5 * var(--cg-best,.15)));outline:0}
 .cg-logo{position:relative;touch-action:none;user-select:none;-webkit-user-select:none;-webkit-touch-callout:none;cursor:pointer;-webkit-tap-highlight-color:transparent}
 .cg-stage{display:block;width:100%;aspect-ratio:700/300}
 .cg-hint{min-height:20px;text-align:center;font-size:12.5px;color:var(--text-2);transition:opacity .3s}

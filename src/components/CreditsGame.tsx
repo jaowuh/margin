@@ -11,7 +11,7 @@ export default function CreditsGame() {
     const holds = Array.from(document.querySelectorAll<HTMLElement>('.wordmark'));
     holds.forEach(el => el.classList.add('cg-hold'));
     const stop = mountCreditsGame(root.current, holds, wmUrl, creditsUrl);
-    return () => { stop(); holds.forEach(el => el.classList.remove('cg-hold', 'cg-trophy')); };
+    return () => { stop(); holds.forEach(el => el.classList.remove('cg-hold')); };
   }, []);
   return (
     <div className="card cg-card" aria-hidden="true" ref={root} data-cg="card">
