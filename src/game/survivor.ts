@@ -92,16 +92,18 @@ export function startGame(canvas, profile, opts, ui) {
   };
   function spawn(type, o = {}) {
     const T = TYPES[type], a = o.angle ?? rnd(0, Math.PI * 2), d = o.dist ?? Math.max(W, H) / 2 + 50;
-    const hpScale = (1 + progress() * 2.4) * (o.hp || 1);
+    const p = progress();
+    // early monsters are soft (die in one hit); late ones get much tougher and hit harder
+    const hpScale = (T.boss ? 1 + p * 2.4 : 0.55 + 4.5 * Math.pow(p, 1.6)) * (o.hp || 1), dmgScale = 0.8 + 1.4 * p;
     const big = o.mini ? 2.1 : 1;
-    enemies.push({ type, x: P.x + Math.cos(a) * d, y: P.y + Math.sin(a) * d, r: T.r * big, hp: T.hp * hpScale, maxHp: T.hp * hpScale, sp: T.sp * (1 + progress() * 0.35) * (o.sp || 1), dmg: T.dmg * (o.mini ? 1.5 : 1), xp: T.xp * (o.mini ? 4 : 1), boss: !!T.boss || !!o.mini, mini: !!o.mini, hit: 0, ph: Math.random() * 6, slow: 0 });
+    enemies.push({ type, x: P.x + Math.cos(a) * d, y: P.y + Math.sin(a) * d, r: T.r * big, hp: T.hp * hpScale, maxHp: T.hp * hpScale, sp: T.sp * (1 + progress() * 0.5) * (o.sp || 1), dmg: T.dmg * dmgScale * (o.mini ? 1.5 : 1), xp: T.xp * (o.mini ? 4 : 1), boss: !!T.boss || !!o.mini, mini: !!o.mini, hit: 0, ph: Math.random() * 6, slow: 0 });
   }
   function spawnWave(dt) {
     spawnCd -= dt;
-    if (spawnCd > 0 || enemies.length > 260) return;
+    if (spawnCd > 0 || enemies.length > 320) return;
     const p = progress();
-    spawnCd = Math.max(0.16, 1.1 - p * 0.95);     // monsters arrive faster and faster
-    const n = 1 + Math.floor(p * 6);
+    spawnCd = 0.1 + 1.5 * Math.pow(1 - p, 1.5);   // sparse at first, then a flood
+    const n = 1 + Math.floor(p * p * 8);
     for (let i = 0; i < n; i++) {
       const roll = Math.random();
       let type = 'slime';
@@ -109,7 +111,7 @@ export function startGame(canvas, profile, opts, ui) {
       if (p > 0.12 && roll < 0.3) type = 'skeleton';
       if (p > 0.25 && roll < 0.2) type = 'mushroom';
       if (p > 0.2 && roll < 0.22) type = 'goblin';
-      if (p > 0.4 && roll < 0.1) type = 'ogre';
+      if (p > 0.35 && roll < 0.05 + p * 0.12) type = 'ogre';
       spawn(type);
     }
     if (!bossA && p >= 0.5) { bossA = true; spawn('king'); ui.banner('The Ogre King approaches!'); }
@@ -120,7 +122,7 @@ export function startGame(canvas, profile, opts, ui) {
     if (t >= nextSwarm && p < 0.86) { nextSwarm += D * 0.3; swarm(); }
   }
   function swarm() {
-    const n = 36 + Math.floor(progress() * 40), dist = Math.max(W, H) * 0.55;
+    const n = 30 + Math.floor(progress() * 70), dist = Math.max(W, H) * 0.55;
     for (let i = 0; i < n; i++) spawn(Math.random() < 0.65 ? 'bat' : (progress() > 0.4 && Math.random() < 0.3 ? 'goblin' : 'slime'), { angle: (i / n) * Math.PI * 2, dist, hp: 0.6, sp: 1.15 });
     ui.banner('A swarm is coming!');
   }
