@@ -9,6 +9,7 @@ import { useActive, useStore } from '../lib/store';
 import type { View } from '../App';
 import BudgetWizard from './BudgetWizard';
 import { SavingsCard } from './Savings';
+import { GameCard } from './MonsterGame';
 import { Donut, EmptyState, MonthSwitcher, ProgressBar, useUI } from './ui';
 import { TxRow } from './TxRow';
 
@@ -153,6 +154,7 @@ export default function Dashboard({ month, setMonth, go, editTx }: Props) {
       </section>
 
       <SavingsCard month={month} canTick={elapsed != null} />
+      <GameCard month={month} />
 
       {/* ---- Balance ---- */}
       <section className="card balance" aria-label="Available balance">

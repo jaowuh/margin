@@ -55,3 +55,8 @@ Hidden coloring game (`src/components/CreditsGame.tsx` = painting card only; `cr
 ## Budget wizard + savings goals
 - `AppData.goals: SavingsGoal[]` (name, monthlyAmount, target, saved, savedMonths). Goals are tracked by ticking "Save ₱X" on the Overview (`SavingsCard`); they do NOT count as spending or touch balances. Manage them in Budgets → Savings goals (`Savings.tsx`).
 - `BudgetWizard.tsx` (modal, 4 steps: income per week/month → savings total + split across goals → suggested spending limits per category → review). Opened from Budgets ("Budget wizard") and the Overview empty state. `A.applyWizard` sets monthly limits, upserts goals by name (keeps progress), remembers income in `prefs.plans[workspaceId]`. Helpers in calc.ts: `monthlyIncome` (weekly x 52/12), `suggestSplit`, `splitSavings`.
+
+## Monster hunt (survivor game)
+- Overview card `GameCard` (in `src/components/MonsterGame.tsx`) opens a fullscreen overlay: intro (hero job + stats + chest at stake) → play → result.
+- `src/game/profile.ts`: `profileFor` turns real data into a hero. Job by savings rate (Wanderer none, Scout <15%, Knight 15–25%, Paladin ≥25%); HP bonus for staying within budget; damage bonus for savings goals ticked this month; luck and chest tier from savings rate. `chestFor` sets reward (win bumps the tier; gold + win = legendary). Save lives in localStorage `margin:game` (coins, relics, best time, runs).
+- `src/game/survivor.ts`: imperative canvas engine (`@ts-nocheck`). Floating-thumb joystick/WASD, auto bolts, XP gems, level-up picks, monsters (slime, bat, goblin, ogre), Ogre King at 50%, Dragon at 90% (killing it wins). Run length 600s; set localStorage `margin:game-test` to a number of seconds for quick tests (`window.__game.debug` is exposed).

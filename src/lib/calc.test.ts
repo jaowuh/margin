@@ -271,3 +271,22 @@ describe('budget wizard', () => {
     expect(back.goals).toHaveLength(1);
   });
 });
+
+describe('monster game profile', () => {
+  it('derives job, stats and chest tier from real savings', async () => {
+    const { profileFor, chestFor } = await import('../game/profile');
+    let { d, ws } = fixture();
+    expect(profileFor(d, ws, '2026-11').job).toBe('Wanderer');
+    d = A.applyWizard(d, ws, { income: 30000, incomePeriod: 'month', goals: [{ name: 'Emergency fund', monthlyAmount: 6000, target: 0 }], limits: {} });
+    let p = profileFor(d, ws, '2026-11');
+    expect(p.job).toBe('Knight'); expect(p.tier).toBe('silver'); expect(p.rate).toBeCloseTo(0.2);
+    d = A.toggleGoalSaved(d, d.goals[0].id, '2026-11');
+    p = profileFor(d, ws, '2026-11');
+    expect(p.damage).toBeCloseTo(1.4);
+    d = A.applyWizard(d, ws, { income: 30000, incomePeriod: 'month', goals: [{ name: 'Emergency fund', monthlyAmount: 9000, target: 0 }], limits: {} });
+    p = profileFor(d, ws, '2026-11');
+    expect(p.job).toBe('Paladin'); expect(p.tier).toBe('gold');
+    expect(chestFor(p, true, 600, 600, 100).tier).toBe('legendary');
+    expect(chestFor(p, false, 100, 600, 0).tier).toBe('gold');
+  });
+});
