@@ -137,7 +137,7 @@ const endPaint=()=>{painting=false;last=null;if(!S.won)saveS()};
 on(paint,'pointerup',endPaint);on(paint,'pointercancel',endPaint);
 on(paint,'pointerleave',e=>{if(e.pointerType==='mouse'&&!painting)brushPos=null});
 
-function setWon(){S.prevBest=S.best;S.won=true;S.played=true;S.margin=marginFrac(S.ink);S.waste=S.paint>0?clamp(S.spill/S.paint):0;S.best=Math.max(S.best,S.margin)}
+function setWon(){S.prevBest=S.best;S.won=true;S.played=true;S.margin=marginFrac(S.ink);S.waste=S.paint>0?clamp(S.spill/S.paint):0;S.best=S.margin}
 function advance(){
   S.done++;litStart[S.done-1]=performance.now();buzz(18);
   if(S.done<6){saveS();loadShape();setHint('')}
