@@ -154,7 +154,7 @@ export default function Dashboard({ month, setMonth, go, editTx }: Props) {
       </section>
 
       <SavingsCard month={month} canTick={elapsed != null} />
-      <GameCard month={month} />
+      <GameCard month={month} go={() => go('play')} />
 
       {/* ---- Balance ---- */}
       <section className="card balance" aria-label="Available balance">

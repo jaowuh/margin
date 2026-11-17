@@ -286,10 +286,10 @@ input[type='date'] { color-scheme: dark; }
   .mobile-top .wordmark { height: auto; margin-right: auto; }
   .mobile-top .ws-select { width: auto; margin: 0; padding: 8px 10px; font-size: 14px; max-width: 46vw; }
   .bottom-nav {
-    display: grid; grid-template-columns: repeat(6, 1fr); position: fixed; inset: auto 0 0 0; z-index: 40; height: calc(var(--nav-h) + env(safe-area-inset-bottom));
+    display: grid; grid-template-columns: repeat(7, 1fr); position: fixed; inset: auto 0 0 0; z-index: 40; height: calc(var(--nav-h) + env(safe-area-inset-bottom));
     padding-bottom: env(safe-area-inset-bottom); background: #1c1918; border-top: 1px solid var(--border);
   }
-  .bottom-nav button { display: grid; place-content: center; justify-items: center; gap: 3px; border: 0; background: transparent; color: var(--text-2); font-size: 10.5px; font-weight: 700; padding: 6px 0; }
+  .bottom-nav button { display: grid; place-content: center; justify-items: center; gap: 3px; border: 0; background: transparent; color: var(--text-2); font-size: 10px; font-weight: 700; padding: 6px 0; min-width: 0; }
   .bottom-nav button.active { color: var(--copper-light); }
   .fab { right: 16px; bottom: calc(var(--nav-h) + 16px + env(safe-area-inset-bottom)); padding: 14px 20px; }
   .toast { bottom: calc(var(--nav-h) + 20px + env(safe-area-inset-bottom)); }
@@ -456,3 +456,9 @@ input[type='date'] { color-scheme: dark; }
 .mg-levelup h3{margin:0 0 6px;color:#F2B48C;font-size:22px}
 .mg-choice{width:min(92vw,340px);background:#292524;border:1px solid #B9684D;border-radius:12px;padding:12px 14px;color:#F5F5F4;text-align:left;display:grid;gap:2px;position:relative}
 .mg-choice span{font-size:13px;color:#A8A29E}.mg-choice em{position:absolute;right:12px;top:12px;font-style:normal;font-size:12px;color:#F2B48C}
+
+.mg-jobs{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
+.mg-job{background:#171717;border:1.5px solid #3F3A37;border-radius:12px;padding:10px 6px;color:#F5F5F4;display:grid;gap:3px;text-align:center}
+.mg-job strong{font-size:14px}.mg-job span{font-size:12px;color:#F5F5F4}.mg-job em{font-style:normal;font-size:10px;color:#A8A29E;line-height:1.3}
+.mg-job.on{background:#292524}
+.mg-relics{margin:0;font-size:13px;color:#F2B48C}

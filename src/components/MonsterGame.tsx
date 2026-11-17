@@ -1,5 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { Pause, Play, Swords, X } from 'lucide-react';
+import type { Job } from '../game/profile';
+import { JOB_IDS, JOBS } from '../game/profile';
 import { useActive, useStore } from '../lib/store';
 import { chestFor, loadSave, profileFor, RELICS, writeSave } from '../game/profile';
 import type { GameSave, Tier } from '../game/profile';
@@ -8,36 +10,78 @@ import { startGame } from '../game/survivor';
 const fmt = (s: number) => `${Math.floor(s / 60)}:${String(Math.floor(s % 60)).padStart(2, '0')}`;
 const duration = () => { try { const v = Number(localStorage.getItem('margin:game-test')); if (v > 0) return v; } catch { /* ignore */ } return 600; };
 
-/** Overview card that opens the monster game. */
-export function GameCard({ month }: { month: string }) {
+/** Small Overview shortcut to the Play tab. */
+export function GameCard({ month, go }: { month: string; go: () => void }) {
   const { data } = useStore();
   const { ws } = useActive();
-  const [open, setOpen] = useState(false);
-  const profile = profileFor(data, ws.id, month);
   const save = loadSave();
+  const profile = profileFor(data, ws.id, month, save.job);
   return (
-    <>
-      <section className="card game-card" aria-label="Monster game">
-        <div className="card-head">
-          <div><h2>Monster hunt</h2><p>A quick 10-minute run. Your {profile.job.toLowerCase()} is built from your savings.</p></div>
-          <button className="btn small primary" onClick={() => setOpen(true)}><Swords size={14} /> Play</button>
+    <section className="card game-card" aria-label="Monster hunt">
+      <div className="card-head">
+        <div><h2>Monster hunt</h2><p>Your {profile.title.toLowerCase()} is ready. A quick 10-minute run.</p></div>
+        <button className="btn small primary" onClick={go}><Swords size={14} /> Play</button>
+      </div>
+    </section>
+  );
+}
+
+/** The Play tab: pick a job, see stats and the chest at stake, start a run. */
+export function PlayTab({ month }: { month: string }) {
+  const { data } = useStore();
+  const { ws } = useActive();
+  const [save, setSave] = useState(loadSave);
+  const [running, setRunning] = useState(false);
+  const profile = profileFor(data, ws.id, month, save.job);
+  const D = duration();
+  const preview = chestFor(profile, false, D, D, 0);
+  const choose = (job: Job) => { const n = { ...save, job }; setSave(n); writeSave(n); };
+  return (
+    <div className="page">
+      <div className="page-head"><div><div className="eyebrow">{ws.name.toUpperCase()}</div><h1>Play</h1></div></div>
+      <section className="card">
+        <div className="card-head"><div><h2>Pick your job</h2><p>Saving more upgrades your title and your main weapon.</p></div></div>
+        <div className="mg-jobs">
+          {JOB_IDS.map(j => (
+            <button key={j} className={`mg-job ${save.job === j ? 'on' : ''}`} style={{ borderColor: save.job === j ? JOBS[j].color : undefined }} onClick={() => choose(j)} aria-pressed={save.job === j}>
+              <strong style={{ color: JOBS[j].color }}>{JOBS[j].titles[profile.rank - 1]}</strong>
+              <span>{JOBS[j].weapon}</span>
+              <em>{JOBS[j].titles.join(' → ')}</em>
+            </button>
+          ))}
         </div>
-        {save.runs > 0 && <p className="muted small-note">{save.coins} coins · {save.relics.length} relics · best {fmt(save.bestSeconds)}</p>}
+        <p className="mg-blurb" style={{ marginTop: 12 }}>{profile.weapon}: {profile.blurb}.</p>
       </section>
-      {open && <MonsterGame month={month} onClose={() => setOpen(false)} />}
-    </>
+      <section className="card">
+        <div className="card-head"><div><h2>{profile.title}</h2><p>{profile.notes.rank}</p></div></div>
+        <ul className="mg-stats">
+          <li><span>Health</span><strong>{profile.maxHp}</strong><em>{profile.notes.hp}</em></li>
+          <li><span>Damage</span><strong>×{profile.damage.toFixed(2)}</strong><em>{profile.notes.damage}</em></li>
+          <li><span>Speed</span><strong>×{profile.speed.toFixed(2)}</strong></li>
+          <li><span>Luck</span><strong>×{profile.luck.toFixed(2)}</strong><em>{profile.notes.luck}</em></li>
+        </ul>
+        <div className={`mg-chest t-${preview.tier}`}><span>Chest at stake</span><strong>{preview.tier}{profile.tier !== 'gold' ? ' → better if you win' : ' → legendary if you win'}</strong></div>
+        <p className="mg-how">Drag anywhere to move. You attack on your own. Survive {fmt(D)} and beat the dragon.</p>
+        <button className="btn primary mg-go" onClick={() => setRunning(true)}><Play size={16} /> Start run</button>
+      </section>
+      <section className="card">
+        <div className="card-head"><div><h2>Your loot</h2><p>{save.coins} coins · best {save.runs > 0 ? fmt(save.bestSeconds) : '–'} · {save.runs} runs</p></div></div>
+        {save.relics.length > 0 ? <p className="mg-relics">{save.relics.join(' · ')}</p> : <p className="muted">No relics yet. Win or survive a run to find one.</p>}
+      </section>
+      {running && <MonsterGame month={month} job={save.job} onClose={() => { setRunning(false); setSave(loadSave()); }} />}
+    </div>
   );
 }
 
 type Phase = 'intro' | 'play' | 'result';
 interface Hud { hp: number; maxHp: number; xp: number; need: number; level: number; t: number; D: number; kills: number }
 
-function MonsterGame({ month, onClose }: { month: string; onClose: () => void }) {
+function MonsterGame({ month, job, onClose }: { month: string; job: Job; onClose: () => void }) {
   const { data } = useStore();
   const { ws } = useActive();
-  const profile = profileFor(data, ws.id, month);
+  const profile = profileFor(data, ws.id, month, job);
   const D = duration();
-  const [phase, setPhase] = useState<Phase>('intro');
+  const [phase, setPhase] = useState<Phase>('play');
   const [hud, setHud] = useState<Hud | null>(null);
   const [choices, setChoices] = useState<any[] | null>(null);
   const [banner, setBanner] = useState('');
@@ -47,8 +91,6 @@ function MonsterGame({ month, onClose }: { month: string; onClose: () => void })
   const canvas = useRef<HTMLCanvasElement>(null);
   const game = useRef<any>(null);
   const pick = useRef<((id: string) => void) | null>(null);
-  const save = loadSave();
-  const preview = chestFor(profile, false, D, D, 0);
 
   useEffect(() => {
     if (phase !== 'play' || !canvas.current) return;
@@ -63,7 +105,7 @@ function MonsterGame({ month, onClose }: { month: string; onClose: () => void })
         const pool = RELICS[c.tier];
         const relic = pool[Math.floor(Math.random() * pool.length)];
         const s = loadSave();
-        const next: GameSave = { coins: s.coins + c.coins, relics: s.relics.includes(relic) ? s.relics : [...s.relics, relic], bestSeconds: Math.max(s.bestSeconds, seconds), runs: s.runs + 1 };
+        const next: GameSave = { coins: s.coins + c.coins, relics: s.relics.includes(relic) ? s.relics : [...s.relics, relic], bestSeconds: Math.max(s.bestSeconds, seconds), runs: s.runs + 1, job: s.job };
         writeSave(next);
         setResult({ won, seconds, kills, tier: c.tier, coins: c.coins, relic, save: next });
         setPhase('result');
@@ -78,24 +120,6 @@ function MonsterGame({ month, onClose }: { month: string; onClose: () => void })
 
   return (
     <div className="mg" role="dialog" aria-label="Monster hunt">
-      {phase === 'intro' && (
-        <div className="mg-panel">
-          <button className="mg-x" onClick={close} aria-label="Close"><X size={18} /></button>
-          <p className="mg-kicker">Your hero</p>
-          <h2 className="mg-title" style={{ color: profile.color }}>{profile.job}</h2>
-          <p className="mg-blurb">{profile.blurb}</p>
-          <ul className="mg-stats">
-            <li><span>Health</span><strong>{profile.maxHp}</strong><em>{profile.notes.hp}</em></li>
-            <li><span>Damage</span><strong>×{profile.damage.toFixed(2)}</strong><em>{profile.notes.damage}</em></li>
-            <li><span>Speed</span><strong>×{profile.speed.toFixed(2)}</strong></li>
-            <li><span>Luck</span><strong>×{profile.luck.toFixed(2)}</strong><em>{profile.notes.luck}</em></li>
-          </ul>
-          <div className={`mg-chest t-${preview.tier}`}><span>Chest at stake</span><strong>{preview.tier}{profile.tier !== 'gold' ? ' → better if you win' : ' → legendary if you win'}</strong></div>
-          <p className="mg-how">Drag anywhere to move. You shoot on your own. Survive {fmt(D)} and beat the dragon.</p>
-          <button className="btn primary mg-go" onClick={() => setPhase('play')}><Play size={16} /> Start run</button>
-          {save.runs > 0 && <p className="mg-meta">{save.coins} coins · {save.relics.length} relics · best {fmt(save.bestSeconds)}</p>}
-        </div>
-      )}
       {phase === 'play' && (
         <>
           <canvas ref={canvas} className={`mg-canvas ${shake ? 'shake' : ''}`} />

@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { CalendarClock, CreditCard, LayoutDashboard, ListOrdered, Plus, Scale, Settings as SettingsIcon, WifiOff, X } from 'lucide-react';
+import { CalendarClock, CreditCard, Gamepad2, LayoutDashboard, ListOrdered, Plus, Scale, Settings as SettingsIcon, WifiOff, X } from 'lucide-react';
 import type { Transaction } from './types';
 import * as A from './lib/actions';
 import { todayStr } from './lib/format';
@@ -7,6 +7,7 @@ import { useActive, useStore } from './lib/store';
 import Accounts from './components/Accounts';
 import Budgets from './components/Budgets';
 import Dashboard from './components/Dashboard';
+import { PlayTab } from './components/MonsterGame';
 import Planner from './components/Planner';
 import Settings from './components/Settings';
 import Transactions from './components/Transactions';
@@ -14,13 +15,14 @@ import { TxModal } from './components/TxModal';
 import { useOnline } from './components/ui';
 import CreditsGame from './components/CreditsGame';
 
-export type View = 'overview' | 'transactions' | 'planner' | 'budgets' | 'accounts' | 'settings';
+export type View = 'overview' | 'transactions' | 'planner' | 'budgets' | 'play' | 'accounts' | 'settings';
 
 const NAV: { id: View; label: string; icon: typeof LayoutDashboard }[] = [
   { id: 'overview', label: 'Overview', icon: LayoutDashboard },
   { id: 'transactions', label: 'Activity', icon: ListOrdered },
   { id: 'planner', label: 'Planner', icon: CalendarClock },
   { id: 'budgets', label: 'Budgets', icon: Scale },
+  { id: 'play', label: 'Play', icon: Gamepad2 },
   { id: 'accounts', label: 'Accounts', icon: CreditCard },
   { id: 'settings', label: 'Settings', icon: SettingsIcon },
 ];
@@ -93,6 +95,7 @@ export default function App() {
         {view === 'transactions' && <Transactions month={month} setMonth={setMonth} editTx={editTx} addTx={addTx} />}
         {view === 'planner' && <Planner month={month} setMonth={setMonth} />}
         {view === 'budgets' && <Budgets />}
+        {view === 'play' && <PlayTab month={month} />}
         {view === 'accounts' && <Accounts />}
         {view === 'settings' && <Settings />}
       </main>
