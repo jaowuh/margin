@@ -208,6 +208,12 @@ export function startGame(canvas, profile, opts, ui) {
   function monster(e, sx, sy) {
     const c = ctx, r = e.r, flash = e.hit > 0;
     c.save(); c.translate(sx, sy);
+    if (SP && SP.mon[e.type]) {
+      const sz = e.r * (e.type === 'bat' ? 3.4 : e.type === 'slime' ? 3.2 : 2.9), bob = Math.sin(e.ph) * 1.5;
+      c.imageSmoothingEnabled = false; c.save(); if (e.vx > 0) c.scale(-1, 1); c.drawImage(flash ? SP.flash[e.type] : SP.mon[e.type], -sz / 2, -sz / 2 + bob, sz, sz); c.restore(); c.restore();
+      if (e.boss) { const w = r * 2.4; c.fillStyle = '#0008'; c.fillRect(sx - w / 2, sy - r * 1.8, w, 5); c.fillStyle = '#E24B3C'; c.fillRect(sx - w / 2, sy - r * 1.8, w * clamp(e.hp / e.maxHp), 5); }
+      return;
+    }
     const wob = Math.sin(e.ph) * 0.08;
     if (e.type === 'slime') {
       c.fillStyle = flash ? '#fff' : '#6FCF6F'; c.beginPath(); c.ellipse(0, r * 0.15, r * (1 + wob), r * (0.8 - wob), 0, Math.PI, 0); c.lineTo(r, r * 0.15); c.ellipse(0, r * 0.15, r * (1 + wob), r * 0.35, 0, 0, Math.PI); c.fill();
@@ -216,10 +222,6 @@ export function startGame(canvas, profile, opts, ui) {
       const f = Math.sin(e.ph * 2) * 0.6; c.fillStyle = flash ? '#fff' : '#8B6FD0';
       c.beginPath(); c.moveTo(0, 0); c.quadraticCurveTo(-r * 1.9, -r * (0.9 + f), -r * 1.5, r * 0.5); c.quadraticCurveTo(-r * 0.6, r * 0.1, 0, r * 0.4); c.quadraticCurveTo(r * 0.6, r * 0.1, r * 1.5, r * 0.5); c.quadraticCurveTo(r * 1.9, -r * (0.9 + f), 0, 0); c.fill();
       c.beginPath(); c.arc(0, 0, r * 0.55, 0, 7); c.fill(); eyes(c, r * 0.25, -r * 0.05, 1.8, '#F66');
-    } else if (SP && (e.type === 'goblin' || e.type === 'ogre' || e.type === 'king')) {
-      const sz = e.r * 2.6, bob = Math.sin(e.ph) * 1.5, img = e.type === 'king' ? (flash ? SP.knightFlash : SP.knight) : (flash ? SP.orcFlash : SP.orc);
-      c.imageSmoothingEnabled = false; if (e.type === 'ogre') { c.filter = 'hue-rotate(-40deg) saturate(1.3)'; } if (e.type === 'king') { c.filter = 'sepia(1) hue-rotate(-30deg) saturate(3)'; }
-      c.save(); if (e.vx < 0) c.scale(-1, 1); c.drawImage(img, -sz / 2, -sz / 2 + bob, sz, sz); c.restore(); c.filter = 'none';
     } else if (e.type === 'goblin') {
       c.fillStyle = flash ? '#fff' : '#7FA83A'; c.beginPath(); c.arc(0, 0, r, 0, 7); c.fill();
       c.beginPath(); c.moveTo(-r * 0.8, -r * 0.2); c.lineTo(-r * 1.6, -r * 0.7); c.lineTo(-r * 0.6, -r * 0.7); c.fill(); c.beginPath(); c.moveTo(r * 0.8, -r * 0.2); c.lineTo(r * 1.6, -r * 0.7); c.lineTo(r * 0.6, -r * 0.7); c.fill();
@@ -263,7 +265,7 @@ export function startGame(canvas, profile, opts, ui) {
       const n = 1 + Math.floor(up.sword / 2) + (isMain('sword') && R >= 2 ? 1 : 0), rad = 42 + 3 * up.sword;
       for (let k = 0; k < n; k++) {
         const a = orbAng + (k * Math.PI * 2) / n; c.save(); c.translate(W / 2 + Math.cos(a) * rad, H / 2 + Math.sin(a) * rad); c.rotate(a + Math.PI / 2);
-        if (SP) { c.imageSmoothingEnabled = false; c.drawImage(SP.swordTile, -14, -20, 28, 28); c.restore(); continue; }
+        if (SP) { c.imageSmoothingEnabled = false; c.rotate(-Math.PI / 4); c.drawImage(SP.sword, -22, -22, 44, 44); c.restore(); continue; }
         c.fillStyle = '#E8ECEF'; c.shadowColor = '#fff'; c.shadowBlur = 8; c.beginPath(); c.moveTo(0, -16); c.lineTo(4, 4); c.lineTo(-4, 4); c.fill(); c.shadowBlur = 0; c.fillStyle = '#B9684D'; c.fillRect(-6, 4, 12, 3); c.fillRect(-1.5, 7, 3, 6); c.restore();
       }
     }
@@ -271,11 +273,7 @@ export function startGame(canvas, profile, opts, ui) {
     c.save(); c.translate(W / 2, H / 2); if (P.inv > 0 && Math.floor(t * 20) % 2) c.globalAlpha = 0.45;
     if (SP) {
       c.imageSmoothingEnabled = false; const bob = Math.sin(t * (joy || keys['a'] || keys['d'] || keys['w'] || keys['s'] ? 14 : 3)) * 1.6;
-      c.save(); c.scale(P.face, 1);
-      c.drawImage(SP.hero[profile.job][profile.rank - 1], -20, -22 + bob, 40, 40);
-      if (profile.job === 'swordsman') c.drawImage(SP.weapon.swordsman, 4, -8 + bob, 22, 22);
-      else c.drawImage(SP.weapon[profile.job], 6, -16 + bob, 30, 30);
-      c.restore();
+      c.save(); c.scale(-P.face, 1); c.drawImage(SP.hero[profile.job][profile.rank - 1], -30, -40 + bob, 60, 60); c.restore();
     } else {
     c.fillStyle = profile.color; c.beginPath(); c.arc(0, 0, 12, 0, 7); c.fill();
     c.fillStyle = '#171717'; c.beginPath(); c.arc(P.face * 4, -2, 2.4, 0, 7); c.arc(P.face * 4 + (P.face > 0 ? -7 : 7), -2, 2.4, 0, 7); c.fill();

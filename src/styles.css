@@ -469,3 +469,5 @@ input[type='date'] { color-scheme: dark; }
 .mg-perks li.on{color:#F5F5F4;border:1px solid #B9684D;background:#171717}
 
 .mg-sprite{width:48px;height:48px;image-rendering:pixelated;margin:0 auto 2px}
+
+.mg-credit{text-align:center;font-size:11px;margin:4px 0 12px}

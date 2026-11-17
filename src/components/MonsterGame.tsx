@@ -76,6 +76,7 @@ export function PlayTab({ month }: { month: string }) {
         <div className="card-head"><div><h2>Your loot</h2><p>{save.coins} coins · best {save.runs > 0 ? fmt(save.bestSeconds) : '–'} · {save.runs} runs</p></div></div>
         {save.relics.length > 0 ? <p className="mg-relics">{save.relics.join(' · ')}</p> : <p className="muted">No relics yet. Win or survive a run to find one.</p>}
       </section>
+      <p className="muted mg-credit">Game art: 32rogues by Seth Boyles</p>
       {running && <MonsterGame month={month} job={save.job} onClose={() => { setRunning(false); setSave(loadSave()); }} />}
     </div>
   );
