@@ -63,6 +63,8 @@ export function startGame(canvas, profile, opts, ui) {
     slime: { r: 11, hp: 14, sp: 38, dmg: 8, xp: 1 },
     bat: { r: 9, hp: 9, sp: 78, dmg: 6, xp: 1 },
     goblin: { r: 12, hp: 32, sp: 55, dmg: 11, xp: 2 },
+    skeleton: { r: 13, hp: 26, sp: 48, dmg: 9, xp: 2 },
+    mushroom: { r: 12, hp: 44, sp: 44, dmg: 10, xp: 2 },
     ogre: { r: 22, hp: 130, sp: 40, dmg: 20, xp: 6 },
     king: { r: 40, hp: 1500, sp: 42, dmg: 30, xp: 40, boss: true },
     dragon: { r: 52, hp: 3800, sp: 52, dmg: 38, xp: 80, boss: true },
@@ -82,6 +84,8 @@ export function startGame(canvas, profile, opts, ui) {
       const roll = Math.random();
       let type = 'slime';
       if (p > 0.08 && roll < 0.35) type = 'bat';
+      if (p > 0.12 && roll < 0.3) type = 'skeleton';
+      if (p > 0.25 && roll < 0.2) type = 'mushroom';
       if (p > 0.2 && roll < 0.22) type = 'goblin';
       if (p > 0.4 && roll < 0.08) type = 'ogre';
       spawn(type);
@@ -208,6 +212,14 @@ export function startGame(canvas, profile, opts, ui) {
   function monster(e, sx, sy) {
     const c = ctx, r = e.r, flash = e.hit > 0;
     c.save(); c.translate(sx, sy);
+    const AN = SP && SP.anim && SP.anim[e.type === 'bat' ? 'eye' : e.type];
+    if (AN) {
+      const k = (e.r * 2.7) / Math.max(AN.w, AN.h), n = AN.frames.length, fi = Math.floor(t * 10 + e.ph * 3) % n, bob = e.type === 'bat' ? Math.sin(e.ph) * 3 : 0;
+      c.imageSmoothingEnabled = false; c.save(); if (e.vx < 0) c.scale(-1, 1);
+      c.drawImage((flash ? AN.flash : AN.frames)[fi] || AN.frames[0], -AN.w * k / 2, -AN.h * k / 2 + bob, AN.w * k, AN.h * k); c.restore(); c.restore();
+      if (e.boss) { const w = r * 2.4; c.fillStyle = '#0008'; c.fillRect(sx - w / 2, sy - r * 1.8, w, 5); c.fillStyle = '#E24B3C'; c.fillRect(sx - w / 2, sy - r * 1.8, w * clamp(e.hp / e.maxHp), 5); }
+      return;
+    }
     if (SP && SP.mon[e.type]) {
       const sz = e.r * (e.type === 'bat' ? 3.4 : e.type === 'slime' ? 3.2 : 2.9), bob = Math.sin(e.ph) * 1.5;
       c.imageSmoothingEnabled = false; c.save(); if (e.vx > 0) c.scale(-1, 1); c.drawImage(flash ? SP.flash[e.type] : SP.mon[e.type], -sz / 2, -sz / 2 + bob, sz, sz); c.restore(); c.restore();
@@ -271,9 +283,14 @@ export function startGame(canvas, profile, opts, ui) {
     }
     // hero
     c.save(); c.translate(W / 2, H / 2); if (P.inv > 0 && Math.floor(t * 20) % 2) c.globalAlpha = 0.45;
-    if (SP) {
-      c.imageSmoothingEnabled = false; const bob = Math.sin(t * (joy || keys['a'] || keys['d'] || keys['w'] || keys['s'] ? 14 : 3)) * 1.6;
-      c.save(); c.scale(-P.face, 1); c.drawImage(SP.hero[profile.job][profile.rank - 1], -30, -40 + bob, 60, 60); c.restore();
+    if (SP && SP.anim) {
+      const AN = SP.anim[profile.job], moving = !!(joy || keys['a'] || keys['d'] || keys['w'] || keys['s']);
+      const k = 1.55 + (profile.rank - 1) * 0.12, fi = Math.floor(t * (moving ? 12 : 5)) % AN.frames.length;
+      const aura = ['#B9684D', '#cfd4d8', '#e0a94f'][profile.rank - 1];
+      c.fillStyle = aura + '55'; c.beginPath(); c.ellipse(0, AN.h * k / 2 - 2, AN.w * k * 0.38, 6, 0, 0, 7); c.fill();
+      c.imageSmoothingEnabled = false; c.save(); if (P.face < 0) c.scale(-1, 1);
+      if (profile.rank >= 3) { c.shadowColor = aura; c.shadowBlur = 10; }
+      c.drawImage(AN.frames[fi] || AN.frames[0], -AN.w * k / 2, -AN.h * k / 2, AN.w * k, AN.h * k); c.restore();
     } else {
     c.fillStyle = profile.color; c.beginPath(); c.arc(0, 0, 12, 0, 7); c.fill();
     c.fillStyle = '#171717'; c.beginPath(); c.arc(P.face * 4, -2, 2.4, 0, 7); c.arc(P.face * 4 + (P.face > 0 ? -7 : 7), -2, 2.4, 0, 7); c.fill();

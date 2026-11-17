@@ -48,7 +48,7 @@ export function PlayTab({ month }: { month: string }) {
         <div className="mg-jobs">
           {JOB_IDS.map(j => (
             <button key={j} className={`mg-job ${save.job === j ? 'on' : ''}`} style={{ borderColor: save.job === j ? JOBS[j].color : undefined }} onClick={() => choose(j)} aria-pressed={save.job === j}>
-              {sp && <img className="mg-sprite" alt="" src={sp.hero[j][profile.rank - 1].toDataURL()} />}
+              {sp && <img className="mg-sprite" alt="" src={sp.anim[j].frames[0].toDataURL()} />}
               <strong style={{ color: JOBS[j].color }}>{JOBS[j].titles[profile.rank - 1]}</strong>
               <span>{JOBS[j].weapon}</span>
               <em>{JOBS[j].titles.join(' → ')}</em>
@@ -76,7 +76,7 @@ export function PlayTab({ month }: { month: string }) {
         <div className="card-head"><div><h2>Your loot</h2><p>{save.coins} coins · best {save.runs > 0 ? fmt(save.bestSeconds) : '–'} · {save.runs} runs</p></div></div>
         {save.relics.length > 0 ? <p className="mg-relics">{save.relics.join(' · ')}</p> : <p className="muted">No relics yet. Win or survive a run to find one.</p>}
       </section>
-      <p className="muted mg-credit">Game art: 32rogues by Seth Boyles</p>
+      <p className="muted mg-credit">Game art: chierit (Elementals), Luiz Melo (Monsters Creatures Fantasy), Seth Boyles (32rogues)</p>
       {running && <MonsterGame month={month} job={save.job} onClose={() => { setRunning(false); setSave(loadSave()); }} />}
     </div>
   );
