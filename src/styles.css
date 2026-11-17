@@ -410,3 +410,12 @@ input[type='date'] { color-scheme: dark; }
 .btn.small.ticked { background: #1f3a2e; border-color: #2f5a46; color: var(--green); }
 .ok-note { color: var(--green); }
 .btn-row.center { justify-content: center; }
+
+.saver-cards { display: grid; gap: 8px; margin: 10px 0 14px; }
+.saver-cards button { display: grid; gap: 3px; text-align: left; padding: 12px 14px; border-radius: 14px; border: 1px solid var(--border); background: var(--surface-2); color: var(--text); }
+.saver-cards button.chosen { border-color: var(--copper); background: #3b2a24; }
+.saver-top { display: flex; justify-content: space-between; align-items: baseline; }
+.saver-top strong { font-size: 15px; }
+.saver-top em { font-style: normal; font-weight: 900; color: var(--copper-light); }
+.saver-amt { font-size: 13px; font-weight: 700; }
+.saver-cards small { color: var(--text-2); font-size: 12px; }

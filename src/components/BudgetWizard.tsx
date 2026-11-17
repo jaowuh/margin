@@ -9,6 +9,11 @@ import { Field, Modal, useUI } from './ui';
 interface GoalRow { key: string; name: string; on: boolean; amount: string; touched: boolean; target: string }
 
 const num = (s: string) => { const n = Number(s.replace(/[₱,\s]/g, '')); return Number.isFinite(n) && n > 0 ? n : 0; };
+const SAVERS = [
+  { name: 'Starter saver', pct: 10, blurb: 'Easing in. Small, steady and easy to keep up.' },
+  { name: 'Steady saver', pct: 20, blurb: 'The classic. A solid cushion without feeling tight.' },
+  { name: 'Super saver', pct: 30, blurb: 'All in. Builds your funds fast, with less left to spend.' },
+];
 const DEFAULT_GOALS = ['Emergency fund', 'Savings', 'Travel fund'];
 
 /** Spread `total` over the goals that are on and not hand-edited. */
@@ -111,14 +116,20 @@ export default function BudgetWizard({ onClose }: { onClose: () => void }) {
 
       {step === 1 && (
         <>
-          <p className="muted-text small">Pay yourself first. How much will you set aside each month? Income: <strong>{peso(income)}</strong> a month.</p>
-          <div className="wiz-chips" role="group" aria-label="Quick savings amounts">
-            {[10, 20, 30].map(p => {
-              const v = Math.round((income * p) / 100 / 10) * 10;
-              return <button type="button" key={p} className={saveTotal === v ? 'chosen' : ''} onClick={() => setSavingsTotal(v)}>{p}%<small>{peso(v)}</small></button>;
+          <p className="muted-text small">Pay yourself first. Pick the kind of saver you want to be, or type your own amount. Income: <strong>{peso(income)}</strong> a month.</p>
+          <div className="saver-cards" role="group" aria-label="Choose a saver type">
+            {SAVERS.map(sv => {
+              const v = Math.round((income * sv.pct) / 100 / 10) * 10;
+              return (
+                <button type="button" key={sv.name} className={saveTotal === v ? 'chosen' : ''} aria-pressed={saveTotal === v} onClick={() => setSavingsTotal(v)}>
+                  <span className="saver-top"><strong>{sv.name}</strong><em>{sv.pct}%</em></span>
+                  <span className="saver-amt">{peso(v)} a month</span>
+                  <small>{sv.blurb}</small>
+                </button>
+              );
             })}
           </div>
-          <Field label="Save per month" hint={saveTotal >= income && income > 0 ? 'That’s all of your income. Choose a smaller amount.' : undefined}>
+          <Field label="Or choose your own amount per month" hint={saveTotal >= income && income > 0 ? 'That’s all of your income. Choose a smaller amount.' : undefined}>
             <input className="input amount" inputMode="decimal" placeholder="₱ 0" value={saveStr} onChange={e => setSavingsTotal(num(e.target.value))} />
           </Field>
           <div className="wiz-goals">
