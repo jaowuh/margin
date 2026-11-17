@@ -462,3 +462,8 @@ input[type='date'] { color-scheme: dark; }
 .mg-job strong{font-size:14px}.mg-job span{font-size:12px;color:#F5F5F4}.mg-job em{font-style:normal;font-size:10px;color:#A8A29E;line-height:1.3}
 .mg-job.on{background:#292524}
 .mg-relics{margin:0;font-size:13px;color:#F2B48C}
+
+.mg-perks{list-style:none;margin:0 0 14px;padding:0;display:grid;gap:6px;font-size:12px;color:#6b6460;text-align:left}
+.mg-perks li{padding:8px 10px;border-radius:10px;border:1px dashed #3F3A37}
+.mg-perks li b{display:block;font-size:11px;text-transform:uppercase;letter-spacing:.06em}
+.mg-perks li.on{color:#F5F5F4;border:1px solid #B9684D;background:#171717}

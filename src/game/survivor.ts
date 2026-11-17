@@ -29,7 +29,10 @@ export function startGame(canvas, profile, opts, ui) {
   const main = PRIMARY[profile.job] || 'arrow';
   const up = { arrow: 0, magic: 0, sword: 0, dmg: 0, rate: 0, speed: 0, hp: 0, magnet: 0, heal: 0 };
   up[main] = profile.rank; // your job's weapon starts at your saver level
-  const wmul = k => (k === main ? 1.3 : 1);
+  const wmul = k => (k === main ? [1.3, 1.5, 1.8][profile.rank - 1] : 1);
+  const R = profile.rank, isMain = k => k === main;
+  const after = [], novas = [];
+  let novaCd = 5;
   const booms = [];
   let t = 0, kills = 0, arrowCd = 0, magicCd = 0, orbAng = 0, spawnCd = 0, bossA = false, bossB = false, over = false;
   const enemies = [], shots = [], gems = [], pops = [];
@@ -138,9 +141,9 @@ export function startGame(canvas, profile, opts, ui) {
     arrowCd -= dt;
     if (up.arrow > 0 && arrowCd <= 0) {
       if (inRange) {
-        arrowCd = 0.85 / rate();
+        arrowCd = 0.85 / rate() / (isMain('arrow') && R >= 2 ? 1.15 : 1);
         const L = up.arrow, n = 1 + Math.floor((L - 1) / 2) + (L >= 6 ? 1 : 0);
-        for (let i = 0; i < n; i++) { const a = ang + (i - (n - 1) / 2) * 0.14; shots.push({ kind: 'arrow', x: P.x, y: P.y, a, vx: Math.cos(a) * 420, vy: Math.sin(a) * 420, life: 1.2, dmg: dmg() * wmul('arrow') * (1 + 0.12 * (L - 1)), pierce: 1 + Math.floor(L / 2), hit: [] }); }
+        for (let i = 0; i < n; i++) { const a = ang + (i - (n - 1) / 2) * 0.14; shots.push({ kind: 'arrow', x: P.x, y: P.y, a, vx: Math.cos(a) * 420, vy: Math.sin(a) * 420, life: 1.2, dmg: dmg() * wmul('arrow') * (1 + 0.12 * (L - 1)) * (isMain('arrow') && R >= 3 && Math.random() < 0.25 ? 2 : 1), crit: isMain('arrow') && R >= 3, pierce: 1 + Math.floor(L / 2) + (isMain('arrow') && R >= 2 ? 1 : 0), hit: [] }); }
       } else arrowCd = 0.15;
     }
     // magic: slow orb that explodes
@@ -149,7 +152,7 @@ export function startGame(canvas, profile, opts, ui) {
       if (inRange) {
         magicCd = 1.7 / rate();
         const L = up.magic, n = L >= 4 ? 2 : 1;
-        for (let i = 0; i < n; i++) { const a = ang + (i - (n - 1) / 2) * 0.35; shots.push({ kind: 'magic', x: P.x, y: P.y, a, vx: Math.cos(a) * 210, vy: Math.sin(a) * 210, life: 1.6, dmg: dmg() * 2.3 * wmul('magic') * (1 + 0.18 * (L - 1)), rad: 46 + 7 * L }); }
+        for (let i = 0; i < n; i++) { const a = ang + (i - (n - 1) / 2) * 0.35; shots.push({ kind: 'magic', x: P.x, y: P.y, a, vx: Math.cos(a) * 210, vy: Math.sin(a) * 210, life: 1.6, dmg: dmg() * 2.3 * wmul('magic') * (1 + 0.18 * (L - 1)), rad: (46 + 7 * L) * (isMain('magic') && R >= 2 ? 1.25 : 1) }); }
       } else magicCd = 0.15;
     }
     for (const s of shots) {
@@ -158,17 +161,21 @@ export function startGame(canvas, profile, opts, ui) {
         if (e.hp <= 0 || s.life <= 0) continue;
         if ((e.x - s.x) ** 2 + (e.y - s.y) ** 2 < (e.r + (s.kind === 'magic' ? 7 : 4)) ** 2) {
           if (s.kind === 'magic') {
-            s.life = 0; booms.push({ x: s.x, y: s.y, r: s.rad, life: 0.3 });
+            s.life = 0; booms.push({ x: s.x, y: s.y, r: s.rad, life: 0.3 }); if (isMain('magic') && R >= 3) after.push({ x: s.x, y: s.y, rad: s.rad, dmg: s.dmg * 0.6, at: t + 0.45 });
             for (const o of enemies) if (o.hp > 0 && (o.x - s.x) ** 2 + (o.y - s.y) ** 2 < (s.rad + o.r) ** 2) hurt(o, s.dmg);
           } else if (!s.hit.includes(e)) { s.hit.push(e); hurt(e, s.dmg); if (--s.pierce <= 0) s.life = 0; }
         }
       }
     }
+    for (let i = after.length - 1; i >= 0; i--) { const f = after[i]; if (t >= f.at) { booms.push({ x: f.x, y: f.y, r: f.rad, life: 0.3 }); for (const o of enemies) if (o.hp > 0 && (o.x - f.x) ** 2 + (o.y - f.y) ** 2 < (f.rad + o.r) ** 2) hurt(o, f.dmg); after.splice(i, 1); } }
     for (let i = booms.length - 1; i >= 0; i--) { booms[i].life -= dt; if (booms[i].life <= 0) booms.splice(i, 1); }
+    // sword nova (Super saver)
+    if (isMain('sword') && R >= 3) { novaCd -= dt; if (novaCd <= 0) { novaCd = 5; novas.push({ x: P.x, y: P.y, life: 0.4 }); for (const o of enemies) if (o.hp > 0 && (o.x - P.x) ** 2 + (o.y - P.y) ** 2 < (115 + o.r) ** 2) hurt(o, dmg() * 3 * wmul('sword')); } }
+    for (let i = novas.length - 1; i >= 0; i--) { novas[i].life -= dt; if (novas[i].life <= 0) novas.splice(i, 1); }
     // sword: blades circling the hero
     if (up.sword > 0) {
       orbAng += dt * (3 + up.sword * 0.15);
-      const L = up.sword, n = 1 + Math.floor(L / 2), rad = 42 + 3 * L;
+      const L = up.sword, n = 1 + Math.floor(L / 2) + (isMain('sword') && R >= 2 ? 1 : 0), rad = 42 + 3 * L;
       for (let k = 0; k < n; k++) {
         const a = orbAng + (k * Math.PI * 2) / n, ox = P.x + Math.cos(a) * rad, oy = P.y + Math.sin(a) * rad;
         for (const e of enemies) if (e.hp > 0 && (e.x - ox) ** 2 + (e.y - oy) ** 2 < (e.r + 12 + L) ** 2 && (!e.swCd || e.swCd < t)) { e.swCd = t + 0.4; hurt(e, dmg() * 1.5 * wmul('sword') * (1 + 0.15 * (L - 1))); }
@@ -243,11 +250,12 @@ export function startGame(canvas, profile, opts, ui) {
     for (const s of shots) {
       const x = s.x + ox, y = s.y + oy;
       if (s.kind === 'magic') { c.fillStyle = '#B9A2FF'; c.shadowColor = '#9A86E0'; c.shadowBlur = 12; c.beginPath(); c.arc(x, y, 7, 0, 7); c.fill(); c.shadowBlur = 0; }
-      else { c.save(); c.translate(x, y); c.rotate(s.a); c.fillStyle = '#FFE08A'; c.fillRect(-9, -1.2, 14, 2.4); c.beginPath(); c.moveTo(5, -3.5); c.lineTo(10, 0); c.lineTo(5, 3.5); c.fill(); c.restore(); }
+      else { c.save(); c.translate(x, y); c.rotate(s.a); c.fillStyle = s.crit ? '#FFC53D' : '#FFE08A'; if (s.crit) { c.shadowColor = '#FFC53D'; c.shadowBlur = 8; } c.fillRect(-9, -1.2, 14, 2.4); c.beginPath(); c.moveTo(5, -3.5); c.lineTo(10, 0); c.lineTo(5, 3.5); c.fill(); c.restore(); }
     }
+    for (const nv of novas) { c.globalAlpha = clamp(nv.life * 2.5); c.strokeStyle = '#E8ECEF'; c.lineWidth = 6; c.beginPath(); c.arc(W / 2, H / 2, 115 * (1.1 - nv.life), 0, 7); c.stroke(); c.globalAlpha = 1; }
     for (const b of booms) { c.globalAlpha = clamp(b.life * 3) * 0.7; c.fillStyle = '#B9A2FF'; c.beginPath(); c.arc(b.x + ox, b.y + oy, b.r * (1.15 - b.life), 0, 7); c.fill(); c.globalAlpha = 1; }
     if (up.sword > 0) {
-      const n = 1 + Math.floor(up.sword / 2), rad = 42 + 3 * up.sword;
+      const n = 1 + Math.floor(up.sword / 2) + (isMain('sword') && R >= 2 ? 1 : 0), rad = 42 + 3 * up.sword;
       for (let k = 0; k < n; k++) {
         const a = orbAng + (k * Math.PI * 2) / n; c.save(); c.translate(W / 2 + Math.cos(a) * rad, H / 2 + Math.sin(a) * rad); c.rotate(a + Math.PI / 2);
         c.fillStyle = '#E8ECEF'; c.shadowColor = '#fff'; c.shadowBlur = 8; c.beginPath(); c.moveTo(0, -16); c.lineTo(4, 4); c.lineTo(-4, 4); c.fill(); c.shadowBlur = 0; c.fillStyle = '#B9684D'; c.fillRect(-6, 4, 12, 3); c.fillRect(-1.5, 7, 3, 6); c.restore();

@@ -60,6 +60,9 @@ export function PlayTab({ month }: { month: string }) {
           <li><span>Speed</span><strong>×{profile.speed.toFixed(2)}</strong></li>
           <li><span>Luck</span><strong>×{profile.luck.toFixed(2)}</strong><em>{profile.notes.luck}</em></li>
         </ul>
+        <ul className="mg-perks">
+          {JOBS[profile.job].perks.map((t, i) => <li key={i} className={i < profile.rank ? 'on' : ''}><b>{['Starter', 'Steady', 'Super'][i]} saver</b> {t}</li>)}
+        </ul>
         <div className={`mg-chest t-${preview.tier}`}><span>Chest at stake</span><strong>{preview.tier}{profile.tier !== 'gold' ? ' → better if you win' : ' → legendary if you win'}</strong></div>
         <p className="mg-how">Drag anywhere to move. You attack on your own. Survive {fmt(D)} and beat the dragon.</p>
         <button className="btn primary mg-go" onClick={() => setRunning(true)}><Play size={16} /> Start run</button>
