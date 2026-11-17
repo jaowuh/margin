@@ -277,18 +277,20 @@ export function startGame(canvas, profile, opts, ui) {
       const n = 1 + Math.floor(up.sword / 2) + (isMain('sword') && R >= 2 ? 1 : 0), rad = 42 + 3 * up.sword;
       for (let k = 0; k < n; k++) {
         const a = orbAng + (k * Math.PI * 2) / n; c.save(); c.translate(W / 2 + Math.cos(a) * rad, H / 2 + Math.sin(a) * rad); c.rotate(a + Math.PI / 2);
-        if (SP) { c.imageSmoothingEnabled = false; c.rotate(-Math.PI / 4); c.drawImage(SP.sword, -22, -22, 44, 44); c.restore(); continue; }
+        if (SP) { c.imageSmoothingEnabled = false; c.rotate(Math.PI / 4); c.drawImage(SP.sword, -22, -22, 44, 44); c.restore(); continue; }
         c.fillStyle = '#E8ECEF'; c.shadowColor = '#fff'; c.shadowBlur = 8; c.beginPath(); c.moveTo(0, -16); c.lineTo(4, 4); c.lineTo(-4, 4); c.fill(); c.shadowBlur = 0; c.fillStyle = '#B9684D'; c.fillRect(-6, 4, 12, 3); c.fillRect(-1.5, 7, 3, 6); c.restore();
       }
     }
     // hero
     c.save(); c.translate(W / 2, H / 2); if (P.inv > 0 && Math.floor(t * 20) % 2) c.globalAlpha = 0.45;
     if (SP && SP.anim) {
-      const AN = SP.anim[profile.job], moving = !!(joy || keys['a'] || keys['d'] || keys['w'] || keys['s']);
-      const k = 1.55 + (profile.rank - 1) * 0.12, fi = Math.floor(t * (moving ? 12 : 5)) % AN.frames.length;
+      const moving = !!(joy || keys['a'] || keys['d'] || keys['w'] || keys['s']);
+      const AN = (!moving && SP.anim[profile.job + '_idle']) || SP.anim[profile.job];
+      const k = 1.0 + (profile.rank - 1) * 0.08, fi = Math.floor(t * (moving ? 12 : 8)) % AN.frames.length;
+      const flip = (P.face < 0) !== (!moving && profile.job === 'swordsman'); // swordsman idle frames face left
       const aura = ['#B9684D', '#cfd4d8', '#e0a94f'][profile.rank - 1];
       c.fillStyle = aura + '55'; c.beginPath(); c.ellipse(0, AN.h * k / 2 - 2, AN.w * k * 0.38, 6, 0, 0, 7); c.fill();
-      c.imageSmoothingEnabled = false; c.save(); if (P.face < 0) c.scale(-1, 1);
+      c.imageSmoothingEnabled = false; c.save(); if (flip) c.scale(-1, 1);
       if (profile.rank >= 3) { c.shadowColor = aura; c.shadowBlur = 10; }
       c.drawImage(AN.frames[fi] || AN.frames[0], -AN.w * k / 2, -AN.h * k / 2, AN.w * k, AN.h * k); c.restore();
     } else {

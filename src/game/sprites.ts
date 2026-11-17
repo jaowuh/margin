@@ -41,6 +41,12 @@ export function loadSprites(): Promise<Sprites> {
             const f = document.createElement('canvas'); f.width = w; f.height = h; const x = f.getContext('2d')!; x.drawImage(cv, 0, 0); x.globalCompositeOperation = 'source-in'; x.fillStyle = '#fff'; x.fillRect(0, 0, w, h); fl.push(f);
           }
           anim[k] = { frames, flash: fl, w, h };
+          const idle = MANIFEST[k].idle;
+          if (idle) {
+            const fr: HTMLCanvasElement[] = [];
+            for (let i = 0; i < idle.n; i++) { const cv = document.createElement('canvas'); cv.width = w; cv.height = h; cv.getContext('2d')!.drawImage(a, i * w, idle.y, w, h, 0, 0, w, h); fr.push(cv); }
+            anim[k + '_idle'] = { frames: fr, flash: fr, w, h };
+          }
         }
         resolve({ hero, mon, flash, sword: tile(15), anim });
       }).catch(reject);
