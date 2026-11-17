@@ -58,14 +58,12 @@ const needed=()=>sumArea*cfg.threshold/100/cfg.brush;
 const maxInk=()=>needed()*cfg.inkMult;
 
 /* ---------- canvases ---------- */
-const stage=$('stage'), sctx=stage.getContext('2d');
 const paint=$('paint'), pctx=paint.getContext('2d');
 const DPR=Math.min(3,window.devicePixelRatio||1);
 paint.width=paint.height=Math.round(L*DPR);
 const layer=mk(paint.width,paint.height), lctx=layer.getContext('2d');
 const cov=mk(MR,MR), cctx=cov.getContext('2d',{willReadFrequently:true});
 let letterCream=null,letterCop=null,fx=null,wmRing=null;
-function sizeStage(){const w=Math.max(10,Math.round(stage.getBoundingClientRect().width*DPR));if(stage.width!==w){stage.width=w;stage.height=Math.round(w*300/700)}}
 
 /* ---------- game state ---------- */
 let resumeOnly=false,holdBase=0,retract=null,wasFull=false,holding=false,holdStart=0,drawerOpen=false,completing=null,painting=false,last=null,brushPos=null,hintT=0,dimAmt=0;
@@ -78,49 +76,29 @@ function loadShape(){
   letterCream=mk(layer.width,layer.height);let t=letterCream.getContext('2d');t.setTransform(DPR,0,0,DPR,0,0);t.drawImage(wmImg,o.sx,o.sy,o.bw,o.bh,o.dx,o.dy,o.bw*o.sc,o.bh*o.sc);
   letterCop=mk(layer.width,layer.height);t=letterCop.getContext('2d');t.setTransform(DPR,0,0,DPR,0,0);t.drawImage(wmImg,o.sx,o.sy,o.bw,o.bh,o.dx,o.dy,o.bw*o.sc,o.bh*o.sc);t.setTransform(1,0,0,1,0,0);t.globalCompositeOperation='source-in';t.fillStyle=COP;t.fillRect(0,0,layer.width,layer.height);
   $('shapeName').innerHTML='<span>Emergency fund <b data-cg="resV">100%</b></span><span>Over budget <b data-cg="wasteV">0%</b></span>';completing=null}
-function setHint(t,keep){const h=$('hint');h.textContent=t;h.style.opacity=t?1:0;clearTimeout(hintT);if(t&&!keep)hintT=tmo(()=>{h.style.opacity=0},3500)}
+function setHint(){}
 function buzz(ms){if(cfg.haptics)try{navigator.vibrate&&navigator.vibrate(ms)}catch(e){}}
-let playTarget=300;
-function lineThick(){const sc=stage.getBoundingClientRect().width/700;return 2*WMDOT.r*sc}
-function layoutPlay(){
-  const card=$('card'),pl=$('play'),st=stage.getBoundingClientRect(),cb=card.getBoundingClientRect(),padL=parseFloat(getComputedStyle(card).paddingLeft)||0;
-  const sc=st.width/700,dotx=st.left-(cb.left+card.clientLeft)+WMDOT.x*sc,cw=card.clientWidth;
-  const xl=cw-dotx,xr=dotx,th=lineThick(),pad=th/2+8;
-  const avail=Math.max(100,(xr-xl)-2*pad),Sz=avail*.86;
-  const key=[xl,xr,pad,Sz].map(v=>Math.round(v*10)).join('|');
-  if(pl._k!==key){pl._k=key;pl.style.marginLeft=(xl-padL)+'px';pl.style.width=(xr-xl)+'px';$('playIn').style.padding=pad+'px';paint.style.width=Sz+'px'}
-  playTarget=Math.round(2*pad+46+Sz);const h=drawerOpen?playTarget:0;pl.classList.toggle('open',drawerOpen);pl.classList.toggle('live',drawerOpen&&!!S.charged);if(pl._h!==h){pl._h=h;pl.style.height=h+'px'}}
-function openDrawer(){if(drawerOpen)return;drawerOpen=true;layoutPlay()}
-function closeDrawer(){drawerOpen=false;painting=false;brushPos=null;layoutPlay()}
-
+function openDrawer(){if(drawerOpen)return;drawerOpen=true}
+function closeDrawer(){drawerOpen=false;painting=false;brushPos=null}
+function layoutPlay(){}
 /* trophy ring around the header logo (length = best emergency fund) */
 const NS='http://www.w3.org/2000/svg';
 const rings=holdEls.map(()=>{const sv=document.createElementNS(NS,'svg'),r=document.createElementNS(NS,'rect');
   sv.setAttribute('aria-hidden','true');sv.style.cssText='position:fixed;pointer-events:none;overflow:visible;z-index:31;display:none';
   r.setAttribute('fill','none');r.setAttribute('stroke',COP);r.setAttribute('stroke-width','2');r.setAttribute('stroke-linecap','round');r.setAttribute('pathLength','1');
   sv.appendChild(r);document.body.appendChild(sv);disp.push(()=>sv.remove());return [sv,r]});
-function trophyDraw(){
-  const frac=clamp(S.best),show=(S.played||S.best>0)&&frac>.01&&!root.classList.contains('cg-on');
-  holdEls.forEach((el,i)=>{const[sv,r]=rings[i],b=el.getBoundingClientRect();
-    if(!show||b.width<2){sv.style.display='none';return}
-    const P=6,w=b.width+2*P,h=b.height+2*P;
-    sv.style.display='';sv.style.left=(b.left-P)+'px';sv.style.top=(b.top-P)+'px';sv.setAttribute('width',w);sv.setAttribute('height',h);
-    r.setAttribute('x',1);r.setAttribute('y',1);r.setAttribute('width',w-2);r.setAttribute('height',h-2);r.setAttribute('rx',Math.min(14,(h-2)/2));
-    r.setAttribute('stroke-dasharray',frac+' 2');sv.style.filter='drop-shadow(0 0 '+(cfg.glow*(.3+.7*frac)/3)+'px '+COP+')'})}
 /* hold on logo */
 const onH=(ev,fn)=>holdEls.forEach(el=>on(el,ev,fn));
 onH('contextmenu',e=>e.preventDefault());
 onH('pointerdown',e=>{
-  if(S.won||completing)return;
+  if(S.won||completing||painting)return;
   e.preventDefault();try{e.currentTarget.setPointerCapture(e.pointerId)}catch(_){}
-  holding=true;resumeOnly=!!S.charged;holdBase=S.ink;retract=null;wasFull=false;holdStart=performance.now();setHint('')});
+  holding=true;resumeOnly=!!S.charged;holdBase=S.ink;retract=null;wasFull=false;holdStart=performance.now()});
 const endHold=()=>{
   if(!holding)return;holding=false;if(S.won)return;
-  if(resumeOnly)return;
-  const need=cfg.holdNeed/100*maxInk();
+  if(resumeOnly||S.charged)return;
   if(S.ink<=holdBase+1)return;
-  if(S.ink>=need-1e-6){S.charged=true;setHint(S.ink>=maxInk()-1?'Line complete — paint!':'');saveS()}
-  else{retract={to:holdBase};setHint('Keep holding until the line is complete.')}};
+  retract={to:holdBase}};
 onH('pointerup',endHold);onH('pointercancel',endHold);
 on($('closeBtn'),'click',()=>closeDrawer());
 
@@ -194,135 +172,118 @@ function drawPaint(now){
     for(const p of fx.ps){const t=e-p.d;if(t>0&&t<p.life){c.globalAlpha=1-t/p.life;c.fillStyle=p.c;c.beginPath();c.arc(p.x+p.vx*t,p.y+p.vy*t+30*t*t,p.s,0,7);c.fill()}}
     c.globalAlpha=1;c.setTransform(1,0,0,1,0,0)}
   if(brushPos&&drawerOpen&&!completing){c.setTransform(DPR,0,0,DPR,0,0);c.beginPath();c.arc(brushPos[0],brushPos[1],cfg.brush/2,0,7);c.lineWidth=1.5;c.strokeStyle='rgba(245,245,244,.9)';c.stroke()}}
-let lineD='',reserveFrac=.15;
-const marginFrac=I=>clamp(I/(maxInk()*(reserveFrac||.1)));
-let lastRect=null,lineFlash=-1e9,sparks=[];
-const fxc=$('fxc'),fctx=fxc.getContext('2d');
+let reserveFrac=.2;
+const marginFrac=I=>clamp(I/(maxInk()*reserveFrac));
+let lineFlash=-1e9,sparks=[];
+const fxc=document.createElement('canvas'),fctx=fxc.getContext('2d');
+fxc.setAttribute('aria-hidden','true');fxc.style.cssText='position:fixed;left:0;top:0;width:100vw;height:100vh;pointer-events:none;z-index:35';
+document.body.appendChild(fxc);disp.push(()=>fxc.remove());
+const logoEl=()=>holdEls.find(e=>e.getBoundingClientRect().width>2)||holdEls[0];
+function ringRect(){const b=logoEl().getBoundingClientRect(),P=6;return{x:b.left-P,y:b.top-P,w:b.width+2*P,h:b.height+2*P}}
 function popFx(now){
-  lineFlash=now;buzz(25);setHint('');
-  if(!lastRect)return;const{x0,x1,top,bot}=lastRect,cx=(x0+x1)/2,cy=(top+bot)/2,W=x1-x0,H=bot-top,per=2*(W+H);
-  const cols=['#F2B48C','#D9895F','#F5F5F4'];
-  for(let n=0;n<60;n++){let t=Math.random()*per,x,y;
-    if(t<W){x=x0+t;y=top}else if(t<W+H){x=x1;y=top+(t-W)}else if(t<2*W+H){x=x1-(t-W-H);y=bot}else{x=x0;y=bot-(t-2*W-H)}
-    const a=Math.atan2(y-cy,x-cx)+(Math.random()-.5)*.6,sp=40+Math.random()*120;
-    sparks.push({x,y,vx:Math.cos(a)*sp,vy:Math.sin(a)*sp,t0:now+Math.random()*120,life:.6+Math.random()*.6,s:1.6+Math.random()*2.6,c:cols[n%3]})}}
-function drawFx(now){
-  const card=$('card'),w=card.clientWidth,h=card.clientHeight,k=DPR;
-  if(fxc.width!==Math.round(w*k)||fxc.height!==Math.round(h*k)){fxc.width=Math.round(w*k);fxc.height=Math.round(h*k)}
-  fctx.setTransform(k,0,0,k,0,0);fctx.clearRect(0,0,w,h);
-  sparks=sparks.filter(p=>(now-p.t0)/1000<p.life);
-  for(const p of sparks){const t=(now-p.t0)/1000;if(t<0)continue;fctx.globalAlpha=1-t/p.life;fctx.fillStyle=p.c;fctx.beginPath();fctx.arc(p.x+p.vx*t,p.y+p.vy*t+30*t*t,p.s,0,7);fctx.fill()}
-  fctx.globalAlpha=1}
-function drawInk(){
-  const sv=$('lineSvg').getBoundingClientRect(),st=stage.getBoundingClientRect(),pl=$('play').getBoundingClientRect();
-  const sc=st.width/700,dx=st.left-sv.left+WMDOT.x*sc,dy=st.top-sv.top+WMDOT.y*sc,th=lineThick();
-  const vis=clamp(pl.height/playTarget);
-  const ln=$('inkLine'),base=$('inkBase'),tk=$('tick');
-  const x0=pl.left-sv.left,x1=dx,top=pl.top-sv.top,bot=pl.bottom-sv.top;lastRect={x0,x1,top,bot};
-  const r=Math.max(1,Math.min(30,(bot-top)/2-1,(x1-x0)/2-1));
-  if(vis<.03||bot-top<8){ln.style.opacity=0;base.style.opacity=0;tk.style.display='none';return}
-  const d=`M${x1},${dy} V${bot-r} A${r},${r} 0 0 1 ${x1-r},${bot} H${x0+r} A${r},${r} 0 0 1 ${x0},${bot-r} V${top+r} A${r},${r} 0 0 1 ${x0+r},${top} H${x1-r} A${r},${r} 0 0 1 ${x1},${top+r}`;
-  if(d!==lineD){lineD=d;ln.setAttribute('d',d);base.setAttribute('d',d);ln._tot=ln.getTotalLength()}
-  ln.setAttribute('stroke-width',th);base.setAttribute('stroke-width',th);
-  const tot=ln._tot,M=maxInk(),I=S.ink,stemLen=Math.max(0,top+r-dy);
-  reserveFrac=clamp(stemLen/tot,0,.6);
-  const la=0,lb=clamp(I/M)*tot;
-  const frac=clamp(I/M);
-  ln.setAttribute('stroke-dasharray',Math.max(0,lb-la)+' '+(tot*3));ln.setAttribute('stroke-dashoffset',-la);
-  const empty=lb-la<1;
-  ln.style.opacity=empty?0:vis;base.style.opacity=.55*vis;
-  {const fl=1-clamp((performance.now()-lineFlash)/600);ln.style.filter=(cfg.glow>0||fl>0)?`drop-shadow(0 0 ${cfg.glow*(.3+.7*frac)+34*fl}px #D9895F)`:'none'}
-  tk.style.display='none'}
-let frameFrac=0,frameAlpha=1;
+  lineFlash=now;buzz(25);
+  const R=ringRect(),per=2*(R.w+R.h),cx=R.x+R.w/2,cy=R.y+R.h/2,cols=['#F2B48C','#D9895F','#F5F5F4'];
+  for(let n=0;n<46;n++){let t=Math.random()*per,x,y;
+    if(t<R.w){x=R.x+t;y=R.y}else if(t<R.w+R.h){x=R.x+R.w;y=R.y+(t-R.w)}else if(t<2*R.w+R.h){x=R.x+R.w-(t-R.w-R.h);y=R.y+R.h}else{x=R.x;y=R.y+R.h-(t-2*R.w-R.h)}
+    const a=Math.atan2(y-cy,x-cx)+(Math.random()-.5)*.6,sp=30+Math.random()*80;
+    sparks.push({x,y,vx:Math.cos(a)*sp,vy:Math.sin(a)*sp,t0:now+Math.random()*120,life:.6+Math.random()*.6,s:1.2+Math.random()*1.8,c:cols[n%3]})}}
+function ringDraw(frac,glow,show){
+  const R=ringRect();
+  holdEls.forEach((el,i)=>{const[sv,r]=rings[i];
+    if(!show||frac<=.005||el!==logoEl()){sv.style.display='none';return}
+    sv.style.display='';sv.style.left=R.x+'px';sv.style.top=R.y+'px';sv.setAttribute('width',R.w);sv.setAttribute('height',R.h);
+    r.setAttribute('x',1);r.setAttribute('y',1);r.setAttribute('width',R.w-2);r.setAttribute('height',R.h-2);r.setAttribute('rx',Math.min(14,(R.h-2)/2));
+    r.setAttribute('stroke-dasharray',frac+' 2');sv.style.filter=glow>0?'drop-shadow(0 0 '+glow+'px '+COP+')':'none'})}
+let frameFrac=0;
 function drawStage(now,dt){
-  sizeStage();const k=stage.width/700,c=sctx;c.setTransform(k,0,0,k,0,0);c.clearRect(0,0,700,300);
+  const w=innerWidth,h=innerHeight,k=DPR;
+  if(fxc.width!==Math.round(w*k)||fxc.height!==Math.round(h*k)){fxc.width=Math.round(w*k);fxc.height=Math.round(h*k)}
+  const c=fctx;c.setTransform(k,0,0,k,0,0);c.clearRect(0,0,w,h);
+  const el=logoEl(),b=el.getBoundingClientRect(),s=b.width/WMW,ox=b.left,oy=b.top,u=b.width/640;
+  const WD={x:ox+1315.5*s,y:oy+241*s,r:50.5*s*.95};
+  const crW=Math.max(b.width*1.5,120),crs=crW/CI.w,crH=CI.h*crs,crX=ox,crY=oy+b.height/2-crH/2;
+  const CD={x:crX+CI.dotx*crs,y:crY+CI.doty*crs,r:CI.dotr*crs};
   const wt=S.won?(now-S.winT0)/1000:-1;
   const Tl=dur(cfg.lightSpeed),Th=Tl+(RM?.01:.5),Tf=dur(cfg.flight),Ta=Th+Tf,Tc=dur(cfg.creditsFade),Tout=RM?.01:.7,Troll=dur(cfg.flight)*1.3;
   const Tb=Ta+Tc+cfg.creditsStay,Tend=Tb+Math.max(Troll,Tout)+(RM?.01:.9);
-  const active=S.won?(wt<Tb+.3):(S.done>0||drawerOpen||holding||!!completing);
+  const runActive=holding||drawerOpen||S.done>0||!!completing||!!retract||!!S.charged;
+  const active=S.won?(wt<Tb+.3):runActive;
   dimAmt+=clamp((active?1:0)-dimAmt,-dt*4,dt*4);
+  const showCanvasLogo=S.won||runActive||dimAmt>.02;
+  holdEls.forEach(e=>{e.style.opacity=showCanvasLogo?'0':''});
   let la=1;if(S.won){if(wt<Th)la=1;else if(wt<Tb)la=1-clamp((wt-Th)/Tout);else la=clamp((wt-(Tb+.3))/Tout)}
   const litA=(S.won&&wt>=Tb)?0:la;
   const base=lerp(1,.2,dimAmt)*la;
-  if(base>0||litA>0){
+  if(showCanvasLogo){
     for(let i=0;i<6;i++){
-      const sx=LET[i][0],sw=LET[i][1]-LET[i][0];
-      const dx=WM.x+sx*WM.s,dy=WM.y,dw=sw*WM.s,dh=WMH*WM.s;
+      const sx=LET[i][0],sw=LET[i][1]-LET[i][0],dx=ox+sx*s,dy=oy,dw=sw*s,dh=WMH*s;
       c.globalAlpha=base;c.drawImage(wmImg,sx,0,sw,WMH,dx,dy,dw,dh);
       const p=litStart[i]?clamp((now-litStart[i])/(Tl*1000)):(i<S.done?1:0);
-      if(p>0&&litA>0){c.globalAlpha=litA;const ep=ease(p);c.drawImage(tint,sx,WMH*(1-ep),sw,WMH*ep,dx,dy+dh*(1-ep),dw,dh*ep)}}}
+      if(p>0&&litA>0){c.globalAlpha=litA;const ep=ease(p);c.drawImage(tint,sx,WMH*(1-ep),sw,WMH*ep,dx,dy+dh*(1-ep),dw,dh*ep)}}
+    c.globalAlpha=1;
+    if(S.won&&wt>-.3&&wt<Tb&&wmRing){
+      const rv=ease(clamp((wt+.25)/.85)),pd=wmRing.pad*s,x0=ox-pd,ww=WMW*s+2*pd;
+      c.save();c.beginPath();c.rect(x0,0,ww*rv,h);c.clip();
+      c.shadowColor='#F2B48C';c.shadowBlur=(4+3*Math.sin(wt*8))*k;c.globalAlpha=la;
+      c.drawImage(wmRing,x0,oy-pd,ww,WMH*s+2*pd);c.restore();
+      const t0=Tl*.5;
+      for(let i=0;i<26;i++){const t=wt-t0,ang=(i*2.399)%(Math.PI*2),sp=(60+((i*37)%70))*u*.7,life=.8+((i*13)%5)*.09;
+        if(t>0&&t<life){c.globalAlpha=1-t/life;c.fillStyle=i%3?'#F2B48C':'#F5F5F4';c.beginPath();c.arc(WD.x+Math.cos(ang)*sp*t,WD.y+Math.sin(ang)*sp*t+24*u*t*t,1.2+(i%3)*.7,0,7);c.fill()}}
+      c.globalAlpha=1}
+    // dot
+    const dl=S.won?clamp(wt/Tl):0;let pos=WD,r=WD.r,rollA=0,rollAng=0;
+    if(S.won&&wt>=Th){
+      if(wt<Tb){const f=ease(clamp((wt-Th)/Tf)),P0=WD,P2=CD,Cc={x:(P0.x+P2.x)/2+10*u,y:Math.min(P0.y,P2.y)-95*u};
+        pos={x:(1-f)*(1-f)*P0.x+2*(1-f)*f*Cc.x+f*f*P2.x,y:(1-f)*(1-f)*P0.y+2*(1-f)*f*Cc.y+f*f*P2.y};r=lerp(P0.r,P2.r,f)}
+      else{const f=ease(clamp((wt-Tb)/Troll));pos={x:lerp(CD.x,WD.x,f),y:lerp(CD.y,WD.y,f)};r=lerp(CD.r,WD.r,f);
+        rollAng=Math.hypot(pos.x-CD.x,pos.y-CD.y)/((CD.r+WD.r)/2)-Math.PI/2;rollA=clamp(f*8)*clamp((1-f)*8)}}
+    const mf=S.won?S.margin:1,glowK=cfg.glow*(.3+.7*mf)*.4;
+    const gf=S.won?(wt<Tb+Troll?1:1-clamp((wt-Tb-Troll)/.5)):0;
+    c.save();c.globalAlpha=lerp(1,.2+.8*dl,dimAmt);c.fillStyle=DOT;if(dl>0&&glowK>0){c.shadowColor=DOT;c.shadowBlur=glowK*k*dl*gf}
+    c.beginPath();c.arc(pos.x,pos.y,r,0,Math.PI*2);c.fill();c.restore();
+    if(rollA>0){c.save();c.globalAlpha=rollA*.7;c.fillStyle='#FFE9D6';c.beginPath();c.arc(pos.x+Math.cos(rollAng)*r*.55,pos.y+Math.sin(rollAng)*r*.55,r*.2,0,7);c.fill();c.restore()}
+    // credits
+    if(S.won&&wt>=Ta){const out=wt>=Tb?1-clamp((wt-Tb)/Tout):1;c.globalAlpha=clamp((wt-Ta)/Tc)*out;c.drawImage(crImg,crX,crY,crW,crH);c.globalAlpha=1}
+    if(S.won&&wt>=Ta+Tc&&wt<Tb){
+      const txt='Emergency fund '+Math.round(S.margin*100)+'%  ·  Over budget '+Math.round(S.waste*100)+'%';
+      c.font='600 12px system-ui,-apple-system,sans-serif';const tw=c.measureText(txt).width,ty=b.bottom+34;
+      c.globalAlpha=clamp((wt-Ta-Tc)/.4)*(wt>Tb-.4?clamp((Tb-wt)/.4):1);c.fillStyle='#292524';c.strokeStyle='#3F3A37';
+      c.beginPath();c.roundRect?c.roundRect(ox-6,ty-14,tw+24,26,13):c.rect(ox-6,ty-14,tw+24,26);c.fill();c.stroke();
+      c.fillStyle='#DCA289';c.textBaseline='middle';c.fillText(txt,ox+6,ty-1);c.globalAlpha=1}}
+  // sparks
+  sparks=sparks.filter(p=>(now-p.t0)/1000<p.life);
+  for(const p of sparks){const t=(now-p.t0)/1000;if(t<0)continue;c.globalAlpha=1-t/p.life;c.fillStyle=p.c;c.beginPath();c.arc(p.x+p.vx*t,p.y+p.vy*t+30*t*t,p.s,0,7);c.fill()}
   c.globalAlpha=1;
-  // completion flourish: copper outline traces the letters, then a spark burst from the dot
-  if(S.won&&wt>-.3&&wt<Tb&&wmRing){
-    const rv=ease(clamp((wt+.25)/.85)),pd=wmRing.pad*WM.s,x0=WM.x-pd,w=(WMW*WM.s+2*pd);
-    c.save();c.beginPath();c.rect(x0,0,w*rv,300);c.clip();
-    c.shadowColor='#F2B48C';c.shadowBlur=(8+6*Math.sin(wt*8))*k;c.globalAlpha=la;
-    c.drawImage(wmRing,x0,WM.y-pd,w,WMH*WM.s+2*pd);c.restore();
-    const t0=Tl*.5;
-    for(let i=0;i<26;i++){const t=wt-t0,ang=(i*2.399)%(Math.PI*2),sp=60+((i*37)%70),life=.8+((i*13)%5)*.09;
-      if(t>0&&t<life){c.globalAlpha=1-t/life;c.fillStyle=i%3?'#F2B48C':'#F5F5F4';c.beginPath();c.arc(WMDOT.x+Math.cos(ang)*sp*t,WMDOT.y+Math.sin(ang)*sp*t+24*t*t,2+(i%3),0,7);c.fill()}}
-    c.globalAlpha=1}
-  // idle animation: the dot hops twice, then rests
-  const idleAmt=(cfg.idle&&!RM&&!S.won)?clamp(1-dimAmt)*cfg.idleStrength/100:0;
-  let bY=0,bsx=1,bsy=1;
-  if(idleAmt>.01){
-    const u=((now/1000)%cfg.idleEvery)/1.1;
-    if(u<1){const s=Math.abs(Math.sin(2*Math.PI*u));bY=-22*idleAmt*s*(1-.55*u);
-      if(s<.14){const q=1-s/.14;bsx=1+.16*idleAmt*q;bsy=1-.16*idleAmt*q}}}
-  // trophy frame (stays after the game; length = best margin)
+  // ring: gauge while playing, trophy otherwise
   let tgt;if(S.won){tgt=wt>=Ta&&wt<Tb?S.margin:(wt>=Tb?S.best:S.prevBest)}else tgt=S.best;
   frameFrac+=clamp(tgt-frameFrac,-dt*.5,dt*.5);
-  const runActive=S.done>0||drawerOpen||holding||!!completing;
-  frameAlpha+=clamp((S.won||!runActive?1:0)-frameAlpha,-dt*3,dt*3);
-  const glowF=cfg.glow*(.3+.7*frameFrac);
-  if(frameFrac*FR.per>1&&frameAlpha>.01){c.save();c.globalAlpha=frameAlpha;c.strokeStyle=COP;c.lineWidth=5;c.lineCap='round';c.setLineDash([frameFrac*FR.per,FR.per*2]);
-    if(glowF>0){c.shadowColor=COP;c.shadowBlur=glowF*k}
-    const p=new Path2D(),x=FR.x,y=FR.y,w=FR.w,h=FR.h,rr=FR.r;
-    p.moveTo(x+rr,y);p.arcTo(x+w,y,x+w,y+h,rr);p.arcTo(x+w,y+h,x,y+h,rr);p.arcTo(x,y+h,x,y,rr);p.arcTo(x,y,x+w,y,rr);p.closePath();c.stroke(p);c.restore()}
-  // dot
-  const dl=S.won?clamp(wt/Tl):0;let pos=WMDOT,r=WMDOT.r,rollA=0,rollAng=0;
-  if(S.won&&wt>=Th){
-    if(wt<Tb){const f=ease(clamp((wt-Th)/Tf)),P0=WMDOT,P2=CRDOT,Cc={x:(P0.x+P2.x)/2+10,y:Math.min(P0.y,P2.y)-95};
-      pos={x:(1-f)*(1-f)*P0.x+2*(1-f)*f*Cc.x+f*f*P2.x,y:(1-f)*(1-f)*P0.y+2*(1-f)*f*Cc.y+f*f*P2.y};r=lerp(P0.r,P2.r,f)}
-    else{const f=ease(clamp((wt-Tb)/Troll));pos={x:lerp(CRDOT.x,WMDOT.x,f),y:lerp(CRDOT.y,WMDOT.y,f)};r=lerp(CRDOT.r,WMDOT.r,f);
-      rollAng=Math.hypot(pos.x-CRDOT.x,pos.y-CRDOT.y)/((CRDOT.r+WMDOT.r)/2)-Math.PI/2;rollA=clamp(f*8)*clamp((1-f)*8)}}
-  const mf=S.won?S.margin:1,glowK=cfg.glow*(.3+.7*mf);
-  const gf=S.won?(wt<Tb+Troll?1:1-clamp((wt-Tb-Troll)/.5)):0;
-  c.save();c.globalAlpha=lerp(1,.2+.8*dl,dimAmt);c.fillStyle=DOT;if(dl>0&&glowK>0){c.shadowColor=DOT;c.shadowBlur=glowK*k*dl*gf}c.beginPath();c.ellipse(pos.x,pos.y+bY+r*(1-bsy),r*bsx,r*bsy,0,0,Math.PI*2);c.fill();c.restore();
-  if(rollA>0){c.save();c.globalAlpha=rollA*.7;c.fillStyle='#FFE9D6';c.beginPath();c.arc(pos.x+Math.cos(rollAng)*r*.55,pos.y+Math.sin(rollAng)*r*.55,r*.2,0,7);c.fill();c.restore()}
-  // credits
-  const mt=$('marginTxt');let txt='';
-  if(S.won&&wt>=Ta){
-    const out=wt>=Tb?1-clamp((wt-Tb)/Tout):1;
-    const ca=clamp((wt-Ta)/Tc)*out;c.globalAlpha=ca;c.drawImage(crImg,CR.x,CR.y,CR.w,CR.h);c.globalAlpha=1}
-  if(S.won&&wt<Tb){if(wt>=Ta+Tc)txt='Emergency fund '+Math.round(S.margin*100)+'%  ·  Over budget '+Math.round(S.waste*100)+'%'}
-
-  if(mt.textContent!==txt)mt.textContent=txt;
-  c.globalAlpha=1;
+  const fl=1-clamp((now-lineFlash)/600);
+  if(runActive&&!S.won)ringDraw(clamp(S.ink/maxInk()),cfg.glow*.12+14*fl,true);
+  else ringDraw(frameFrac,cfg.glow*(.3+.7*frameFrac)/3,(S.played||S.best>0||S.won)&&frameFrac>.005&&!(S.won&&wt<Ta));
   if(S.won&&wt>=Tend)endWin()}
 
 /* ---------- main loop ---------- */
 let prev=performance.now();
 function tick(now){
   const dt=Math.min(.1,(now-prev)/1000);prev=now;
-  if(holding){const el=now-holdStart;if(el>350&&!drawerOpen)openDrawer();
-    if(!resumeOnly&&(el>350||drawerOpen)){S.ink=Math.min(maxInk(),S.ink+maxInk()/cfg.holdSec*dt)}}
+  if(holding){const el=now-holdStart;
+    if(el>250&&!resumeOnly)S.ink=Math.min(maxInk(),S.ink+maxInk()/cfg.holdSec*dt);
+    if(resumeOnly&&el>350&&S.charged&&!drawerOpen&&!completing)openDrawer()}
   if(S.ink>maxInk())S.ink=maxInk();
-  if(holding&&!resumeOnly&&!S.charged&&drawerOpen&&S.ink>=cfg.holdNeed/100*maxInk()-1e-6){S.charged=true;popFx(now)}
-  if(holding&&!resumeOnly&&!wasFull&&S.ink>=maxInk()-1){wasFull=true;buzz(15)}
-  if(retract&&!holding){S.ink=Math.max(retract.to,S.ink-maxInk()/cfg.holdSec*2.5*dt);if(S.ink<=retract.to+.01){S.ink=retract.to;const keep=S._painted||retract.to>1;retract=null;if(!keep)closeDrawer()}}
+  if(holding&&!resumeOnly&&!S.charged&&S.ink>=cfg.holdNeed/100*maxInk()-1e-6){S.charged=true;openDrawer();popFx(now)}
+  if(retract&&!holding){S.ink=Math.max(retract.to,S.ink-maxInk()/cfg.holdSec*2.5*dt);if(S.ink<=retract.to+.01){S.ink=retract.to;retract=null}}
   if(completing){const e=now-completing.t0;
     if(!completing.filled&&e>250){completing.filled=true;startFx(now);lctx.setTransform(1,0,0,1,0,0);lctx.clearRect(0,0,layer.width,layer.height);lctx.drawImage(letterCop,0,0);coverage=1}
     if(e>(RM?300:1600)){completing=null;advance()}}
-  {const onNow=holding||drawerOpen||S.done>0||!!completing||!!retract||S.won||dimAmt>.02;root.classList.toggle('cg-on',onNow);trophyDraw()}
-  layoutPlay();drawPaint(now);drawInk();drawFx(now);drawStage(now,dt);
+  root.classList.toggle('cg-open',drawerOpen);
+  drawPaint(now);drawStage(now,dt);
   $('covFill').style.width=(clamp(coverage/(cfg.threshold/100))*100)+'%';
-  const rv2=$('resV');if(rv2)rv2.textContent=Math.round(clamp(S.ink/(maxInk()*(reserveFrac||.1)))*100)+'%';
+  const rv2=$('resV');if(rv2)rv2.textContent=Math.round(marginFrac(S.ink)*100)+'%';
   const wv=$('wasteV');if(wv){const tot=curIns+curSpill;wv.textContent=(tot>0?Math.round(curSpill/tot*100):0)+'%'}
   if(!dead)rafId=requestAnimationFrame(tick)}
 
-function onCfg(){layoutPlay()}
 
+function onCfg(){}
 /* ---------- start ---------- */
 let loaded=0;
 function ready(){if(++loaded<2||dead)return;
