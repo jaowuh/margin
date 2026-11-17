@@ -317,3 +317,26 @@ input[type='date'] { color-scheme: dark; }
   .upcoming .btn.small { padding: 6px 9px; }
 }
 @media (prefers-reduced-motion: reduce) { * { animation: none !important; transition: none !important; } }
+
+/* ---- About card: hidden coloring minigame ---- */
+.cg-card{position:relative}
+.cg-logo{position:relative;touch-action:none;user-select:none;-webkit-user-select:none;-webkit-touch-callout:none;cursor:pointer;-webkit-tap-highlight-color:transparent}
+.cg-stage{display:block;width:100%;aspect-ratio:700/300}
+.cg-hint{min-height:20px;text-align:center;font-size:12.5px;color:var(--text-2);transition:opacity .3s}
+.cg-margin{text-align:center;font-weight:700;color:#DCA289;min-height:20px;font-size:14px}
+.cg-line{position:absolute;inset:0;width:100%;height:100%;pointer-events:none;overflow:visible;z-index:3}
+.cg-fx{position:absolute;inset:0;width:100%;height:100%;pointer-events:none;z-index:4}
+.cg-play{height:0;overflow:hidden;visibility:hidden;transition:height .45s cubic-bezier(.2,.8,.2,1),visibility 0s linear .45s}
+.cg-play.open{visibility:visible;transition:height .45s cubic-bezier(.2,.8,.2,1),visibility 0s}
+.cg-play-in{opacity:0;transform:scale(.88);transform-origin:50% 45%;transition:opacity .3s,transform .55s cubic-bezier(.2,1.5,.35,1)}
+.cg-play.live .cg-play-in{opacity:1;transform:none}
+.cg-play:not(.live) .cg-play-in{pointer-events:none}
+.cg-dh{display:flex;align-items:center;justify-content:space-between;font-size:13px;color:#A8A29E;margin:0 0 6px;height:28px}
+.cg-shape{display:flex;gap:12px;font-size:12px}
+.cg-shape b{color:#F5F5F4}
+.cg-close{background:#292524;border:1px solid #3F3A37;color:#F5F5F4;border-radius:999px;width:28px;height:28px;font-size:16px;line-height:1;padding:0;cursor:pointer}
+.cg-cov{height:4px;background:#3F3A37;border-radius:4px;margin:0 0 8px;position:relative}
+.cg-cov i{position:absolute;left:0;top:0;bottom:0;background:#B9684D;border-radius:4px;width:0}
+.cg-paint{display:block;margin:0 auto;aspect-ratio:1;touch-action:none;border-radius:20px;border:1px solid #3F3A37;-webkit-touch-callout:none;user-select:none;-webkit-user-select:none}
+.cg-replay{display:block;margin:4px auto 0;background:none;border:0;color:#DCA289;font-size:12.5px;text-decoration:underline;cursor:pointer}
+.cg-ver{margin:10px 0 0}

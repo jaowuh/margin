@@ -40,15 +40,10 @@ Vite + React + TypeScript, hand-written CSS (`src/styles.css`), self-hosted Nuni
 - Data is per device (no sync). Settings has JSON backup/restore and a 30-day backup reminder.
 - Not built: savings goals, light theme, per-month limits, non-monthly recurring bills, multi-device sync / staff access (would need an online database).
 
-## In progress: credits minigame (NOT built yet — still designing)
-Goal: a hidden minigame played on the big logo in **Settings → About**. Finishing it reveals the credits: `brand/credits-by-dr-jao.png` ("by Dr.Jao", same rounded lettering with a copper dot). The source image has a grey smudgy background and dark halo; it must be cut out onto transparency before use (cream letters + copper dot).
-
-Agreed so far:
-- It must play **in place on the logo** (no zoom, no new screen), be simple, and be about **balance / staying within your margin**.
-- Ending idea: the copper dot "hands off" into the dot between "Dr." and "Jao", and "by Dr.Jao" fades in.
-- Candidate mechanic the owner proposed: **hold on the logo** → the dot grows into a triangle fulcrum, a lever line appears with the word "margin" on the left arm, and copper liquid fills the letters while held (more fill = heavier). Release, then **tap** to drop coins on the right arm to balance. Proposed refinement: win when the coin side ends *slightly heavier*, inside a small shaded "margin" tolerance band; overshooting shows "over budget!" and resets the coins, not the fill.
-- The owner then asked for a mechanic that **rewards not spending too much** (a larger leftover margin = a better reveal). Candidates discussed, no final pick: budget jar (limited pour supply, leftover = margin), resist-the-sale, receipt strike-through, plug-the-leaks, and the lever with a limited purse of coins.
-
-Proposed defaults (not yet confirmed by the owner): everyone sees the credits regardless of score; ending flourish scales with the margin; best margin and "Replay credits" are saved on-device; soft haptics on phones, no sound; respect `prefers-reduced-motion` and offer a "Skip to credits" link; disable the browser's long-press menu on the logo.
-
-Process agreed: first build a **preview page (artifact) with sliders** for the animation variables (fill speed, coin weight, tolerance band, etc.) and a "Copy settings" button; the owner tunes it, sends the settings back, and only then is it implemented in the real app.
+## Credits minigame (built): Settings → About
+Hidden coloring game on the big logo (`src/components/CreditsGame.tsx` + `creditsGameEngine.ts`, styles `.cg-*` in styles.css, assets in `src/assets/`). Engine is plain imperative canvas code (`@ts-nocheck`), ported from a tuned preview; settings are hardcoded in `cfg` at the top of the engine (holdSec 1, inkMult 4, inkUse 3, brush 40, threshold 75, touchOffset 10, idle dot-hop every 4s, glow 12, lightSpeed .6, flight 1, creditsFade 1.4, creditsStay 5).
+- Hold the logo: a copper line grows from the dot down the right edge and around a hidden play area; release early and it retracts. When full (100%), the play area pops in.
+- Paint the letters m,a,r,g,i,n one at a time. Paint can go anywhere; spill = "Over budget". Header shows only "Emergency fund X%" / "Over budget Y%". Ink drains at inkUse× per px; the stem (dot→border) is the reserve, spent last. Pausing (×) then holding only resumes (no refill); running out of ink restarts the run.
+- Each finished letter outlines + lights up in the logo. After 6: credits (`credits-by-dr-jao.png`) fade in, dot flies to the "by Dr.Jao" dot, then rolls back; run resets.
+- Trophy = copper border around the logo; its length = best Emergency fund. Shown only after a completed run. Saved in localStorage `margin:credits-game` ({best, played}); "Replay credits" link appears after first completion. Respects prefers-reduced-motion.
+- No skip/debug buttons on purpose (keep it hidden).

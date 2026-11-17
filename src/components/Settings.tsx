@@ -7,6 +7,7 @@ import { useActive, useStore } from '../lib/store';
 import { clearStoredData } from '../lib/storage';
 import { createInitialData } from '../lib/seed';
 import { Field, useUI } from './ui';
+import CreditsGame from './CreditsGame';
 
 interface InstallEvent extends Event { prompt: () => Promise<void> }
 
@@ -146,7 +147,7 @@ export default function Settings() {
         <button className="btn danger" onClick={eraseAll}><Trash2 size={16} /> Erase all data</button>
       </section>
 
-      <p className="muted-text small center">Margin v1.0 · Data stays on this device · No account, no tracking</p>
+      <CreditsGame />
     </div>
   );
 }
