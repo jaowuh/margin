@@ -1,12 +1,12 @@
 import { useState } from 'react';
-import { ArrowDownLeft, ArrowUpRight, CalendarClock, Check, Scale, Wallet } from 'lucide-react';
+import { CalendarClock, Check, Scale } from 'lucide-react';
 import type { BalanceView, Transaction } from '../types';
 import * as A from '../lib/actions';
 import { categoryBreakdown, monthElapsedPct, monthSummary, upcomingItems, workspaceBalance } from '../lib/calc';
 import { daysInMonth, monthKeyOf, monthLabel, pct, peso, shortDate, todayStr } from '../lib/format';
 import { useActive, useStore } from '../lib/store';
 import type { View } from '../App';
-import { Donut, EmptyState, MonthSwitcher, ProgressBar, StatusPill, useUI } from './ui';
+import { Donut, EmptyState, MonthSwitcher, ProgressBar, useUI } from './ui';
 import { TxRow } from './TxRow';
 
 interface Props {
@@ -44,6 +44,12 @@ export default function Dashboard({ month, setMonth, go, editTx }: Props) {
   const netLabel = isBusiness ? 'Profit' : 'Net';
   const daysLeft = elapsed != null ? daysInMonth(month) - Number(today.slice(8, 10)) : null;
 
+  const verdict = sum.status === 'over' ? 'You’re over budget'
+    : sum.status === 'warn' ? 'Close to your limit'
+      : paceAhead ? 'Within budget, but spending fast' : 'You’re within budget';
+  const verdictTone = sum.status === 'ok' && paceAhead ? 'warn' : sum.status;
+  const perDay = elapsed != null && daysLeft != null && sum.remaining > 0 ? Math.round(sum.remaining / Math.max(1, daysLeft + 1)) : null;
+
   function quickPay(id: string) {
     const item = data.scheduled.find(s => s.id === id);
     if (!item) return;
@@ -64,22 +70,23 @@ export default function Dashboard({ month, setMonth, go, editTx }: Props) {
         <MonthSwitcher month={month} onChange={setMonth} />
       </div>
 
-      {/* ---- Budget used ---- */}
-      <section className="card hero" aria-label="Budget used">
-        <div className="hero-top">
-          <span className="eyebrow">BUDGET USED · {monthLabel(month).toUpperCase()}</span>
-          <StatusPill status={sum.status} ahead={paceAhead} />
-        </div>
+      {/* ---- Am I within budget? ---- */}
+      <section className={`card hero ${sum.budget > 0 ? sum.status : ''}`} aria-label="Budget status">
+        <div className="eyebrow">BUDGET · {monthLabel(month).toUpperCase()}</div>
         {sum.budget > 0 ? (
           <>
+            <h2 className={`verdict ${verdictTone}`}>{verdict}</h2>
             <div className="hero-figure">
-              <span className={`hero-pct ${sum.status}`}>{pct(sum.usedPct)}</span>
-              <span className="hero-of"><strong>{peso(sum.spent)}</strong> of {peso(sum.budget)}</span>
+              <span className={`hero-pct ${sum.status}`}>{sum.remaining >= 0 ? peso(sum.remaining) : peso(-sum.remaining)}</span>
+              <span className="hero-word">{sum.remaining >= 0 ? 'left' : 'over'}</span>
             </div>
+            <div className="hero-of"><strong>{peso(sum.spent)}</strong> spent of {peso(sum.budget)} · {pct(sum.usedPct)} used</div>
             <ProgressBar pct={sum.usedPct} status={sum.status} marker={elapsed} label="Budget used" />
             <div className="bar-legend">
-              <span>{sum.remaining >= 0 ? `${peso(sum.remaining)} left` : `${peso(-sum.remaining)} over`}</span>
-              {elapsed != null && <span>Day {Number(today.slice(8, 10))} of {daysInMonth(month)} · {daysLeft} day{daysLeft === 1 ? '' : 's'} left</span>}
+              {elapsed != null && daysLeft != null
+                ? <span>Day {Number(today.slice(8, 10))} of {daysInMonth(month)} · {daysLeft} day{daysLeft === 1 ? '' : 's'} left</span>
+                : <span />}
+              {perDay != null && <span>≈ {peso(perDay)} a day to stay within</span>}
             </div>
             <div className="hero-stats">
               <div>
@@ -103,17 +110,17 @@ export default function Dashboard({ month, setMonth, go, editTx }: Props) {
             title="Set your monthly budget"
             action={<button className="btn primary" onClick={() => go('budgets')}><Scale size={16} /> Set category limits</button>}
           >
-            Give each spending category a monthly limit and this card will show how much of your budget you’ve used.
+            Give each spending category a monthly limit and this card will tell you whether you’re still within budget.
             {sum.spent > 0 && <> So far this month you’ve spent <strong>{peso(sum.spent)}</strong>.</>}
           </EmptyState>
         )}
       </section>
 
-      {/* ---- Income / spent / net ---- */}
-      <section className="metrics">
-        <Metric icon={<ArrowDownLeft size={17} />} tone="green" title={`${incomeLabel} this month`} value={peso(sum.income)} />
-        <Metric icon={<ArrowUpRight size={17} />} tone="copper" title="Spent" value={peso(sum.spent)} />
-        <Metric icon={<Scale size={17} />} tone="neutral" title={netLabel} value={peso(sum.net)} negative={sum.net < 0} />
+      {/* ---- In / out, one slim line ---- */}
+      <section className="card strip" aria-label="This month">
+        <div><span>{incomeLabel}</span><strong>{peso(sum.income)}</strong></div>
+        <div><span>Spent</span><strong>{peso(sum.spent)}</strong></div>
+        <div><span>{netLabel}</span><strong className={sum.net < 0 ? 'neg' : ''}>{peso(sum.net)}</strong></div>
       </section>
 
       {/* ---- Balance ---- */}
@@ -124,9 +131,9 @@ export default function Dashboard({ month, setMonth, go, editTx }: Props) {
             <div className="balance-value">{peso(balance)}</div>
             <div className="muted-text small">{balanceCaption} · {ws.name}</div>
           </div>
-          <span className="balance-icon"><Wallet size={22} /></span>
+          {accounts.length > 0 && <button className="link-btn" onClick={() => setShowPicker(x => !x)}>{showPicker ? 'Done' : 'Change view'}</button>}
         </div>
-        {accounts.length > 0 && (
+        {accounts.length > 0 && showPicker && (
           <div className="balance-controls">
             <div className="segmented" role="group" aria-label="Balance view">
               {(['all', 'selected', 'primary'] as BalanceView[]).map(v => (
@@ -136,10 +143,9 @@ export default function Dashboard({ month, setMonth, go, editTx }: Props) {
                 </button>
               ))}
             </div>
-            <button className="link-btn" onClick={() => setShowPicker(s => !s)}>{showPicker ? 'Hide accounts' : 'Choose accounts'}</button>
           </div>
         )}
-        {showPicker && (
+        {showPicker && view === 'selected' && (
           <div className="picker">
             {accounts.map(a => {
               const on = selected.includes(a.id);
@@ -245,16 +251,6 @@ export default function Dashboard({ month, setMonth, go, editTx }: Props) {
           </section>
         </div>
       </div>
-    </div>
-  );
-}
-
-function Metric({ icon, tone, title, value, negative }: { icon: React.ReactNode; tone: string; title: string; value: string; negative?: boolean }) {
-  return (
-    <div className="card metric">
-      <span className={`metric-icon ${tone}`}>{icon}</span>
-      <span className="metric-title">{title}</span>
-      <strong className={`metric-value ${negative ? 'neg' : ''}`}>{value}</strong>
     </div>
   );
 }

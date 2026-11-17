@@ -332,3 +332,20 @@ input[type='date'] { color-scheme: dark; }
 .cg-cov{height:4px;background:#3F3A37;border-radius:4px;margin:0 0 8px;position:relative}
 .cg-cov i{position:absolute;left:0;top:0;bottom:0;background:#B9684D;border-radius:4px;width:0}
 .cg-paint{display:block;width:100%;aspect-ratio:1;touch-action:none;border-radius:20px;border:1px solid #3F3A37;-webkit-touch-callout:none;user-select:none;-webkit-user-select:none}
+
+/* ---- Overview: "am I within budget?" ---- */
+.hero.ok { background: linear-gradient(160deg, #26332c 0%, var(--surface) 62%); }
+.hero.warn { background: linear-gradient(160deg, #3a3020 0%, var(--surface) 62%); }
+.hero.over { background: linear-gradient(160deg, #40251f 0%, var(--surface) 62%); }
+.verdict { font-size: 22px; font-weight: 900; letter-spacing: -.6px; margin: 8px 0 12px; }
+.verdict.ok { color: var(--green); } .verdict.warn { color: var(--amber); } .verdict.over { color: var(--red); }
+.hero-figure { margin-bottom: 4px; align-items: baseline; gap: 10px; }
+.hero-pct { font-size: 48px; }
+.hero-word { font-size: 20px; font-weight: 800; color: var(--text-2); }
+.hero-of { margin-bottom: 14px; }
+.strip { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; padding: 12px 16px; }
+.strip > div { display: grid; gap: 2px; }
+.strip span { font-size: 12px; color: var(--text-2); font-weight: 700; }
+.strip strong { font-size: clamp(15px, 4.4vw, 20px); font-weight: 900; letter-spacing: -.5px; }
+.balance-value { font-size: 26px; letter-spacing: -1px; }
+@media (max-width: 900px) { .hero-pct { font-size: 40px; } .verdict { font-size: 20px; } }
