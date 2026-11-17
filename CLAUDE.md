@@ -72,3 +72,9 @@ Hidden coloring game (`src/components/CreditsGame.tsx` = painting card only; `cr
 
 ### Weapons (levels 1-7)
 - Each weapon maxes at level 7 with a signature effect: Arrows = Arrow Storm (wall of 7 parallel arrows, 4x fire rate), Magic = Meteor Rain (5+ meteors on random monsters each cast), Sword = Blade Tempest (second counter-rotating ring). Blades hit along their whole length (segment distance). `Duplicate` upgrade (max 4) adds +1 arrow/bolt/blade/meteor.
+
+## Game v2 (weapons, drops, events)
+- Hero carries max 3 weapons (job weapon counts): arrow, magic, sword, potion, lightning, each Lv 1-7 with a per-level effect (`LV` in `src/game/survivor.ts`). Arrows fly the way the hero faces (`P.dir`). Magic = homing bolts that hit one monster only.
+- Generic upgrades continue past weapon max: Duplicate (max 3, simultaneous +1), Multishot (max 3, sequential repeat), damage, fire rate (also spins blades faster), speed, HP, magnet. Blades capped at 6 per ring (12 with the L7 second ring).
+- Drops (~3% per kill): heart, magnet (vacuums all gems), shield (6s invincible), boots (8s speed). Champion every D/5 drops a chest (weapon, health or upgrade pick). Swarm every 0.3D. Spawn rate/density ramps up late.
+- `window.__game.debug` has `lvl, drop, swarm, mini, setT` for headless tests. HUD shows weapon chips and buff timers.

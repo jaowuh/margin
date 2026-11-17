@@ -83,7 +83,7 @@ export function PlayTab({ month }: { month: string }) {
 }
 
 type Phase = 'intro' | 'play' | 'result';
-interface Hud { hp: number; maxHp: number; xp: number; need: number; level: number; t: number; D: number; kills: number }
+interface Hud { hp: number; maxHp: number; xp: number; need: number; level: number; t: number; D: number; kills: number; weapons?: any[]; buffs?: any }
 
 function MonsterGame({ month, job, onClose }: { month: string; job: Job; onClose: () => void }) {
   const { data } = useStore();
@@ -93,6 +93,7 @@ function MonsterGame({ month, job, onClose }: { month: string; job: Job; onClose
   const [phase, setPhase] = useState<Phase>('play');
   const [hud, setHud] = useState<Hud | null>(null);
   const [choices, setChoices] = useState<any[] | null>(null);
+  const [lvTitle, setLvTitle] = useState('Level up!');
   const [banner, setBanner] = useState('');
   const [shake, setShake] = useState(false);
   const [paused, setPaused] = useState(false);
@@ -108,7 +109,7 @@ function MonsterGame({ month, job, onClose }: { month: string; job: Job; onClose
     if (dead || !canvas.current) return;
     game.current = startGame(canvas.current, profile, { duration: D, sprites }, {
       hud: setHud,
-      levelUp: (opts: any[], cb: (id: string) => void) => { pick.current = cb; setChoices(opts); },
+      levelUp: (opts: any[], cb: (id: string) => void, title?: string) => { pick.current = cb; setLvTitle(title || 'Level up!'); setChoices(opts); },
       banner: (m: string) => { setBanner(m); clearTimeout(bt); bt = setTimeout(() => setBanner(''), 2500); },
       shake: () => { setShake(true); setTimeout(() => setShake(false), 150); },
       end: ({ won, seconds, kills }: any) => {
@@ -142,6 +143,11 @@ function MonsterGame({ month, job, onClose }: { month: string; job: Job; onClose
                 <div className="mg-bar xp"><i style={{ width: `${(hud.xp / hud.need) * 100}%` }} /></div>
               </div>
               <div className="mg-top"><span>Lv {hud.level}</span><strong data-testid="mg-time">{fmt(Math.max(0, hud.D - hud.t))}</strong><span>{hud.kills} slain</span></div>
+              <div className="mg-chips">
+                {(hud.weapons || []).map((w: any) => <span key={w.id} className={`mg-chip ${w.level >= 7 ? 'max' : ''}`}>{w.name} {w.level >= 7 ? 'MAX' : w.level}</span>)}
+                {hud.buffs?.inv > 0 && <span className="mg-chip buff">🛡️ {Math.ceil(hud.buffs.inv)}s</span>}
+                {hud.buffs?.speed > 0 && <span className="mg-chip buff">⚡ {Math.ceil(hud.buffs.speed)}s</span>}
+              </div>
             </div>
           )}
           <button className="mg-pause" aria-label={paused ? 'Resume' : 'Pause'} onClick={() => { const v = !paused; setPaused(v); game.current?.pause(v); }}>{paused ? <Play size={16} /> : <Pause size={16} />}</button>
@@ -150,7 +156,7 @@ function MonsterGame({ month, job, onClose }: { month: string; job: Job; onClose
           {paused && !choices && <div className="mg-pausemsg">Paused</div>}
           {choices && (
             <div className="mg-levelup">
-              <h3>Level up!</h3>
+              <h3>{lvTitle}</h3>
               {choices.map(c => (
                 <button key={c.id} className="mg-choice" onClick={() => { pick.current?.(c.id); setChoices(null); }}>
                   <strong>{c.name}</strong><span>{c.desc}</span>{c.have > 0 && <em>Lv {c.have + 1}</em>}
