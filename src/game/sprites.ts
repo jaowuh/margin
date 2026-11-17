@@ -2,10 +2,10 @@ import sheetUrl from '../assets/game-sprites.png';
 import animUrl from '../assets/anim-sprites.png';
 // Art credits (only the frames used are packed into game-sprites.png and anim-sprites.png):
 //  - "32rogues" by Seth Boyles: slime, troll, ettin, dragon, sword.
-//  - "Elementals" Leaf Ranger, Water Priestess, Metal Bladekeeper by chierit (CC BY 4.0, https://chierit.itch.io): heroes.
+//  - "Elementals" Leaf Ranger, Water Priestess, Fire Knight by chierit (CC BY 4.0, https://chierit.itch.io): heroes.
 //  - "Monsters Creatures Fantasy" by Luiz Melo (CC0): goblin, skeleton, mushroom, flying eye.
 export interface Anim { frames: HTMLCanvasElement[]; flash: HTMLCanvasElement[]; w: number; h: number }
-const MANIFEST: Record<string, { w: number; h: number; run: { y: number; n: number }; idle?: { y: number; n: number } }> = {"archer": {"w": 51, "h": 44, "run": {"y": 0, "n": 10}, "idle": {"y": 44, "n": 12}}, "mage": {"w": 36, "h": 38, "run": {"y": 88, "n": 10}, "idle": {"y": 126, "n": 8}}, "swordsman": {"w": 53, "h": 44, "run": {"y": 164, "n": 8}, "idle": {"y": 208, "n": 8}}, "goblin": {"w": 38, "h": 38, "run": {"y": 252, "n": 8}}, "skeleton": {"w": 45, "h": 51, "run": {"y": 290, "n": 4}}, "mushroom": {"w": 26, "h": 39, "run": {"y": 341, "n": 8}}, "eye": {"w": 42, "h": 33, "run": {"y": 380, "n": 8}}};
+const MANIFEST: Record<string, { w: number; h: number; run: { y: number; n: number }; idle?: { y: number; n: number } }> = {"archer": {"w": 51, "h": 44, "run": {"y": 0, "n": 10}, "idle": {"y": 44, "n": 12}}, "mage": {"w": 36, "h": 38, "run": {"y": 88, "n": 10}, "idle": {"y": 126, "n": 8}}, "swordsman": {"w": 64, "h": 45, "run": {"y": 164, "n": 8}, "idle": {"y": 209, "n": 8}}, "goblin": {"w": 38, "h": 38, "run": {"y": 254, "n": 8}}, "skeleton": {"w": 45, "h": 51, "run": {"y": 292, "n": 4}}, "mushroom": {"w": 26, "h": 39, "run": {"y": 343, "n": 8}}, "eye": {"w": 42, "h": 33, "run": {"y": 382, "n": 8}}};
 export type SpriteName = 'archer' | 'mage' | 'swordsman';
 export interface Sprites {
   hero: Record<SpriteName, HTMLCanvasElement[]>;

@@ -6,8 +6,10 @@ const rnd = (a, b) => a + Math.random() * (b - a);
 
 const WEAPONS = { arrow: 'Arrows', magic: 'Magic', sword: 'Sword' };
 const WDESC = { arrow: 'More arrows per shot, and they pierce', magic: 'Bigger, stronger explosions', sword: 'More blades, wider circle' };
+const WMAX = { arrow: 'MAX: Arrow Storm, a non-stop wall of arrows', magic: 'MAX: Meteor Rain, meteors crash on monsters', sword: 'MAX: Blade Tempest, a second ring of blades' };
 const UPGRADES = [
-  { id: 'arrow', max: 6 }, { id: 'magic', max: 6 }, { id: 'sword', max: 6 },
+  { id: 'arrow', max: 7 }, { id: 'magic', max: 7 }, { id: 'sword', max: 7 },
+  { id: 'dup', name: 'Duplicate', desc: '+1 arrow, magic bolt and blade for all your weapons', max: 4 },
   { id: 'dmg', name: 'Sharper edge', desc: '+25% damage to everything', max: 8 },
   { id: 'rate', name: 'Quick hands', desc: '+20% fire rate', max: 8 },
   { id: 'speed', name: 'Swift boots', desc: '+10% move speed', max: 5 },
@@ -28,13 +30,21 @@ export function startGame(canvas, profile, opts, ui) {
 
   const P = { x: 0, y: 0, hp: profile.maxHp, maxHp: profile.maxHp, inv: 0, face: 1, level: 1, xp: 0, need: 8 };
   const main = PRIMARY[profile.job] || 'arrow';
-  const up = { arrow: 0, magic: 0, sword: 0, dmg: 0, rate: 0, speed: 0, hp: 0, magnet: 0, heal: 0 };
+  const up = { arrow: 0, magic: 0, sword: 0, dup: 0, dmg: 0, rate: 0, speed: 0, hp: 0, magnet: 0, heal: 0 };
   up[main] = profile.rank; // your job's weapon starts at your saver level
   const wmul = k => (k === main ? [1.3, 1.5, 1.8][profile.rank - 1] : 1);
   const R = profile.rank, isMain = k => k === main;
   const after = [], novas = [];
   let novaCd = 5;
-  const booms = [];
+  const booms = [], meteors = [];
+  const distSeg = (px, py, x1, y1, x2, y2) => { const dx = x2 - x1, dy = y2 - y1, l2 = dx * dx + dy * dy || 1; const u = clamp(((px - x1) * dx + (py - y1) * dy) / l2); return Math.hypot(px - (x1 + dx * u), py - (y1 + dy * u)); };
+  const rings = () => {
+    const L = up.sword; if (L <= 0) return [];
+    const n = 1 + Math.floor(L / 2) + (isMain('sword') && R >= 2 ? 1 : 0) + up.dup, size = 44 * (1 + 0.05 * (L - 1));
+    const r = [{ rad: 42 + 3 * L, n, dir: 1, size }];
+    if (L >= 7) r.push({ rad: 98, n: n + 2, dir: -0.8, size });
+    return r;
+  };
   let t = 0, kills = 0, arrowCd = 0, magicCd = 0, orbAng = 0, spawnCd = 0, bossA = false, bossB = false, over = false;
   const enemies = [], shots = [], gems = [], pops = [];
   const keys = {};
@@ -101,8 +111,9 @@ export function startGame(canvas, profile, opts, ui) {
       P.xp -= P.need; P.level++; P.need = Math.round(8 + P.level * 5);
       const pool = UPGRADES.filter(u => up[u.id] < u.max).sort(() => Math.random() - 0.5).slice(0, 3);
       paused = true;
-      ui.levelUp(pool.map(u => WEAPONS[u.id] ? ({ id: u.id, name: up[u.id] ? WEAPONS[u.id] : 'New: ' + WEAPONS[u.id], desc: WDESC[u.id], have: up[u.id], weapon: true }) : ({ ...u, have: up[u.id] })), id => {
+      ui.levelUp(pool.map(u => WEAPONS[u.id] ? ({ id: u.id, name: up[u.id] ? WEAPONS[u.id] : 'New: ' + WEAPONS[u.id], desc: up[u.id] === 6 ? WMAX[u.id] : WDESC[u.id], have: up[u.id], weapon: true }) : ({ ...u, have: up[u.id] })), id => {
         up[id]++;
+        if (WMAX[id] && up[id] === 7) ui.banner(WMAX[id].split(',')[0].replace('MAX: ', '') + '!');
         if (id === 'hp') { P.maxHp += 30; P.hp = Math.min(P.maxHp, P.hp + 30); }
         if (id === 'heal') P.hp = Math.min(P.maxHp, P.hp + P.maxHp * 0.4);
         paused = false; last = performance.now();
@@ -142,23 +153,38 @@ export function startGame(canvas, profile, opts, ui) {
     for (const e of enemies) { const d = (e.x - P.x) ** 2 + (e.y - P.y) ** 2; if (d < bd) { bd = d; best = e; } }
     const inRange = best && bd < (Math.max(W, H) * 0.7) ** 2;
     const ang = inRange ? Math.atan2(best.y - P.y, best.x - P.x) : 0;
-    // arrows: fast, fan out, pierce
+    // arrows: fast, fan out, pierce. Level 7 = Arrow Storm
     arrowCd -= dt;
     if (up.arrow > 0 && arrowCd <= 0) {
       if (inRange) {
-        arrowCd = 0.85 / rate() / (isMain('arrow') && R >= 2 ? 1.15 : 1);
-        const L = up.arrow, n = 1 + Math.floor((L - 1) / 2) + (L >= 6 ? 1 : 0);
-        for (let i = 0; i < n; i++) { const a = ang + (i - (n - 1) / 2) * 0.14; shots.push({ kind: 'arrow', x: P.x, y: P.y, a, vx: Math.cos(a) * 420, vy: Math.sin(a) * 420, life: 1.2, dmg: dmg() * wmul('arrow') * (1 + 0.12 * (L - 1)) * (isMain('arrow') && R >= 3 && Math.random() < 0.25 ? 2 : 1), crit: isMain('arrow') && R >= 3, pierce: 1 + Math.floor(L / 2) + (isMain('arrow') && R >= 2 ? 1 : 0), hit: [] }); }
+        const L = up.arrow, storm = L >= 7;
+        arrowCd = 0.85 / rate() / (isMain('arrow') && R >= 2 ? 1.15 : 1) / (storm ? 4 : 1);
+        const n = storm ? 7 + up.dup : 1 + Math.floor((L - 1) / 2) + up.dup;
+        for (let i = 0; i < n; i++) {
+          const off = (i - (n - 1) / 2);
+          const a = storm ? ang + rnd(-0.03, 0.03) : ang + off * 0.14;
+          const px = storm ? P.x - Math.sin(ang) * off * 8 : P.x, py = storm ? P.y + Math.cos(ang) * off * 8 : P.y;
+          const crit = isMain('arrow') && R >= 3 && Math.random() < 0.25;
+          shots.push({ kind: 'arrow', x: px, y: py, a, vx: Math.cos(a) * 420, vy: Math.sin(a) * 420, life: 1.2, dmg: dmg() * wmul('arrow') * (1 + 0.12 * (L - 1)) * (storm ? 0.8 : 1) * (crit ? 2 : 1), crit: crit || storm, pierce: 1 + Math.floor(L / 2) + (isMain('arrow') && R >= 2 ? 1 : 0), hit: [] });
+        }
       } else arrowCd = 0.15;
     }
-    // magic: slow orb that explodes
+    // magic: slow orb that explodes. Level 7 = Meteor Rain
     magicCd -= dt;
     if (up.magic > 0 && magicCd <= 0) {
       if (inRange) {
         magicCd = 1.7 / rate();
-        const L = up.magic, n = L >= 4 ? 2 : 1;
+        const L = up.magic, n = (L >= 4 ? 2 : 1) + up.dup;
         for (let i = 0; i < n; i++) { const a = ang + (i - (n - 1) / 2) * 0.35; shots.push({ kind: 'magic', x: P.x, y: P.y, a, vx: Math.cos(a) * 210, vy: Math.sin(a) * 210, life: 1.6, dmg: dmg() * 2.3 * wmul('magic') * (1 + 0.18 * (L - 1)), rad: (46 + 7 * L) * (isMain('magic') && R >= 2 ? 1.25 : 1) }); }
+        if (L >= 7) {
+          const near = enemies.filter(e => e.hp > 0 && Math.abs(e.x - P.x) < W * 0.6 && Math.abs(e.y - P.y) < H * 0.6).sort(() => Math.random() - 0.5).slice(0, 5 + up.dup);
+          for (const e of near) meteors.push({ x: e.x, y: e.y, at: t + 0.6, rad: 64, dmg: dmg() * 2.2 * wmul('magic') });
+        }
       } else magicCd = 0.15;
+    }
+    for (let i = meteors.length - 1; i >= 0; i--) {
+      const m = meteors[i];
+      if (t >= m.at) { booms.push({ x: m.x, y: m.y, r: m.rad, life: 0.35, col: '#FF9A5A' }); for (const o of enemies) if (o.hp > 0 && (o.x - m.x) ** 2 + (o.y - m.y) ** 2 < (m.rad + o.r) ** 2) hurt(o, m.dmg); meteors.splice(i, 1); }
     }
     for (const s of shots) {
       s.x += s.vx * dt; s.y += s.vy * dt; s.life -= dt;
@@ -177,13 +203,17 @@ export function startGame(canvas, profile, opts, ui) {
     // sword nova (Super saver)
     if (isMain('sword') && R >= 3) { novaCd -= dt; if (novaCd <= 0) { novaCd = 5; novas.push({ x: P.x, y: P.y, life: 0.4 }); for (const o of enemies) if (o.hp > 0 && (o.x - P.x) ** 2 + (o.y - P.y) ** 2 < (115 + o.r) ** 2) hurt(o, dmg() * 3 * wmul('sword')); } }
     for (let i = novas.length - 1; i >= 0; i--) { novas[i].life -= dt; if (novas[i].life <= 0) novas.splice(i, 1); }
-    // sword: blades circling the hero
+    // sword: blades circling the hero. The whole blade hits. Level 7 = second ring
     if (up.sword > 0) {
       orbAng += dt * (3 + up.sword * 0.15);
-      const L = up.sword, n = 1 + Math.floor(L / 2) + (isMain('sword') && R >= 2 ? 1 : 0), rad = 42 + 3 * L;
-      for (let k = 0; k < n; k++) {
-        const a = orbAng + (k * Math.PI * 2) / n, ox = P.x + Math.cos(a) * rad, oy = P.y + Math.sin(a) * rad;
-        for (const e of enemies) if (e.hp > 0 && (e.x - ox) ** 2 + (e.y - oy) ** 2 < (e.r + 12 + L) ** 2 && (!e.swCd || e.swCd < t)) { e.swCd = t + 0.4; hurt(e, dmg() * 1.5 * wmul('sword') * (1 + 0.15 * (L - 1))); }
+      const L = up.sword;
+      for (const ring of rings()) {
+        const half = ring.size * 0.46;
+        for (let k = 0; k < ring.n; k++) {
+          const a = orbAng * ring.dir + (k * Math.PI * 2) / ring.n, ux = Math.cos(a), uy = Math.sin(a);
+          const cx = P.x + ux * ring.rad, cy = P.y + uy * ring.rad;
+          for (const e of enemies) if (e.hp > 0 && (!e.swCd || e.swCd < t) && distSeg(e.x, e.y, cx - ux * half, cy - uy * half, cx + ux * half, cy + uy * half) < e.r + 3) { e.swCd = t + 0.4; hurt(e, dmg() * 1.5 * wmul('sword') * (1 + 0.15 * (L - 1))); }
+        }
       }
     }
     // cleanup + gems
@@ -272,22 +302,22 @@ export function startGame(canvas, profile, opts, ui) {
       else { c.save(); c.translate(x, y); c.rotate(s.a); c.fillStyle = s.crit ? '#FFC53D' : '#FFE08A'; if (s.crit) { c.shadowColor = '#FFC53D'; c.shadowBlur = 8; } c.fillRect(-9, -1.2, 14, 2.4); c.beginPath(); c.moveTo(5, -3.5); c.lineTo(10, 0); c.lineTo(5, 3.5); c.fill(); c.restore(); }
     }
     for (const nv of novas) { c.globalAlpha = clamp(nv.life * 2.5); c.strokeStyle = '#E8ECEF'; c.lineWidth = 6; c.beginPath(); c.arc(W / 2, H / 2, 115 * (1.1 - nv.life), 0, 7); c.stroke(); c.globalAlpha = 1; }
-    for (const b of booms) { c.globalAlpha = clamp(b.life * 3) * 0.7; c.fillStyle = '#B9A2FF'; c.beginPath(); c.arc(b.x + ox, b.y + oy, b.r * (1.15 - b.life), 0, 7); c.fill(); c.globalAlpha = 1; }
-    if (up.sword > 0) {
-      const n = 1 + Math.floor(up.sword / 2) + (isMain('sword') && R >= 2 ? 1 : 0), rad = 42 + 3 * up.sword;
-      for (let k = 0; k < n; k++) {
-        const a = orbAng + (k * Math.PI * 2) / n; c.save(); c.translate(W / 2 + Math.cos(a) * rad, H / 2 + Math.sin(a) * rad); c.rotate(a + Math.PI / 2);
-        if (SP) { c.imageSmoothingEnabled = false; c.rotate(Math.PI / 4); c.drawImage(SP.sword, -22, -22, 44, 44); c.restore(); continue; }
-        c.fillStyle = '#E8ECEF'; c.shadowColor = '#fff'; c.shadowBlur = 8; c.beginPath(); c.moveTo(0, -16); c.lineTo(4, 4); c.lineTo(-4, 4); c.fill(); c.shadowBlur = 0; c.fillStyle = '#B9684D'; c.fillRect(-6, 4, 12, 3); c.fillRect(-1.5, 7, 3, 6); c.restore();
+    for (const b of booms) { c.globalAlpha = clamp(b.life * 3) * 0.7; c.fillStyle = b.col || '#B9A2FF'; c.beginPath(); c.arc(b.x + ox, b.y + oy, b.r * (1.15 - b.life), 0, 7); c.fill(); c.globalAlpha = 1; }
+    for (const ring of rings()) {
+      for (let k = 0; k < ring.n; k++) {
+        const a = orbAng * ring.dir + (k * Math.PI * 2) / ring.n; c.save(); c.translate(W / 2 + Math.cos(a) * ring.rad, H / 2 + Math.sin(a) * ring.rad); c.rotate(a + Math.PI / 2);
+        if (SP) { c.imageSmoothingEnabled = false; c.rotate(Math.PI / 4); if (up.sword >= 7) { c.shadowColor = '#9fd4ff'; c.shadowBlur = 10; } const z = ring.size; c.drawImage(SP.sword, -z / 2, -z / 2, z, z); c.restore(); continue; }
+        c.fillStyle = '#E8ECEF'; c.beginPath(); c.moveTo(0, -16); c.lineTo(4, 4); c.lineTo(-4, 4); c.fill(); c.restore();
       }
     }
+    for (const m of meteors) { const f = clamp(1 - (m.at - t) / 0.6); c.globalAlpha = 0.25 + 0.35 * f; c.strokeStyle = '#FF9A5A'; c.lineWidth = 2; c.beginPath(); c.arc(m.x + ox, m.y + oy, m.rad * (0.4 + 0.6 * f), 0, 7); c.stroke(); c.fillStyle = '#FF9A5A'; c.beginPath(); c.arc(m.x + ox, m.y + oy - (1 - f) * 120, 6, 0, 7); c.fill(); c.globalAlpha = 1; }
     // hero
     c.save(); c.translate(W / 2, H / 2); if (P.inv > 0 && Math.floor(t * 20) % 2) c.globalAlpha = 0.45;
     if (SP && SP.anim) {
       const moving = !!(joy || keys['a'] || keys['d'] || keys['w'] || keys['s']);
       const AN = (!moving && SP.anim[profile.job + '_idle']) || SP.anim[profile.job];
       const k = 1.0 + (profile.rank - 1) * 0.08, fi = Math.floor(t * (moving ? 12 : 8)) % AN.frames.length;
-      const flip = (P.face < 0) !== (!moving && profile.job === 'swordsman'); // swordsman idle frames face left
+      const flip = P.face < 0;
       const aura = ['#B9684D', '#cfd4d8', '#e0a94f'][profile.rank - 1];
       c.fillStyle = aura + '55'; c.beginPath(); c.ellipse(0, AN.h * k / 2 - 2, AN.w * k * 0.38, 6, 0, 0, 7); c.fill();
       c.imageSmoothingEnabled = false; c.save(); if (flip) c.scale(-1, 1);
@@ -321,5 +351,5 @@ export function startGame(canvas, profile, opts, ui) {
     canvas.removeEventListener('pointerdown', down); canvas.removeEventListener('pointermove', move); canvas.removeEventListener('pointerup', end); canvas.removeEventListener('pointercancel', end);
     window.removeEventListener('keydown', kd); window.removeEventListener('keyup', ku); document.removeEventListener('visibilitychange', vis);
   }
-  return { stop, pause: v => { paused = v; last = performance.now(); }, isPaused: () => paused, debug: { P, enemies, kill: () => { t = D * 0.95; } } };
+  return { stop, pause: v => { paused = v; last = performance.now(); }, isPaused: () => paused, debug: { P, enemies, kill: () => { t = D * 0.95; }, lvl: (k, L) => { up[k] = L; }, up, meteors } };
 }

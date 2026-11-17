@@ -66,6 +66,9 @@ Hidden coloring game (`src/components/CreditsGame.tsx` = painting card only; `cr
 - Saver rank 1/2/3 (Starter <15%, Steady 15–25%, Super ≥25%, matching the wizard) sets the title (e.g. Archer → Ranger → Skyhunter), +20 HP and +0.1 damage per rank, and the main weapon starts at level = rank (+30% damage for the main weapon). Other weapons come from level-up picks. Bottom nav now has 7 tabs.
 
 ### Sprites
-- Heroes: “Elementals” Leaf Ranger / Water Priestess / Metal Bladekeeper by chierit (CC BY 4.0, credit required, no reselling). Monsters goblin/skeleton/mushroom/flying eye: “Monsters Creatures Fantasy” by Luiz Melo (CC0). Slime, troll, ettin (Ogre King), dragon and the orbiting sword: “32rogues” by Seth Boyles (no redistributing the full pack, no NFT/blockchain, no generative-AI/ML projects).
+- Heroes: “Elementals” Leaf Ranger / Water Priestess / Fire Knight by chierit (CC BY 4.0, credit required, no reselling). Monsters goblin/skeleton/mushroom/flying eye: “Monsters Creatures Fantasy” by Luiz Melo (CC0). Slime, troll, ettin (Ogre King), dragon and the orbiting sword: “32rogues” by Seth Boyles (no redistributing the full pack, no NFT/blockchain, no generative-AI/ML projects).
 - Only used frames are packed into `src/assets/anim-sprites.png` (animated strips, sizes in the manifest inside `src/game/sprites.ts`) and `src/assets/game-sprites.png` (32px static tiles). Do not commit the original packs. Credit line lives on the Play tab.
 - Heroes look the same at every saver rank; rank shows as a bigger sprite and a ground aura (copper/silver/gold, gold also glows). Effects (arrows, magic, nova) and gems are drawn in code.
+
+### Weapons (levels 1-7)
+- Each weapon maxes at level 7 with a signature effect: Arrows = Arrow Storm (wall of 7 parallel arrows, 4x fire rate), Magic = Meteor Rain (5+ meteors on random monsters each cast), Sword = Blade Tempest (second counter-rotating ring). Blades hit along their whole length (segment distance). `Duplicate` upgrade (max 4) adds +1 arrow/bolt/blade/meteor.
