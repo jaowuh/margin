@@ -98,21 +98,24 @@ export function startGame(canvas, profile, opts, ui) {
     const big = o.mini ? 2.1 : 1;
     enemies.push({ type, x: P.x + Math.cos(a) * d, y: P.y + Math.sin(a) * d, r: T.r * big, hp: T.hp * hpScale, maxHp: T.hp * hpScale, sp: T.sp * (1 + progress() * 0.5) * (o.sp || 1), dmg: T.dmg * dmgScale * (o.mini ? 1.5 : 1), xp: T.xp * (o.mini ? 4 : 1), boss: !!T.boss || !!o.mini, mini: !!o.mini, hit: 0, ph: Math.random() * 6, slow: 0 });
   }
+  function pickType(p) {
+    const roll = Math.random();
+    let type = 'slime';
+    if (p > 0.08 && roll < 0.35) type = 'bat';
+    if (p > 0.12 && roll < 0.3) type = 'skeleton';
+    if (p > 0.25 && roll < 0.2) type = 'mushroom';
+    if (p > 0.2 && roll < 0.22) type = 'goblin';
+    if (p > 0.35 && roll < 0.05 + p * 0.12) type = 'ogre';
+    return type;
+  }
+  // Monsters come in bursts from one side. Gaps get shorter and bursts bigger; the next burst never waits for you to clear the last.
   function spawnWave(dt) {
-    spawnCd -= dt;
-    if (spawnCd > 0 || enemies.length > 320) return;
     const p = progress();
-    spawnCd = 0.1 + 1.5 * Math.pow(1 - p, 1.5);   // sparse at first, then a flood
-    const n = 1 + Math.floor(p * p * 8);
-    for (let i = 0; i < n; i++) {
-      const roll = Math.random();
-      let type = 'slime';
-      if (p > 0.08 && roll < 0.35) type = 'bat';
-      if (p > 0.12 && roll < 0.3) type = 'skeleton';
-      if (p > 0.25 && roll < 0.2) type = 'mushroom';
-      if (p > 0.2 && roll < 0.22) type = 'goblin';
-      if (p > 0.35 && roll < 0.05 + p * 0.12) type = 'ogre';
-      spawn(type);
+    spawnCd -= dt;
+    if (spawnCd <= 0 && enemies.length < 320) {
+      spawnCd = 1.8 + 5.5 * Math.pow(1 - p, 1.3);
+      const n = 3 + Math.floor(Math.pow(p, 1.6) * 60) + Math.floor(p * 4), a0 = rnd(0, Math.PI * 2), main = pickType(p);
+      for (let i = 0; i < n; i++) spawn(Math.random() < 0.7 ? main : pickType(p), { angle: a0 + rnd(-0.7, 0.7), dist: Math.max(W, H) / 2 + 50 + rnd(0, 90) });
     }
     if (!bossA && p >= 0.5) { bossA = true; spawn('king'); ui.banner('The Ogre King approaches!'); }
     if (!bossB && p >= 0.9) { bossB = true; spawn('dragon'); ui.banner('The Dragon awakens!'); }
@@ -199,17 +202,25 @@ export function startGame(canvas, profile, opts, ui) {
     const n = Math.min(want, near.length);
     for (let i = 0; i < n; i++) {
       const e = near[i], a = Math.atan2(e.y - P.y, e.x - P.x), up2 = isMain('magic') && R >= 2 ? 1.25 : 1;
-      shots.push({ kind: 'magic', x: P.x, y: P.y, a, sp: 260 * up2, target: e, turn: 5 * up2, life: 2, dmg: dmg() * 3.2 * wmul('magic') * (1 + 0.14 * (L - 1)), reseek: isMain('magic') && R >= 3 ? 1 : 0 });
+      shots.push({ kind: 'magic', x: P.x, y: P.y, a, sp: 150 * up2, target: e, turn: 4 * up2, life: 3.6, dmg: dmg() * 3.2 * wmul('magic') * (1 + 0.14 * (L - 1)), reseek: isMain('magic') && R >= 3 ? 1 : 0 });
     }
   }
   const anyInView = () => enemies.some(e => e.hp > 0 && inView(e));
+  const potionR = L => (34 + 5 * L) * (L >= 7 ? 1.3 : 1);
   function throwPotions() {
-    const L = up.potion, n = (1 + Math.floor(L / 3) + up.dup) * (L >= 7 ? 2 : 1);
-    const near = enemies.filter(e => e.hp > 0 && inView(e));
+    // Flasks land around you, roughly on the 8 compass directions. Low level = loose and random, high level = a tidy ring. Never on top of another puddle.
+    const L = up.potion, n = (1 + Math.floor(L / 3) + up.dup) * (L >= 7 ? 2 : 1), r = potionR(L), pred = clamp((L - 1) / 6);
+    const start = Math.floor(Math.random() * 8);
+    const taken = (x, y) => puddles.some(q => (q.x - x) ** 2 + (q.y - y) ** 2 < ((q.r + r) * 0.8) ** 2) || flasks.some(q => (q.x - x) ** 2 + (q.y - y) ** 2 < ((q.r + r) * 0.8) ** 2);
     for (let i = 0; i < n; i++) {
-      let x, y;
-      if (near.length && Math.random() < 0.6) { const e = pick(near); x = e.x + rnd(-20, 20); y = e.y + rnd(-20, 20); } else { const a = rnd(0, 7), d = rnd(60, 170); x = P.x + Math.cos(a) * d; y = P.y + Math.sin(a) * d; }
-      flasks.push({ x0: P.x, y0: P.y, x, y, at: t + 0.55, dur: 0.55, L });
+      for (let tries = 0; tries < 6; tries++) {
+        const slot = tries === 0 && Math.random() < 0.35 + 0.65 * pred ? (start + Math.round((i * 8) / n)) % 8 : Math.floor(Math.random() * 8);
+        const a = slot * Math.PI / 4 + rnd(-1, 1) * (1 - pred) * 0.45, d = (70 + r) * (1 + (1 - pred) * rnd(-0.25, 0.35));
+        const x = P.x + Math.cos(a) * d, y = P.y + Math.sin(a) * d;
+        if (taken(x, y)) continue;
+        flasks.push({ x0: P.x, y0: P.y, x, y, at: t + 0.55, dur: 0.55, L, r });
+        break;
+      }
     }
   }
   function strikeLightning() {
@@ -268,13 +279,13 @@ export function startGame(canvas, profile, opts, ui) {
     }
     // magic: homing bolts, one monster each. Level 7 = Seeker Swarm
     magicCd -= dt;
-    if (up.magic > 0 && magicCd <= 0 && anyInView()) { magicCd = 1.15 / rate(); volley(fireMagic); }
+    if (up.magic > 0 && magicCd <= 0 && anyInView()) { magicCd = 2.1 / rate(); volley(fireMagic); }
     // potion
     potionCd -= dt;
-    if (up.potion > 0 && potionCd <= 0) { potionCd = 3 / rate(); volley(throwPotions); }
+    if (up.potion > 0 && potionCd <= 0) { potionCd = 3.2 / rate(); volley(throwPotions); }
     // lightning
     lightCd -= dt;
-    if (up.lightning > 0 && lightCd <= 0) { lightCd = 2 / rate(); volley(strikeLightning); }
+    if (up.lightning > 0 && lightCd <= 0) { lightCd = 3.6 / rate(); volley(strikeLightning); }
 
     for (const s of shots) {
       if (s.kind === 'magic') {
@@ -300,7 +311,7 @@ export function startGame(canvas, profile, opts, ui) {
     for (let i = flasks.length - 1; i >= 0; i--) {
       const f = flasks[i];
       if (t >= f.at) {
-        puddles.push({ x: f.x, y: f.y, r: (34 + 5 * f.L) * (f.L >= 7 ? 1.6 : 1), life: 3.5 + 0.35 * f.L, tick: 0, dmg: dmg() * 0.45 * (1 + 0.12 * (f.L - 1)) });
+        puddles.push({ x: f.x, y: f.y, r: f.r, life: 3.5 + 0.35 * f.L, tick: 0, dmg: dmg() * 0.45 * (1 + 0.12 * (f.L - 1)) });
         flasks.splice(i, 1);
       }
     }
