@@ -8,11 +8,13 @@ export default function CreditsGame() {
   const root = useRef<HTMLDivElement>(null);
   useEffect(() => {
     if (!root.current) return;
-    return mountCreditsGame(root.current, wmUrl, creditsUrl);
+    const holds = Array.from(document.querySelectorAll<HTMLElement>('.wordmark'));
+    holds.forEach(el => el.classList.add('cg-hold'));
+    const stop = mountCreditsGame(root.current, holds, wmUrl, creditsUrl);
+    return () => { stop(); holds.forEach(el => el.classList.remove('cg-hold', 'cg-trophy')); };
   }, []);
   return (
-    <div className="card cg-card" ref={root} data-cg="card">
-      <div className="card-head"><div><h2>About</h2></div></div>
+    <div className="card cg-card" aria-hidden="true" ref={root} data-cg="card">
       <div className="cg-logo" data-cg="logo">
         <canvas className="cg-stage" data-cg="stage" role="img" aria-label="margin" />
       </div>
@@ -22,7 +24,7 @@ export default function CreditsGame() {
         <div className="cg-play-in" data-cg="playIn">
           <div className="cg-dh">
             <span className="cg-shape" data-cg="shapeName" />
-            <button type="button" className="cg-close" data-cg="closeBtn" aria-label="Pause">×</button>
+            <button type="button" className="cg-close" tabIndex={-1} data-cg="closeBtn" aria-label="Pause">×</button>
           </div>
           <div className="cg-cov"><i data-cg="covFill" /></div>
           <canvas className="cg-paint" data-cg="paint" />
@@ -34,8 +36,6 @@ export default function CreditsGame() {
         <line data-cg="tick" stroke="#F5F5F4" strokeWidth="2.5" />
       </svg>
       <canvas className="cg-fx" data-cg="fxc" aria-hidden="true" />
-      <button type="button" className="cg-replay" data-cg="replayLnk" style={{ display: 'none' }}>Replay credits</button>
-      <p className="muted-text small center cg-ver">Margin v1.0 · Data stays on this device · No account, no tracking</p>
     </div>
   );
 }

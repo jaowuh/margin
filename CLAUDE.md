@@ -40,10 +40,10 @@ Vite + React + TypeScript, hand-written CSS (`src/styles.css`), self-hosted Nuni
 - Data is per device (no sync). Settings has JSON backup/restore and a 30-day backup reminder.
 - Not built: savings goals, light theme, per-month limits, non-monthly recurring bills, multi-device sync / staff access (would need an online database).
 
-## Credits minigame (built): Settings → About
-Hidden coloring game on the big logo (`src/components/CreditsGame.tsx` + `creditsGameEngine.ts`, styles `.cg-*` in styles.css, assets in `src/assets/`). Engine is plain imperative canvas code (`@ts-nocheck`), ported from a tuned preview; settings are hardcoded in `cfg` at the top of the engine (holdSec 1, inkMult 4, inkUse 3, brush 40, threshold 75, touchOffset 10, idle dot-hop every 4s, glow 12, lightSpeed .6, flight 1, creditsFade 1.4, creditsStay 5).
+## Credits minigame (built): hold the top logo (any page)
+Hidden coloring game. Holding the small header/sidebar wordmark (`.wordmark`) fades in a floating game card (fixed `.cg-card`, rendered once in App) whose big logo is the stage (`src/components/CreditsGame.tsx` + `creditsGameEngine.ts`, styles `.cg-*` in styles.css, assets in `src/assets/`). Engine is plain imperative canvas code (`@ts-nocheck`), ported from a tuned preview; settings are hardcoded in `cfg` at the top of the engine (holdSec 1, inkMult 4, inkUse 3, brush 40, threshold 75, touchOffset 10, idle dot-hop every 4s, glow 12, lightSpeed .6, flight 1, creditsFade 1.4, creditsStay 5).
 - Hold the logo: a copper line grows from the dot down the right edge and around a hidden play area; release early and it retracts. When full (100%), the play area pops in.
 - Paint the letters m,a,r,g,i,n one at a time. Paint can go anywhere; spill = "Over budget". Header shows only "Emergency fund X%" / "Over budget Y%". Ink drains at inkUse× per px; the stem (dot→border) is the reserve, spent last. Pausing (×) then holding only resumes (no refill); running out of ink restarts the run.
 - Each finished letter outlines + lights up in the logo. After 6: credits (`credits-by-dr-jao.png`) fade in, dot flies to the "by Dr.Jao" dot, then rolls back; run resets.
-- Trophy = copper border around the logo; its length = best Emergency fund. Shown only after a completed run. Saved in localStorage `margin:credits-game` ({best, played}); "Replay credits" link appears after first completion. Respects prefers-reduced-motion.
+- Trophy: copper border around the big logo in the card (length = best Emergency fund); the header wordmark also gets a copper ring (`.cg-trophy`) after first completion. Saved in localStorage `margin:credits-game` ({best, played}). Respects prefers-reduced-motion.
 - No skip/debug buttons on purpose (keep it hidden).

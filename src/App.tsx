@@ -12,6 +12,7 @@ import Settings from './components/Settings';
 import Transactions from './components/Transactions';
 import { TxModal } from './components/TxModal';
 import { useOnline } from './components/ui';
+import CreditsGame from './components/CreditsGame';
 
 export type View = 'overview' | 'transactions' | 'planner' | 'budgets' | 'accounts' | 'settings';
 
@@ -52,6 +53,7 @@ export default function App() {
 
   return (
     <div className="shell">
+      <CreditsGame />
       <aside className="sidebar">
         <img className="wordmark" src={`${base}icons/wordmark.png`} alt="margin." width={150} height={42} />
         <div className="eyebrow ws-label">WORKSPACE</div>

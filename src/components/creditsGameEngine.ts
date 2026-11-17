@@ -4,7 +4,7 @@
 const CI={w:847,h:204,dotx:468.75,doty:121.5,dotr:23.625};
 const STORE='margin:credits-game';
 const cfg={holdSec:1,inkMult:4,inkUse:3,brush:40,threshold:75,touchOffset:10,idle:true,idleStrength:60,idleEvery:4,holdNeed:100,glow:12,lightSpeed:0.6,flight:1,creditsFade:1.4,creditsStay:5,haptics:true,varied:false};
-export function mountCreditsGame(root, IMG_WM, IMG_CREDITS){
+export function mountCreditsGame(root, holdEls, IMG_WM, IMG_CREDITS){
 let dead=false, rafId=0;
 const disp=[]; const on=(el,ev,fn)=>{el.addEventListener(ev,fn);disp.push(()=>el.removeEventListener(ev,fn))};
 const timers=[]; 
@@ -94,11 +94,11 @@ function openDrawer(){if(drawerOpen)return;drawerOpen=true;layoutPlay()}
 function closeDrawer(){drawerOpen=false;painting=false;brushPos=null;layoutPlay()}
 
 /* hold on logo */
-const logo=$('logo');
-on(logo,'contextmenu',e=>e.preventDefault());
-on(logo,'pointerdown',e=>{
+const onH=(ev,fn)=>holdEls.forEach(el=>on(el,ev,fn));
+onH('contextmenu',e=>e.preventDefault());
+onH('pointerdown',e=>{
   if(S.won||completing)return;
-  e.preventDefault();try{logo.setPointerCapture(e.pointerId)}catch(_){}
+  e.preventDefault();try{e.currentTarget.setPointerCapture(e.pointerId)}catch(_){}
   holding=true;resumeOnly=!!S.charged;holdBase=S.ink;retract=null;wasFull=false;holdStart=performance.now();setHint('')});
 const endHold=()=>{
   if(!holding)return;holding=false;if(S.won)return;
@@ -107,7 +107,7 @@ const endHold=()=>{
   if(S.ink<=holdBase+1)return;
   if(S.ink>=need-1e-6){S.charged=true;setHint(S.ink>=maxInk()-1?'Line complete — paint!':'');saveS()}
   else{retract={to:holdBase};setHint('Keep holding until the line is complete.')}};
-on(logo,'pointerup',endHold);on(logo,'pointercancel',endHold);
+onH('pointerup',endHold);onH('pointercancel',endHold);
 on($('closeBtn'),'click',()=>closeDrawer());
 
 /* painting — paint goes everywhere; outside the letter counts as waste */
@@ -284,7 +284,6 @@ function drawStage(now,dt){
   if(S.won&&wt<Tb){if(wt>=Ta+Tc)txt='Emergency fund '+Math.round(S.margin*100)+'%  ·  Over budget '+Math.round(S.waste*100)+'%'}
 
   if(mt.textContent!==txt)mt.textContent=txt;
-  $('replayLnk').style.display=(S.played&&!S.won&&S.done===0)?'':'none';
   c.globalAlpha=1;
   if(S.won&&wt>=Tend)endWin()}
 
@@ -301,6 +300,7 @@ function tick(now){
   if(completing){const e=now-completing.t0;
     if(!completing.filled&&e>250){completing.filled=true;startFx(now);lctx.setTransform(1,0,0,1,0,0);lctx.clearRect(0,0,layer.width,layer.height);lctx.drawImage(letterCop,0,0);coverage=1}
     if(e>(RM?300:1600)){completing=null;advance()}}
+  {const onNow=holding||drawerOpen||S.done>0||!!completing||!!retract||S.won||dimAmt>.02;root.classList.toggle('cg-on',onNow);holdEls.forEach(el=>{el.classList.toggle('cg-trophy',S.played||S.best>0);el.style.setProperty('--cg-best',String(Math.max(S.best,.15)))})}
   layoutPlay();drawPaint(now);drawInk();drawFx(now);drawStage(now,dt);
   $('covFill').style.width=(clamp(coverage/(cfg.threshold/100))*100)+'%';
   const rv2=$('resV');if(rv2)rv2.textContent=Math.round(clamp(S.ink/(maxInk()*(reserveFrac||.1)))*100)+'%';
@@ -308,7 +308,6 @@ function tick(now){
   if(!dead)rafId=requestAnimationFrame(tick)}
 
 function onCfg(){layoutPlay()}
-on($('replayLnk'),'click',()=>{if(S.won||S.done>0||drawerOpen)return;S.done=6;S.won=true;S.prevBest=S.best;S.winT0=performance.now()+300});
 
 /* ---------- start ---------- */
 let loaded=0;
