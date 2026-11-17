@@ -20,6 +20,7 @@ const PRIMARY = { archer: 'arrow', mage: 'magic', swordsman: 'sword' };
 export function startGame(canvas, profile, opts, ui) {
   const D = opts.duration;                     // seconds for a full run
   const ctx = canvas.getContext('2d');
+  const SP = opts.sprites;
   const DPR = Math.min(2, window.devicePixelRatio || 1);
   let W = 0, H = 0, raf = 0, stopped = false, paused = false, last = performance.now();
   const resize = () => { const r = canvas.getBoundingClientRect(); W = r.width; H = r.height; canvas.width = Math.round(W * DPR); canvas.height = Math.round(H * DPR); };
@@ -122,7 +123,7 @@ export function startGame(canvas, profile, opts, ui) {
     // enemies
     for (const e of enemies) {
       const dx = P.x - e.x, dy = P.y - e.y, l = Math.hypot(dx, dy) || 1;
-      e.x += (dx / l) * e.sp * dt; e.y += (dy / l) * e.sp * dt; e.hit = Math.max(0, e.hit - dt); e.ph += dt * 6;
+      e.x += (dx / l) * e.sp * dt; e.y += (dy / l) * e.sp * dt; e.vx = dx; e.hit = Math.max(0, e.hit - dt); e.ph += dt * 6;
       if (l < e.r + 10 && P.inv <= 0) { P.hp -= e.dmg; P.inv = 0.6; ui.shake(); if (P.hp <= 0) return finish(false); }
     }
     // soft separation so monsters don't stack into one dot
@@ -215,6 +216,10 @@ export function startGame(canvas, profile, opts, ui) {
       const f = Math.sin(e.ph * 2) * 0.6; c.fillStyle = flash ? '#fff' : '#8B6FD0';
       c.beginPath(); c.moveTo(0, 0); c.quadraticCurveTo(-r * 1.9, -r * (0.9 + f), -r * 1.5, r * 0.5); c.quadraticCurveTo(-r * 0.6, r * 0.1, 0, r * 0.4); c.quadraticCurveTo(r * 0.6, r * 0.1, r * 1.5, r * 0.5); c.quadraticCurveTo(r * 1.9, -r * (0.9 + f), 0, 0); c.fill();
       c.beginPath(); c.arc(0, 0, r * 0.55, 0, 7); c.fill(); eyes(c, r * 0.25, -r * 0.05, 1.8, '#F66');
+    } else if (SP && (e.type === 'goblin' || e.type === 'ogre' || e.type === 'king')) {
+      const sz = e.r * 2.6, bob = Math.sin(e.ph) * 1.5, img = e.type === 'king' ? (flash ? SP.knightFlash : SP.knight) : (flash ? SP.orcFlash : SP.orc);
+      c.imageSmoothingEnabled = false; if (e.type === 'ogre') { c.filter = 'hue-rotate(-40deg) saturate(1.3)'; } if (e.type === 'king') { c.filter = 'sepia(1) hue-rotate(-30deg) saturate(3)'; }
+      c.save(); if (e.vx < 0) c.scale(-1, 1); c.drawImage(img, -sz / 2, -sz / 2 + bob, sz, sz); c.restore(); c.filter = 'none';
     } else if (e.type === 'goblin') {
       c.fillStyle = flash ? '#fff' : '#7FA83A'; c.beginPath(); c.arc(0, 0, r, 0, 7); c.fill();
       c.beginPath(); c.moveTo(-r * 0.8, -r * 0.2); c.lineTo(-r * 1.6, -r * 0.7); c.lineTo(-r * 0.6, -r * 0.7); c.fill(); c.beginPath(); c.moveTo(r * 0.8, -r * 0.2); c.lineTo(r * 1.6, -r * 0.7); c.lineTo(r * 0.6, -r * 0.7); c.fill();
@@ -258,14 +263,24 @@ export function startGame(canvas, profile, opts, ui) {
       const n = 1 + Math.floor(up.sword / 2) + (isMain('sword') && R >= 2 ? 1 : 0), rad = 42 + 3 * up.sword;
       for (let k = 0; k < n; k++) {
         const a = orbAng + (k * Math.PI * 2) / n; c.save(); c.translate(W / 2 + Math.cos(a) * rad, H / 2 + Math.sin(a) * rad); c.rotate(a + Math.PI / 2);
+        if (SP) { c.imageSmoothingEnabled = false; c.drawImage(SP.swordTile, -14, -20, 28, 28); c.restore(); continue; }
         c.fillStyle = '#E8ECEF'; c.shadowColor = '#fff'; c.shadowBlur = 8; c.beginPath(); c.moveTo(0, -16); c.lineTo(4, 4); c.lineTo(-4, 4); c.fill(); c.shadowBlur = 0; c.fillStyle = '#B9684D'; c.fillRect(-6, 4, 12, 3); c.fillRect(-1.5, 7, 3, 6); c.restore();
       }
     }
     // hero
     c.save(); c.translate(W / 2, H / 2); if (P.inv > 0 && Math.floor(t * 20) % 2) c.globalAlpha = 0.45;
+    if (SP) {
+      c.imageSmoothingEnabled = false; const bob = Math.sin(t * (joy || keys['a'] || keys['d'] || keys['w'] || keys['s'] ? 14 : 3)) * 1.6;
+      c.save(); c.scale(P.face, 1);
+      c.drawImage(SP.hero[profile.job][profile.rank - 1], -20, -22 + bob, 40, 40);
+      if (profile.job === 'swordsman') c.drawImage(SP.weapon.swordsman, 4, -8 + bob, 22, 22);
+      else c.drawImage(SP.weapon[profile.job], 6, -16 + bob, 30, 30);
+      c.restore();
+    } else {
     c.fillStyle = profile.color; c.beginPath(); c.arc(0, 0, 12, 0, 7); c.fill();
     c.fillStyle = '#171717'; c.beginPath(); c.arc(P.face * 4, -2, 2.4, 0, 7); c.arc(P.face * 4 + (P.face > 0 ? -7 : 7), -2, 2.4, 0, 7); c.fill();
     c.fillStyle = '#B9684D'; c.beginPath(); c.arc(0, -10, 6, Math.PI, 0); c.fill();
+    }
     c.restore();
     for (const p of pops) { c.globalAlpha = clamp(p.life * 2); c.fillStyle = '#fff'; c.font = '700 11px system-ui'; c.textAlign = 'center'; c.fillText(p.v, p.x + ox, p.y + oy - (0.5 - p.life) * 30); c.globalAlpha = 1; }
     if (joy) { c.strokeStyle = '#ffffff55'; c.lineWidth = 2; c.beginPath(); c.arc(joy.ox, joy.oy, 40, 0, 7); c.stroke(); const dx = joy.x - joy.ox, dy = joy.y - joy.oy, l = Math.min(40, Math.hypot(dx, dy)), a = Math.atan2(dy, dx); c.fillStyle = '#ffffff55'; c.beginPath(); c.arc(joy.ox + Math.cos(a) * l, joy.oy + Math.sin(a) * l, 16, 0, 7); c.fill(); }

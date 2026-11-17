@@ -6,6 +6,8 @@ import { useActive, useStore } from '../lib/store';
 import { chestFor, loadSave, profileFor, RELICS, writeSave } from '../game/profile';
 import type { GameSave, Tier } from '../game/profile';
 import { startGame } from '../game/survivor';
+import { loadSprites } from '../game/sprites';
+import type { Sprites } from '../game/sprites';
 
 const fmt = (s: number) => `${Math.floor(s / 60)}:${String(Math.floor(s % 60)).padStart(2, '0')}`;
 const duration = () => { try { const v = Number(localStorage.getItem('margin:game-test')); if (v > 0) return v; } catch { /* ignore */ } return 600; };
@@ -32,6 +34,8 @@ export function PlayTab({ month }: { month: string }) {
   const { ws } = useActive();
   const [save, setSave] = useState(loadSave);
   const [running, setRunning] = useState(false);
+  const [sp, setSp] = useState<Sprites | null>(null);
+  useEffect(() => { loadSprites().then(setSp).catch(() => null); }, []);
   const profile = profileFor(data, ws.id, month, save.job);
   const D = duration();
   const preview = chestFor(profile, false, D, D, 0);
@@ -44,6 +48,7 @@ export function PlayTab({ month }: { month: string }) {
         <div className="mg-jobs">
           {JOB_IDS.map(j => (
             <button key={j} className={`mg-job ${save.job === j ? 'on' : ''}`} style={{ borderColor: save.job === j ? JOBS[j].color : undefined }} onClick={() => choose(j)} aria-pressed={save.job === j}>
+              {sp && <img className="mg-sprite" alt="" src={sp.hero[j][profile.rank - 1].toDataURL()} />}
               <strong style={{ color: JOBS[j].color }}>{JOBS[j].titles[profile.rank - 1]}</strong>
               <span>{JOBS[j].weapon}</span>
               <em>{JOBS[j].titles.join(' → ')}</em>
@@ -97,8 +102,10 @@ function MonsterGame({ month, job, onClose }: { month: string; job: Job; onClose
 
   useEffect(() => {
     if (phase !== 'play' || !canvas.current) return;
-    let bt: any;
-    game.current = startGame(canvas.current, profile, { duration: D }, {
+    let bt: any, dead = false;
+    loadSprites().catch(() => null).then(sprites => {
+    if (dead || !canvas.current) return;
+    game.current = startGame(canvas.current, profile, { duration: D, sprites }, {
       hud: setHud,
       levelUp: (opts: any[], cb: (id: string) => void) => { pick.current = cb; setChoices(opts); },
       banner: (m: string) => { setBanner(m); clearTimeout(bt); bt = setTimeout(() => setBanner(''), 2500); },
@@ -115,7 +122,8 @@ function MonsterGame({ month, job, onClose }: { month: string; job: Job; onClose
       },
     });
     (window as any).__game = game.current;
-    return () => { game.current?.stop(); clearTimeout(bt); };
+    });
+    return () => { dead = true; game.current?.stop(); clearTimeout(bt); };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [phase]);
 

@@ -64,3 +64,6 @@ Hidden coloring game (`src/components/CreditsGame.tsx` = painting card only; `cr
 ### Jobs and Play tab (update)
 - Own **Play** tab (`PlayTab` in `MonsterGame.tsx`; Overview `GameCard` is just a shortcut). Player picks a job (saved in `margin:game`): archer (arrows, pierce), mage (slow exploding magic), swordsman (blades orbiting the hero). `profileFor(data, ws, month, job)`.
 - Saver rank 1/2/3 (Starter <15%, Steady 15–25%, Super ≥25%, matching the wizard) sets the title (e.g. Archer → Ranger → Skyhunter), +20 HP and +0.1 damage per rank, and the main weapon starts at level = rank (+30% damage for the main weapon). Other weapons come from level-up picks. Bottom nav now has 7 tabs.
+
+### Sprites
+- Art: Kenney “Roguelike Characters” (CC0, https://kenney.nl), sheet at `src/assets/roguelike-chars.png`, license copy in `public/kenney-license.txt`. `src/game/sprites.ts` slices 16px tiles (stride 17) and maps jobs/ranks to hero tiles; orc tile is used for goblin/ogre, armored knight for the Ogre King, a sword tile for orbiting blades. Slime, bat, dragon and effects are still drawn in code (not in the pack).
