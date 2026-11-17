@@ -20,9 +20,9 @@ const mem={};
 function lsGet(k){try{const v=localStorage.getItem(k);return v?JSON.parse(v):null}catch(e){return mem[k]||null}}
 function lsSet(k,v){try{localStorage.setItem(k,JSON.stringify(v))}catch(e){mem[k]=v}}
 let S={done:0,ink:0,best:0,won:false,margin:0,waste:0,played:false,spill:0,paint:0,prevBest:0};
-{const sv=lsGet(STORE)||{};if(typeof sv.best==='number')S.best=clamp(sv.best);S.played=!!sv.played}
+try{localStorage.removeItem(STORE)}catch(e){} // trophy is per-visit only; clear anything saved by earlier versions
 S.winT0=0;
-function saveS(){lsSet(STORE,{best:S.best,played:S.played})}
+function saveS(){}
 function saveC(){}
 
 /* ---------- assets / letters ---------- */
