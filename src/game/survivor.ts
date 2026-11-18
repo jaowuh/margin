@@ -28,7 +28,7 @@ const GENERIC = [
 ];
 const PRIMARY = { archer: 'arrow', mage: 'magic', swordsman: 'sword' };
 const GLYPH = { heart: '❤️', magnet: '🧲', shield: '🛡️', boots: '⚡', chest: '🎁' };
-const AX = 270, AY = 950; // the play field is a long hallway: x from -AX to AX, y from -AY to AY
+const AX = 1000, AY = 400; // the play field is a long hallway running across the map: x from -AX to AX, y from -AY to AY
 const MAX_BLADES_PER_RING = 6; // 12 blades total with the second ring
 
 export function startGame(canvas, profile, opts, ui) {
@@ -65,11 +65,13 @@ export function startGame(canvas, profile, opts, ui) {
   const inView = e => Math.abs(e.x - P.x) < W * 0.62 && Math.abs(e.y - P.y) < H * 0.62;
 
   /* ---------- input ---------- */
-  const down = e => { if (joy) return; canvas.setPointerCapture?.(e.pointerId); const r = canvas.getBoundingClientRect(); joy = { id: e.pointerId, ox: e.clientX - r.left, oy: e.clientY - r.top, x: e.clientX - r.left, y: e.clientY - r.top }; e.preventDefault(); };
+  const noSel = e => e.preventDefault();
+  const down = e => { window.getSelection?.()?.removeAllRanges(); if (joy) return; canvas.setPointerCapture?.(e.pointerId); const r = canvas.getBoundingClientRect(); joy = { id: e.pointerId, ox: e.clientX - r.left, oy: e.clientY - r.top, x: e.clientX - r.left, y: e.clientY - r.top }; e.preventDefault(); };
   const move = e => { if (!joy || e.pointerId !== joy.id) return; const r = canvas.getBoundingClientRect(); joy.x = e.clientX - r.left; joy.y = e.clientY - r.top; };
   const end = e => { if (joy && e.pointerId === joy.id) joy = null; };
   const kd = e => { keys[e.key.toLowerCase()] = true; if (['arrowup', 'arrowdown', 'arrowleft', 'arrowright', ' '].includes(e.key.toLowerCase())) e.preventDefault(); };
   const ku = e => { keys[e.key.toLowerCase()] = false; };
+  canvas.addEventListener('contextmenu', noSel); canvas.addEventListener('selectstart', noSel); canvas.addEventListener('dragstart', noSel);
   canvas.addEventListener('pointerdown', down); canvas.addEventListener('pointermove', move); canvas.addEventListener('pointerup', end); canvas.addEventListener('pointercancel', end);
   window.addEventListener('keydown', kd); window.addEventListener('keyup', ku);
   const vis = () => { if (document.hidden) paused = true; };
@@ -503,7 +505,7 @@ export function startGame(canvas, profile, opts, ui) {
 
   function stop() {
     stopped = true; cancelAnimationFrame(raf); ro.disconnect();
-    canvas.removeEventListener('pointerdown', down); canvas.removeEventListener('pointermove', move); canvas.removeEventListener('pointerup', end); canvas.removeEventListener('pointercancel', end);
+    canvas.removeEventListener('contextmenu', noSel); canvas.removeEventListener('selectstart', noSel); canvas.removeEventListener('dragstart', noSel); canvas.removeEventListener('pointerdown', down); canvas.removeEventListener('pointermove', move); canvas.removeEventListener('pointerup', end); canvas.removeEventListener('pointercancel', end);
     window.removeEventListener('keydown', kd); window.removeEventListener('keyup', ku); document.removeEventListener('visibilitychange', vis);
   }
   return {

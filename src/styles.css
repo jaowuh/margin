@@ -422,8 +422,9 @@ input[type='date'] { color-scheme: dark; }
 
 /* ---- Monster game ---- */
 .game-card .small-note{margin:8px 0 0;font-size:12px}
-.mg{position:fixed;inset:0;z-index:90;background:#171717;display:flex;align-items:center;justify-content:center;overflow:auto;touch-action:none}
-.mg-canvas{position:absolute;inset:0;width:100%;height:100%;touch-action:none;display:block}
+.mg{position:fixed;inset:0;z-index:90;background:#171717;display:flex;align-items:center;justify-content:center;overflow:auto;touch-action:none;user-select:none;-webkit-user-select:none;-webkit-touch-callout:none;-webkit-tap-highlight-color:transparent}
+.mg *{user-select:none;-webkit-user-select:none;-webkit-touch-callout:none;-webkit-tap-highlight-color:transparent}
+.mg-canvas{position:absolute;inset:0;width:100%;height:100%;touch-action:none;display:block;user-select:none;-webkit-user-select:none;outline:none}
 .mg-canvas.shake{transform:translate(2px,-2px)}
 .mg-panel{position:relative;width:min(92vw,380px);background:#292524;border:1px solid #3F3A37;border-radius:18px;padding:22px 18px;text-align:center;max-height:96vh;overflow:auto;touch-action:auto}
 .mg-x{position:absolute;top:10px;right:10px;background:none;border:0;color:#A8A29E;padding:6px}

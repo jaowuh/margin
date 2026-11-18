@@ -94,3 +94,4 @@ Hidden coloring game (`src/components/CreditsGame.tsx` = painting card only; `cr
 - v3.0: arena is a vertical hallway (AX 270, AY 950). Pickup drop chance 1.4% (2.2% when low HP). Late damage factor x(1-0.68p^1.1), upgrade +7%.
 - v3.1: base difficulty is harsh on purpose (HARD: mobs x1.2 HP, x1.3 damage, waves x1.2); relics are strong (about 2x their old size, plus `guard` = damage taken reduction) so collecting them makes runs tolerable. Tune HARD in survivor.ts and RELIC_FX in profile.ts.
 - Result screen: tap-to-open chest (wooden/bronze/silver/golden/epic). Lucky upgrade chance 10-25% (by luck) bumps one tier with +50% coins; relic comes from the final tier. Rewards are saved when the run ends.
+- v3.2: hallway runs across the map (AX 1000, AY 400). Game overlay blocks text selection, long-press callout and tap highlight (user-select none, selectstart/contextmenu prevented on the canvas).
