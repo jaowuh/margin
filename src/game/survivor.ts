@@ -12,7 +12,7 @@ const SLOTS = 3; // weapons a hero can carry at once
 const LV = {
   arrow: [null, 'Arrows fly the way you face', 'Faster arrows, pierce 1 more', '+1 arrow per shot', '15% chance for a double-damage crit', '+1 arrow per shot', 'Pierce 2 more monsters', 'MAX Arrow Storm: a non-stop wall of arrows'],
   magic: [null, 'Homing bolts that each hit one monster', 'Faster, sharper homing', '+1 bolt per cast', 'Small blast: monsters next to the target take 35% damage', '+1 bolt per cast', 'Bigger blast, 50% damage', 'MAX Seeker Swarm: every hit splits into 2 homing shards'],
-  sword: [null, 'Blades circle you', '+1 blade', 'Blades spin 25% faster', '+1 blade', 'Longer blades, wider orbit', '+1 blade', 'MAX Blade Tempest: a second ring spinning the other way'],
+  sword: [null, 'Blades circle you', '+1 blade', '+1 blade', 'Blades spin 25% faster', 'Longer blades, wider orbit', '+1 blade', 'MAX Blade Tempest: a second ring spinning the other way'],
   potion: [null, 'Flasks make slowing, poisonous puddles', 'Bigger puddles', 'Stronger poison (+40%)', '+1 flask', 'Puddles last 60% longer', '+1 flask, heavier slow, +20% poison', 'MAX Toxic Fog: flasks sweep a clockwise ring all around you'],
   lightning: [null, 'Lightning strikes and jumps to a nearby monster', '+1 chain', 'Wider strike zone', '+1 strike', 'Chains keep full damage', '+1 strike and +1 chain', 'MAX Thunderstorm: 4 strikes at once, chains to 6'],
 };
@@ -355,7 +355,7 @@ export function startGame(canvas, profile, opts, ui) {
     for (let i = novas.length - 1; i >= 0; i--) { novas[i].life -= dt; if (novas[i].life <= 0) novas.splice(i, 1); }
     // sword: blades circling the hero (the whole blade hits). Faster fire rate = faster spin
     if (up.sword > 0) {
-      orbAng += dt * (2.2 + 1.3 * rate()) * (up.sword >= 3 ? 1.25 : 1);
+      orbAng += dt * (2.2 + 1.3 * rate()) * (up.sword >= 4 ? 1.25 : 1);
       const L = up.sword;
       for (const ring of rings()) {
         const half = ring.size * 0.46;
@@ -393,7 +393,7 @@ export function startGame(canvas, profile, opts, ui) {
   }
   const rings = () => {
     const L = up.sword; if (L <= 0) return [];
-    const n = Math.min(MAX_BLADES_PER_RING, 1 + (L >= 2 ? 1 : 0) + (L >= 4 ? 1 : 0) + (L >= 6 ? 1 : 0) + (isMain('sword') && R >= 2 ? 1 : 0) + up.dup), size = 34 * (L >= 5 ? 1.25 : 1);
+    const n = Math.min(MAX_BLADES_PER_RING, 1 + (L >= 2 ? 1 : 0) + (L >= 3 ? 1 : 0) + (L >= 6 ? 1 : 0) + (isMain('sword') && R >= 2 ? 1 : 0) + up.dup), size = 34 * (L >= 5 ? 1.25 : 1);
     const r = [{ rad: 42 + (L >= 5 ? 14 : 0), n, dir: 1, size }];
     if (L >= 7) r.push({ rad: 90, n: Math.min(MAX_BLADES_PER_RING, n - up.dup + 2), dir: -0.8, size });
     return r;
