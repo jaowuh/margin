@@ -5,7 +5,7 @@ const clamp = (v, a = 0, b = 1) => Math.min(b, Math.max(a, v));
 const rnd = (a, b) => a + Math.random() * (b - a);
 const pick = arr => arr[Math.floor(Math.random() * arr.length)];
 
-const WNAMES = { arrow: 'Arrows', magic: 'Magic', sword: 'Sword', potion: 'Potion', lightning: 'Lightning' };
+const WNAMES = { arrow: 'Arrows', magic: 'Magic', sword: 'Sword', potion: 'Potion', lightning: 'Lightning', axe: 'Axe', boomerang: 'Boomerang', laser: 'Laser' };
 const WIDS = Object.keys(WNAMES);
 const SLOTS = 3; // weapons a hero can carry at once
 // What reaching each weapon level gives (index = level)
@@ -14,6 +14,9 @@ const LV = {
   magic: [null, 'Homing bolts that each hit one monster', 'Faster, sharper homing', '+1 bolt per cast', 'Small blast: monsters next to the target take 35% damage', '+1 bolt per cast', 'Bigger blast, 50% damage', 'MAX Seeker Swarm: every hit splits into 2 homing shards'],
   sword: [null, 'Blades circle you', '+1 blade', '+1 blade', 'Blades spin 25% faster', 'Longer blades, wider orbit', '+1 blade', 'MAX Blade Tempest: a second ring spinning the other way'],
   potion: [null, 'Flasks make slowing, poisonous puddles', 'Bigger puddles', 'Stronger poison (+40%)', '+1 flask', 'Puddles last 60% longer', '+1 flask, heavier slow, +20% poison', 'MAX Toxic Fog: flasks sweep a clockwise ring all around you'],
+  axe: [null, 'A heavy swing in a wide arc where you face', 'Wider arc', 'A shockwave rolls forward after the swing', 'Half-second stun on hit', 'Double swing: forward, then a backswing', 'Bigger shockwave that travels further', 'MAX Earthsplitter: the shockwave crosses the whole map'],
+  boomerang: [null, 'Thrown at the nearest monster, curves back to you, hits both ways', 'Flies faster', '+1 boomerang', 'Bigger, wider arc', 'The return trip hits 50% harder', '+1 boomerang', 'MAX Orbit: boomerangs never land and loop around you'],
+  laser: [null, 'A beam locks onto the nearest monster and burns the whole line', 'Longer beam', 'Wider beam', 'Shorter rest between beams', '+1 beam on another monster', 'Monsters it hits keep burning', 'MAX Twin Sweep: two beams spin a full circle around you'],
   lightning: [null, 'Lightning strikes and jumps to a nearby monster', '+1 chain', 'Wider strike zone', '+1 strike', 'Chains keep full damage', '+1 strike and +1 chain', 'MAX Thunderstorm: 4 strikes at once, chains to 6'],
 };
 const GENERIC = [
@@ -46,7 +49,7 @@ export function startGame(canvas, profile, opts, ui) {
   const P = { x: 0, y: 0, hp: profile.maxHp + FX.hp, maxHp: profile.maxHp + FX.hp, inv: 0, face: 1, dir: 0, level: 1, xp: 0, need: 3 };
   const main = PRIMARY[profile.job] || 'arrow';
   const R = profile.rank, isMain = k => k === main;
-  const up = { arrow: 0, magic: 0, sword: 0, potion: 0, lightning: 0, dup: 0, multi: 0, dmg: 0, rate: 0, speed: 0, hp: 0, magnet: 0, heal: 0 };
+  const up = { arrow: 0, magic: 0, sword: 0, potion: 0, lightning: 0, axe: 0, boomerang: 0, laser: 0, dup: 0, multi: 0, dmg: 0, rate: 0, speed: 0, hp: 0, magnet: 0, heal: 0 };
   up[main] = profile.rank; // your job's weapon starts at your saver level
   const wmul = k => (k === main ? [1.3, 1.5, 1.8][profile.rank - 1] : 1);
   const owned = () => WIDS.filter(k => up[k] > 0);
@@ -55,6 +58,8 @@ export function startGame(canvas, profile, opts, ui) {
   let nextMini = D / 5, nextSwarm = D * 0.3, miniN = 0;
   const buffs = { inv: 0, speed: 0 };
   const enemies = [], shots = [], gems = [], pops = [], items = [], puddles = [], flasks = [], bolts = [], novas = [], delayed = [];
+  const waves = [], swings = [], scars = [], booms = [], loopers = [], beams = [];
+  let axeCd = 1.5, boomCd = 1, laserOn = false, laserT = 1, laserTick = 0, loopA = 0;
   const keys = {};
   let joy = null; // {id, ox, oy, x, y}
 
@@ -201,6 +206,47 @@ export function startGame(canvas, profile, opts, ui) {
   }
 
   /* ---------- weapons ---------- */
+  /* ----- axe: heavy cleave where you face; shockwave from L3 ----- */
+  const kbNudge = (e, px, py, dist) => { if (e.boss || e.kbCd > t) return; e.kbCd = t + 1.5; const dx = e.x - px, dy = e.y - py, l = Math.hypot(dx, dy) || 1; e.x = clamp(e.x + (dx / l) * dist, -AX, AX); e.y = clamp(e.y + (dy / l) * dist, -AY, AY); };
+  function axeSwing(a) {
+    const L = up.axe, half = L >= 2 ? 1.15 : 0.9, reach = 95, d0 = dmg() * 4.5 * wl(L);
+    swings.push({ x: P.x, y: P.y, a, half, reach, life: 0.22 });
+    for (const e of enemies) {
+      if (e.hp <= 0) continue;
+      const dx = e.x - P.x, dy = e.y - P.y, l = Math.hypot(dx, dy);
+      if (l > reach + e.r) continue;
+      let da = Math.atan2(dy, dx) - a; da = Math.atan2(Math.sin(da), Math.cos(da));
+      if (Math.abs(da) > half && l > e.r + 20) continue;
+      hurt(e, d0); kbNudge(e, P.x, P.y, 26);
+      if (L >= 4 && !e.boss && !(e.stunCd > t)) { e.stun = t + 0.5; e.stunCd = t + 1.6; }
+    }
+    if (L >= 3) waves.push({ x0: P.x, y0: P.y, a, s: 20, max: L >= 7 ? 1e9 : L >= 6 ? 360 : 200, w: L >= 7 ? 95 : L >= 6 ? 62 : 46, d: d0 * (L >= 7 ? 0.9 : 0.6), full: L >= 7, hit: new Set() });
+  }
+  function axeAttack() {
+    const L = up.axe, dirs = [P.dir, P.dir + Math.PI, P.dir + Math.PI / 2].slice(0, 1 + up.dup);
+    dirs.forEach((a, i) => { axeSwing(a); if (L >= 5 && i === 0) later(0.25, () => axeSwing(a + Math.PI)); });
+  }
+  /* ----- boomerang: curves out, returns; hits both ways. L7 = loops around you ----- */
+  function throwBooms() {
+    const L = up.boomerang, n = 1 + (L >= 3 ? 1 : 0) + (L >= 6 ? 1 : 0) + up.dup;
+    const near = enemies.filter(e => e.hp > 0 && inView(e)).sort((a, b) => (a.x - P.x) ** 2 + (a.y - P.y) ** 2 - (b.x - P.x) ** 2 - (b.y - P.y) ** 2);
+    if (!near.length) return;
+    for (let i = 0; i < n; i++) {
+      const e = near[i % near.length], a = Math.atan2(e.y - P.y, e.x - P.x) + (i % 2 ? -0.25 : 0.25) * Math.floor(i / 2 + 0.5);
+      booms.push({ x: P.x, y: P.y, a, sp: 340 * (L >= 2 ? 1.3 : 1), curve: (i % 2 ? -1 : 1) * 2.2, phase: 0, t: 0, out: 0.6 * (L >= 4 ? 1.3 : 1), hit: new Set(), r: L >= 4 ? 14 : 10, spin: 0 });
+    }
+  }
+  /* ----- laser: a beam that locks on and burns the whole line ----- */
+  function startLaser() {
+    const L = up.laser, nb = (L >= 7 ? 2 : 1 + (L >= 5 ? 1 : 0)) + up.dup;
+    beams.length = 0;
+    const near = enemies.filter(e => e.hp > 0 && inView(e)).sort((a, b) => (a.x - P.x) ** 2 + (a.y - P.y) ** 2 - (b.x - P.x) ** 2 - (b.y - P.y) ** 2);
+    for (let i = 0; i < nb; i++) {
+      if (L >= 7) beams.push({ a: P.dir + (i * Math.PI * 2) / nb });
+      else { const e = near[i % Math.max(1, near.length)]; beams.push({ target: e, a: e ? Math.atan2(e.y - P.y, e.x - P.x) : P.dir }); }
+    }
+  }
+  const laserLen = () => (up.laser >= 7 ? 440 : up.laser >= 2 ? 380 : 270);
   function fireArrows() {
     const L = up.arrow, storm = L >= 7, n = storm ? 7 + up.dup : 1 + (L >= 3 ? 1 : 0) + (L >= 5 ? 1 : 0) + up.dup;
     for (let i = 0; i < n; i++) {
@@ -287,8 +333,9 @@ export function startGame(canvas, profile, opts, ui) {
 
     // enemies
     for (const e of enemies) {
-      const dx = P.x - e.x, dy = P.y - e.y, l = Math.hypot(dx, dy) || 1, k = e.slow > t ? (e.slowK || 0.45) : 1;
+      const dx = P.x - e.x, dy = P.y - e.y, l = Math.hypot(dx, dy) || 1, k = e.stun > t ? 0 : e.slow > t ? (e.slowK || 0.45) : 1;
       e.x = clamp(e.x + (dx / l) * e.sp * k * dt, -AX - 20, AX + 20); e.y = clamp(e.y + (dy / l) * e.sp * k * dt, -AY - 20, AY + 20); e.vx = dx; e.hit = Math.max(0, e.hit - dt); e.ph += dt * 6;
+      if (e.burn > t) { e.bt = (e.bt || 0) - dt; if (e.bt <= 0) { e.bt = 0.5; hurt(e, e.burnD); } }
       if (l < e.r + 10 && P.inv <= 0 && buffs.inv <= 0) { P.hp -= e.dmg * (1 - FX.guard); P.inv = 0.6; ui.shake(); if (P.hp <= 0) { if (FX.revive && !revived) { revived = true; P.hp = P.maxHp * 0.5; P.inv = 2.5; ui.banner('Phoenix Ledger: back on your feet!'); } else return finish(false); } }
     }
     // soft separation so monsters don't stack into one dot
@@ -313,6 +360,65 @@ export function startGame(canvas, profile, opts, ui) {
     // lightning
     lightCd -= dt;
     if (up.lightning > 0 && lightCd <= 0) { lightCd = 3.6 / rate(); volley(strikeLightning); }
+
+    // axe
+    axeCd -= dt;
+    if (up.axe > 0 && axeCd <= 0 && anyInView()) { axeCd = Math.max(1.5, 3.5 / rate()); volley(axeAttack); }
+    for (let i = swings.length - 1; i >= 0; i--) { swings[i].life -= dt; if (swings[i].life <= 0) swings.splice(i, 1); }
+    for (let i = scars.length - 1; i >= 0; i--) { scars[i].life -= dt; if (scars[i].life <= 0) scars.splice(i, 1); }
+    for (let i = waves.length - 1; i >= 0; i--) {
+      const w = waves[i]; w.s += 480 * dt;
+      const ux = Math.cos(w.a), uy = Math.sin(w.a), fx = w.x0 + ux * w.s, fy = w.y0 + uy * w.s;
+      for (const e of enemies) {
+        if (e.hp <= 0 || w.hit.has(e)) continue;
+        const rx = e.x - w.x0, ry = e.y - w.y0, u = rx * ux + ry * uy, v = -rx * uy + ry * ux;
+        if (Math.abs(v) < w.w + e.r && Math.abs(u - w.s) < 28 + e.r) { w.hit.add(e); hurt(e, w.full ? w.d : w.d * (1 - 0.6 * (w.s / w.max))); }
+      }
+      if (w.s > w.max || Math.abs(fx) > AX + 60 || Math.abs(fy) > AY + 60) { if (w.full) scars.push({ x1: w.x0, y1: w.y0, x2: fx, y2: fy, life: 1.6, w: w.w }); waves.splice(i, 1); }
+    }
+    // boomerang
+    boomCd -= dt;
+    if (up.boomerang > 0 && up.boomerang < 7 && boomCd <= 0 && anyInView()) { boomCd = 2.2 / rate(); volley(throwBooms); }
+    for (let i = booms.length - 1; i >= 0; i--) {
+      const b = booms[i]; b.t += dt; b.spin += dt * 16;
+      if (b.phase === 0) { b.a += b.curve * dt; if (b.t > b.out) { b.phase = 1; b.hit = new Set(); } }
+      else { let df = Math.atan2(P.y - b.y, P.x - b.x) - b.a; df = Math.atan2(Math.sin(df), Math.cos(df)); b.a += clamp(df, -9 * dt, 9 * dt); b.sp = Math.min(b.sp + 400 * dt, 520); }
+      b.x += Math.cos(b.a) * b.sp * dt; b.y += Math.sin(b.a) * b.sp * dt;
+      for (const e of enemies) if (e.hp > 0 && !b.hit.has(e) && (e.x - b.x) ** 2 + (e.y - b.y) ** 2 < (e.r + b.r) ** 2) { b.hit.add(e); hurt(e, dmg() * 3 * wl(up.boomerang) * (b.phase && up.boomerang >= 5 ? 1.5 : 1)); }
+      if ((b.phase === 1 && Math.hypot(P.x - b.x, P.y - b.y) < 18) || b.t > 4 || up.boomerang >= 7) booms.splice(i, 1);
+    }
+    if (up.boomerang >= 7) {   // max: boomerangs never land, they loop around you in figure-eights
+      const nL = 3 + up.dup; while (loopers.length < nL) loopers.push({ spin: 0, x: P.x, y: P.y });
+      loopA += dt * (2.4 + 0.8 * rate()); const orient = loopA * 0.35;
+      loopers.forEach((b, i) => {
+        const th = loopA + (i * Math.PI * 2) / nL, lx = 140 * Math.sin(th), ly = 60 * Math.sin(2 * th);
+        b.x = P.x + lx * Math.cos(orient) - ly * Math.sin(orient); b.y = P.y + lx * Math.sin(orient) + ly * Math.cos(orient); b.spin += dt * 16;
+        for (const e of enemies) if (e.hp > 0 && (!e.bmCd || e.bmCd < t) && (e.x - b.x) ** 2 + (e.y - b.y) ** 2 < (e.r + 14) ** 2) { e.bmCd = t + 0.35; hurt(e, dmg() * 2.4 * wl(7)); }
+      });
+    }
+    // laser
+    if (up.laser > 0) {
+      const L = up.laser; laserT -= dt;
+      if (!laserOn) { if (laserT <= 0 && anyInView()) { laserOn = true; laserT = L >= 7 ? 3 : 2; laserTick = 0; startLaser(); } }
+      else {
+        for (const b of beams) {
+          if (L >= 7) b.a += 1.3 * dt;
+          else {
+            if (!b.target || b.target.hp <= 0 || !inView(b.target)) { let best = null, bd = 1e9; for (const e of enemies) { if (e.hp <= 0 || !inView(e)) continue; const d = (e.x - P.x) ** 2 + (e.y - P.y) ** 2; if (d < bd) { bd = d; best = e; } } b.target = best; }
+            if (b.target) { let df = Math.atan2(b.target.y - P.y, b.target.x - P.x) - b.a; df = Math.atan2(Math.sin(df), Math.cos(df)); b.a += clamp(df, -4 * dt, 4 * dt); }
+          }
+        }
+        laserTick -= dt;
+        if (laserTick <= 0) {
+          laserTick = 0.1; const len = laserLen(), half = (L >= 3 ? 14 : 8) / 2;
+          for (const b of beams) {
+            const ex = P.x + Math.cos(b.a) * len, ey = P.y + Math.sin(b.a) * len;
+            for (const e of enemies) if (e.hp > 0 && distSeg(e.x, e.y, P.x, P.y, ex, ey) < half + e.r * 0.75) { hurt(e, dmg() * 0.7 * wl(L)); if (L >= 6) { e.burn = t + 1.5; e.burnD = dmg() * 0.25 * wl(L); } }
+          }
+        }
+        if (laserT <= 0) { laserOn = false; beams.length = 0; laserT = (L >= 4 ? 1.5 : 2) * (1 - 0.15 * up.multi); }
+      }
+    }
 
     for (const s of shots) {
       if (s.kind === 'magic') {
@@ -466,6 +572,21 @@ export function startGame(canvas, profile, opts, ui) {
         if (SP) { c.imageSmoothingEnabled = false; c.rotate(Math.PI / 4); if (up.sword >= 7) { c.shadowColor = '#9fd4ff'; c.shadowBlur = 10; } const z = ring.size; c.drawImage(SP.sword, -z / 2, -z / 2, z, z); c.restore(); continue; }
         c.fillStyle = '#E8ECEF'; c.beginPath(); c.moveTo(0, -16); c.lineTo(4, 4); c.lineTo(-4, 4); c.fill(); c.restore();
       }
+    }
+    // axe, boomerang, laser
+    for (const sc of scars) { c.globalAlpha = clamp(sc.life) * 0.7; c.strokeStyle = '#ff9a4d'; c.lineCap = 'round'; c.lineWidth = Math.max(3, sc.w * 0.12); c.beginPath(); c.moveTo(sc.x1 + ox, sc.y1 + oy); c.lineTo(sc.x2 + ox, sc.y2 + oy); c.stroke(); c.globalAlpha = 1; }
+    for (const w of waves) {
+      const ux = Math.cos(w.a), uy = Math.sin(w.a), fx = w.x0 + ux * w.s + ox, fy = w.y0 + uy * w.s + oy;
+      c.strokeStyle = '#ffd9a0'; c.shadowColor = '#ff9a4d'; c.shadowBlur = 10; c.lineCap = 'round'; c.lineWidth = 5;
+      c.beginPath(); c.moveTo(fx - uy * w.w, fy + ux * w.w); c.lineTo(fx + ux * 10, fy + uy * 10); c.lineTo(fx + uy * w.w, fy - ux * w.w); c.stroke();
+      c.globalAlpha = 0.3; c.lineWidth = 3; c.beginPath(); c.moveTo(fx - ux * 30 - uy * w.w * 0.8, fy - uy * 30 + ux * w.w * 0.8); c.lineTo(fx - ux * 30 + uy * w.w * 0.8, fy - uy * 30 - ux * w.w * 0.8); c.stroke(); c.globalAlpha = 1; c.shadowBlur = 0;
+    }
+    for (const sw of swings) { c.globalAlpha = clamp(sw.life * 4); c.strokeStyle = '#ffe2b8'; c.lineWidth = 12; c.lineCap = 'round'; c.beginPath(); c.arc(sw.x + ox, sw.y + oy, sw.reach * 0.8, sw.a - sw.half, sw.a + sw.half); c.stroke(); c.globalAlpha = 1; }
+    for (const b of booms.concat(loopers)) { c.save(); c.translate(b.x + ox, b.y + oy); c.rotate(b.spin); c.strokeStyle = '#d49a5a'; c.lineWidth = 5; c.lineCap = 'round'; c.lineJoin = 'round'; if (up.boomerang >= 7) { c.shadowColor = '#ffd36b'; c.shadowBlur = 10; } c.beginPath(); c.moveTo(-10, -6); c.lineTo(0, 4); c.lineTo(10, -6); c.stroke(); c.restore(); }
+    if (laserOn) for (const b of beams) {
+      const len = laserLen(), w = up.laser >= 3 ? 14 : 8, ex = W / 2 + Math.cos(b.a) * len, ey = H / 2 + Math.sin(b.a) * len;
+      c.lineCap = 'round'; c.shadowColor = '#ff5a3d'; c.shadowBlur = 16; c.strokeStyle = '#ff5a3d'; c.globalAlpha = 0.85; c.lineWidth = w; c.beginPath(); c.moveTo(W / 2, H / 2); c.lineTo(ex, ey); c.stroke();
+      c.shadowBlur = 0; c.globalAlpha = 1; c.strokeStyle = '#fff'; c.lineWidth = w * 0.35; c.beginPath(); c.moveTo(W / 2, H / 2); c.lineTo(ex, ey); c.stroke();
     }
     // hero
     c.save(); c.translate(W / 2, H / 2); if (P.inv > 0 && Math.floor(t * 20) % 2) c.globalAlpha = 0.45;

@@ -107,3 +107,4 @@ Hidden coloring game (`src/components/CreditsGame.tsx` = painting card only; `cr
 - v4.2: monster speed x(1+0.7p) (was 0.5p); hearts heal exactly 20% of max HP.
 - v4.3: pickup drop chance per kill is divided by 1+5p^1.5 (about 1/6 at the end).
 - v4.1b: swordsman hero = animated armored knight from the 'Free Knight' pack (aamatniekss; 120x80 frames cropped to 31x40, run+idle, in src/assets/knight-sprites.png; no license file in the zip, check the itch.io page). Credit added on the Play tab.
+- v5.0: new weapons Axe (heavy cleave where you face, knockback with per-monster immunity, stun L4, shockwave L3, L7 Earthsplitter = map-wide wave), Boomerang (curves out and back, L7 figure-eight orbit), Laser (locks on, burns the line; L7 twin spinning beams). Duplicate = +1 swing/boomerang/beam. Weapon pool is now 8 (3 carried).
