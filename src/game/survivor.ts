@@ -152,8 +152,12 @@ export function startGame(canvas, profile, opts, ui) {
     if (id === 'heal') P.hp = Math.min(P.maxHp, P.hp + P.maxHp * 0.4);
   }
   function showChoices(title) {
+    const opts2 = choices();
+    if (opts2.length === 1 && opts2[0].id === 'heal') {   // nothing left to upgrade: heal automatically, no pause
+      const before = P.hp; applyChoice('heal'); ui.banner(`${title} Healed ${Math.round(P.hp - before)} HP`); return;
+    }
     paused = true;
-    ui.levelUp(choices(), id => { applyChoice(id); paused = false; last = performance.now(); }, title);
+    ui.levelUp(opts2, id => { applyChoice(id); paused = false; last = performance.now(); }, title);
   }
   function addXp(v) {
     P.xp += v * (1 + FX.xp);
