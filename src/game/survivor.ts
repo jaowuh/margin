@@ -363,7 +363,7 @@ export function startGame(canvas, profile, opts, ui) {
         for (let k = 0; k < ring.n; k++) {
           const a = orbAng * ring.dir + (k * Math.PI * 2) / ring.n, ux = Math.cos(a), uy = Math.sin(a);
           const cx = P.x + ux * ring.rad, cy = P.y + uy * ring.rad;
-          for (const e of enemies) if (e.hp > 0 && (!e.swCd || e.swCd < t) && distSeg(e.x, e.y, cx - ux * half, cy - uy * half, cx + ux * half, cy + uy * half) < e.r + 3) { e.swCd = t + 0.4; hurt(e, dmg() * 2.4 * wmul('sword') * wl(L)); // melee risk = more damage than ranged }
+          for (const e of enemies) if (e.hp > 0 && (!e.swCd || e.swCd < t) && distSeg(e.x, e.y, cx - ux * half, cy - uy * half, cx + ux * half, cy + uy * half) < e.r + 3) { e.swCd = t + 0.4; hurt(e, dmg() * 2.4 * wmul('sword') * wl(L)); }
         }
       }
     }
