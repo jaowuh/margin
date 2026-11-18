@@ -96,3 +96,4 @@ Hidden coloring game (`src/components/CreditsGame.tsx` = painting card only; `cr
 - Result screen: tap-to-open chest (wooden/bronze/silver/golden/epic). Lucky upgrade chance 10-25% (by luck) bumps one tier with +50% coins; relic comes from the final tier. Rewards are saved when the run ends.
 - v3.2: hallway runs across the map (AX 1000, AY 400). Game overlay blocks text selection, long-press callout and tap highlight (user-select none, selectstart/contextmenu prevented on the canvas).
 - v3.3: arena AX 650, AY 330.
+- v3.4: arena AX 450, AY 280.
