@@ -95,3 +95,4 @@ Hidden coloring game (`src/components/CreditsGame.tsx` = painting card only; `cr
 - v3.1: base difficulty is harsh on purpose (HARD: mobs x1.2 HP, x1.3 damage, waves x1.2); relics are strong (about 2x their old size, plus `guard` = damage taken reduction) so collecting them makes runs tolerable. Tune HARD in survivor.ts and RELIC_FX in profile.ts.
 - Result screen: tap-to-open chest (wooden/bronze/silver/golden/epic). Lucky upgrade chance 10-25% (by luck) bumps one tier with +50% coins; relic comes from the final tier. Rewards are saved when the run ends.
 - v3.2: hallway runs across the map (AX 1000, AY 400). Game overlay blocks text selection, long-press callout and tap highlight (user-select none, selectstart/contextmenu prevented on the canvas).
+- v3.3: arena AX 650, AY 330.
