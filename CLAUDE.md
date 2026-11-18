@@ -92,3 +92,4 @@ Hidden coloring game (`src/components/CreditsGame.tsx` = painting card only; `cr
 - v2.8: fewer bolts/flasks/strikes: magic, potion, lightning get +1 at L4 and L6 (L7: 4 bolts, 5 flasks, 4 strikes); Duplicate always adds exactly +1 (no doubling at L7); second sword ring ignores Duplicate.
 - v2.9: walled arena (`ARENA` 620 each way, copper border); spawns mirror to the far side near walls. No more win by surviving: the run is lost if the Dragon is alive at t >= D (10 min), with a 30s warning banner. Only killing the Dragon wins.
 - v3.0: arena is a vertical hallway (AX 270, AY 950). Pickup drop chance 1.4% (2.2% when low HP). Late damage factor x(1-0.68p^1.1), upgrade +7%.
+- v3.1: base difficulty is harsh on purpose (HARD: mobs x1.2 HP, x1.3 damage, waves x1.2); relics are strong (about 2x their old size, plus `guard` = damage taken reduction) so collecting them makes runs tolerable. Tune HARD in survivor.ts and RELIC_FX in profile.ts.

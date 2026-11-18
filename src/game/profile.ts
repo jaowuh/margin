@@ -72,27 +72,27 @@ export const RELICS: Record<Tier, string[]> = {
   legendary: ['Dragon’s Hoard', 'Crown of Compound Interest', 'Phoenix Ledger'],
 };
 
-export interface RelicFx { dmg?: number; rate?: number; hp?: number; speed?: number; magnet?: number; xp?: number; drop?: number; revive?: number }
+export interface RelicFx { dmg?: number; rate?: number; hp?: number; speed?: number; magnet?: number; xp?: number; drop?: number; revive?: number; guard?: number }
 export const RELIC_FX: Record<string, { desc: string; fx: RelicFx }> = {
-  'Rusty Coin': { desc: '+10% XP from gems', fx: { xp: 0.1 } },
-  'Cracked Piggy': { desc: '+20% gem pickup range', fx: { magnet: 0.2 } },
-  'Wooden Charm': { desc: '+15 max health', fx: { hp: 15 } },
-  'Bronze Badge': { desc: '+6% damage', fx: { dmg: 0.06 } },
-  'Copper Ring': { desc: '+6% fire rate', fx: { rate: 0.06 } },
-  'Lucky Penny': { desc: '+25% more drops', fx: { drop: 0.25 } },
-  'Silver Crown': { desc: '+15% XP from gems', fx: { xp: 0.15 } },
-  'Moonlit Purse': { desc: '+40% gem pickup range', fx: { magnet: 0.4 } },
-  'Steady Shield': { desc: '+30 max health', fx: { hp: 30 } },
-  'Golden Goblet': { desc: '+10% damage', fx: { dmg: 0.1 } },
-  'Sunstone Vault': { desc: '+10% fire rate', fx: { rate: 0.1 } },
-  'Hoarder’s Crest': { desc: '+8% move speed', fx: { speed: 0.08 } },
-  'Dragon’s Hoard': { desc: '+15% damage and +20 max health', fx: { dmg: 0.15, hp: 20 } },
-  'Crown of Compound Interest': { desc: '+25% XP from gems', fx: { xp: 0.25 } },
-  'Phoenix Ledger': { desc: 'Once per run, come back at half health', fx: { revive: 1 } },
+  'Rusty Coin': { desc: '+20% XP from gems', fx: { xp: 0.2 } },
+  'Cracked Piggy': { desc: '+40% gem pickup range', fx: { magnet: 0.4 } },
+  'Wooden Charm': { desc: '+30 max health', fx: { hp: 30 } },
+  'Bronze Badge': { desc: '+12% damage', fx: { dmg: 0.12 } },
+  'Copper Ring': { desc: '+12% fire rate', fx: { rate: 0.12 } },
+  'Lucky Penny': { desc: '+50% more drops', fx: { drop: 0.5 } },
+  'Silver Crown': { desc: '+35% XP from gems', fx: { xp: 0.35 } },
+  'Moonlit Purse': { desc: '+80% gem pickup range', fx: { magnet: 0.8 } },
+  'Steady Shield': { desc: '+60 max health, take 10% less damage', fx: { hp: 60, guard: 0.1 } },
+  'Golden Goblet': { desc: '+20% damage', fx: { dmg: 0.2 } },
+  'Sunstone Vault': { desc: '+20% fire rate', fx: { rate: 0.2 } },
+  'Hoarder’s Crest': { desc: '+15% move speed, take 10% less damage', fx: { speed: 0.15, guard: 0.1 } },
+  'Dragon’s Hoard': { desc: '+30% damage and +40 max health', fx: { dmg: 0.3, hp: 40 } },
+  'Crown of Compound Interest': { desc: '+50% XP from gems and +10% damage', fx: { xp: 0.5, dmg: 0.1 } },
+  'Phoenix Ledger': { desc: '+40 max health, and once per run come back at half health', fx: { revive: 1, hp: 40 } },
 };
 export const RELIC_SLOTS = 3;
 export function relicFx(names: string[]): Required<RelicFx> {
-  const t = { dmg: 0, rate: 0, hp: 0, speed: 0, magnet: 0, xp: 0, drop: 0, revive: 0 };
+  const t = { dmg: 0, rate: 0, hp: 0, speed: 0, magnet: 0, xp: 0, drop: 0, revive: 0, guard: 0 };
   for (const n of names.slice(0, RELIC_SLOTS)) { const f = RELIC_FX[n]?.fx; if (f) for (const k in f) (t as any)[k] += (f as any)[k]; }
   return t;
 }

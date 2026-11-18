@@ -40,7 +40,8 @@ export function startGame(canvas, profile, opts, ui) {
   const resize = () => { const r = canvas.getBoundingClientRect(); W = r.width; H = r.height; canvas.width = Math.round(W * DPR); canvas.height = Math.round(H * DPR); };
   resize(); const ro = new ResizeObserver(resize); ro.observe(canvas);
 
-  const FX = opts.fx || { dmg: 0, rate: 0, hp: 0, speed: 0, magnet: 0, xp: 0, drop: 0, revive: 0 };
+  const FX = opts.fx || { dmg: 0, rate: 0, hp: 0, speed: 0, magnet: 0, xp: 0, drop: 0, revive: 0, guard: 0 };
+  const HARD = { hp: 1.2, dmg: 1.3, wave: 1.2 }; // base difficulty: harsh for new players, relics bring it back down
   let revived = false;
   const P = { x: 0, y: 0, hp: profile.maxHp + FX.hp, maxHp: profile.maxHp + FX.hp, inv: 0, face: 1, dir: 0, level: 1, xp: 0, need: 3 };
   const main = PRIMARY[profile.job] || 'arrow';
@@ -96,7 +97,7 @@ export function startGame(canvas, profile, opts, ui) {
     const T = TYPES[type], a = o.angle ?? rnd(0, Math.PI * 2), d = o.dist ?? Math.max(W, H) / 2 + 50;
     const p = progress();
     // early monsters are soft (die in one hit); late ones get much tougher and hit harder
-    const hpScale = (T.boss ? 1 + p * 4 : 0.5 + 5 * Math.pow(p, 1.5) + 45 * Math.pow(p, 3)) * (o.hp || 1), dmgScale = 0.8 + 1.4 * p;
+    const hpScale = (T.boss ? 1 + p * 4 : (0.5 + 5 * Math.pow(p, 1.5) + 45 * Math.pow(p, 3)) * HARD.hp) * (o.hp || 1), dmgScale = (0.8 + 1.4 * p) * HARD.dmg;
     const big = o.mini ? 2.1 : 1;
     let sx = P.x + Math.cos(a) * d, sy = P.y + Math.sin(a) * d;
     if (Math.abs(sx) > AX) sx = P.x - Math.cos(a) * d;
@@ -121,7 +122,7 @@ export function startGame(canvas, profile, opts, ui) {
     if (spawnCd <= 0 && enemies.length < 380) {
       const first = !firstDone; firstDone = true;
       spawnCd = 1.4 + 4.5 * Math.pow(1 - p, 1.3);
-      const n = first ? 4 : 4 + Math.floor(Math.pow(p, 1.5) * 85) + Math.floor(p * 6), a0 = rnd(0, Math.PI * 2), main = pickType(p);
+      const n = first ? 4 : Math.round((4 + Math.floor(Math.pow(p, 1.5) * 85) + Math.floor(p * 6)) * HARD.wave), a0 = rnd(0, Math.PI * 2), main = pickType(p);
       for (let i = 0; i < n; i++) spawn(Math.random() < 0.7 ? main : pickType(p), { angle: a0 + rnd(-0.7, 0.7), dist: Math.max(W, H) / 2 + 50 + rnd(0, 90) });
     }
     if (!bossA && p >= 0.5) { bossA = true; spawn('king'); ui.banner('The Ogre King approaches!'); }
@@ -285,7 +286,7 @@ export function startGame(canvas, profile, opts, ui) {
     for (const e of enemies) {
       const dx = P.x - e.x, dy = P.y - e.y, l = Math.hypot(dx, dy) || 1, k = e.slow > t ? 0.45 : 1;
       e.x = clamp(e.x + (dx / l) * e.sp * k * dt, -AX - 20, AX + 20); e.y = clamp(e.y + (dy / l) * e.sp * k * dt, -AY - 20, AY + 20); e.vx = dx; e.hit = Math.max(0, e.hit - dt); e.ph += dt * 6;
-      if (l < e.r + 10 && P.inv <= 0 && buffs.inv <= 0) { P.hp -= e.dmg; P.inv = 0.6; ui.shake(); if (P.hp <= 0) { if (FX.revive && !revived) { revived = true; P.hp = P.maxHp * 0.5; P.inv = 2.5; ui.banner('Phoenix Ledger: back on your feet!'); } else return finish(false); } }
+      if (l < e.r + 10 && P.inv <= 0 && buffs.inv <= 0) { P.hp -= e.dmg * (1 - FX.guard); P.inv = 0.6; ui.shake(); if (P.hp <= 0) { if (FX.revive && !revived) { revived = true; P.hp = P.maxHp * 0.5; P.inv = 2.5; ui.banner('Phoenix Ledger: back on your feet!'); } else return finish(false); } }
     }
     // soft separation so monsters don't stack into one dot
     for (let i = 0; i < enemies.length; i += 2) {
