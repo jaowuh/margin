@@ -10,11 +10,11 @@ const WIDS = Object.keys(WNAMES);
 const SLOTS = 3; // weapons a hero can carry at once
 // What reaching each weapon level gives (index = level)
 const LV = {
-  arrow: [null, 'Arrows fly the way you face', '+7% damage, pierces 1 more', '+1 arrow per shot', '+7% damage, pierces 1 more', '+1 arrow per shot', '+7% damage, pierces 1 more', 'MAX Arrow Storm: a non-stop wall of arrows'],
+  arrow: [null, 'Arrows fly the way you face', 'Faster arrows, pierce 1 more', '+1 arrow per shot', '15% chance for a double-damage crit', '+1 arrow per shot', 'Pierce 2 more monsters', 'MAX Arrow Storm: a non-stop wall of arrows'],
   magic: [null, 'Homing bolts that each hit one monster', 'Faster, sharper homing', '+1 bolt per cast', 'Small blast: monsters next to the target take 35% damage', '+1 bolt per cast', 'Bigger blast, 50% damage', 'MAX Seeker Swarm: every hit splits into 2 homing shards'],
-  sword: [null, 'Blades circle you', '+7% damage', '+1 blade', '+7% damage', '+1 blade', '+7% damage', 'MAX Blade Tempest: a second ring spinning the other way'],
-  potion: [null, 'Flasks make slowing, poisonous puddles', 'Bigger puddles', 'Stronger poison, longer puddles', '+1 flask', 'Bigger, stronger puddles', '+1 flask', 'MAX Toxic Fog: flasks sweep a clockwise ring all around you'],
-  lightning: [null, 'Lightning strikes and jumps to a nearby monster', '+1 chain', 'Stronger strikes', '+1 chain and +1 strike', 'Stronger strikes', '+1 chain and +1 strike', 'MAX Thunderstorm: 4 strikes at once, chains to 6'],
+  sword: [null, 'Blades circle you', '+1 blade', 'Blades spin 25% faster', '+1 blade', 'Longer blades, wider orbit', '+1 blade', 'MAX Blade Tempest: a second ring spinning the other way'],
+  potion: [null, 'Flasks make slowing, poisonous puddles', 'Bigger puddles', 'Stronger poison (+40%)', '+1 flask', 'Puddles last 60% longer', '+1 flask, heavier slow, +20% poison', 'MAX Toxic Fog: flasks sweep a clockwise ring all around you'],
+  lightning: [null, 'Lightning strikes and jumps to a nearby monster', '+1 chain', 'Wider strike zone', '+1 strike', 'Chains keep full damage', '+1 strike and +1 chain', 'MAX Thunderstorm: 4 strikes at once, chains to 6'],
 };
 const GENERIC = [
   { id: 'dup', name: 'Duplicate', desc: '+1 projectile, blade or strike for all weapons', max: 2, rare: 0.22 },
@@ -201,12 +201,12 @@ export function startGame(canvas, profile, opts, ui) {
 
   /* ---------- weapons ---------- */
   function fireArrows() {
-    const L = up.arrow, storm = L >= 7, n = storm ? 7 + up.dup : 1 + Math.floor((L - 1) / 2) + up.dup;
+    const L = up.arrow, storm = L >= 7, n = storm ? 7 + up.dup : 1 + (L >= 3 ? 1 : 0) + (L >= 5 ? 1 : 0) + up.dup;
     for (let i = 0; i < n; i++) {
       const off = i - (n - 1) / 2, a = storm ? P.dir + rnd(-0.03, 0.03) : P.dir + off * 0.14;
       const px = storm ? P.x - Math.sin(P.dir) * off * 8 : P.x, py = storm ? P.y + Math.cos(P.dir) * off * 8 : P.y;
-      const crit = isMain('arrow') && R >= 3 && Math.random() < 0.25;
-      shots.push({ kind: 'arrow', x: px, y: py, a, vx: Math.cos(a) * 420, vy: Math.sin(a) * 420, life: 1.2, dmg: dmg() * wmul('arrow') * (1 + 0.07 * (L - 1)) * (storm ? 0.8 : 1) * (crit ? 2 : 1), crit: crit || storm, pierce: 1 + Math.floor(L / 2) + (isMain('arrow') && R >= 2 ? 1 : 0), hit: [] });
+      const crit = Math.random() < (isMain('arrow') && R >= 3 ? 0.25 : 0) + (L >= 4 ? 0.15 : 0);
+      shots.push({ kind: 'arrow', x: px, y: py, a, vx: Math.cos(a) * 420 * (L >= 2 ? 1.25 : 1), vy: Math.sin(a) * 420 * (L >= 2 ? 1.25 : 1), life: 1.2, dmg: dmg() * wmul('arrow') * (storm ? 0.8 : 1) * (crit ? 2 : 1), crit: crit || storm, pierce: 1 + (L >= 2 ? 1 : 0) + (L >= 6 ? 2 : 0) + (isMain('arrow') && R >= 2 ? 1 : 0), hit: [] });
     }
   }
   function fireMagic() {
@@ -224,7 +224,7 @@ export function startGame(canvas, profile, opts, ui) {
     for (const o of others) shots.push({ kind: 'magic', shard: true, x: from.x, y: from.y, a: Math.atan2(o.y - from.y, o.x - from.x), sp: 230, target: o, turn: 7, life: 1.4, dmg: d, reseek: 0 });
   }
   const anyInView = () => enemies.some(e => e.hp > 0 && inView(e));
-  const potionR = L => (34 + 5 * L) * (L >= 7 ? 1.1 : 1);
+  const potionR = L => 36 * (L >= 2 ? 1.3 : 1) * (L >= 6 ? 1.15 : 1) * (L >= 7 ? 1.15 : 1);
   function throwPotions() {
     // Flasks land around you, roughly on the 8 compass directions. Low level = loose and random, high level = a tidy ring. Never on top of another puddle.
     const L = up.potion, n = (L >= 7 ? 5 : 1 + (L >= 4 ? 1 : 0) + (L >= 6 ? 1 : 0)) + up.dup, r = potionR(L), pred = clamp((L - 1) / 6);
@@ -250,19 +250,19 @@ export function startGame(canvas, profile, opts, ui) {
     }
   }
   function strikeLightning() {
-    const L = up.lightning, n = (L >= 7 ? 4 : 1 + (L >= 4 ? 1 : 0) + (L >= 6 ? 1 : 0)) + up.dup, chain = L >= 7 ? 6 : 1 + Math.floor(L / 2);
+    const L = up.lightning, n = (L >= 7 ? 4 : 1 + (L >= 4 ? 1 : 0) + (L >= 6 ? 1 : 0)) + up.dup, chain = L >= 7 ? 6 : 1 + (L >= 2 ? 1 : 0) + (L >= 6 ? 1 : 0), zone = L >= 3 ? 55 : 36;
     const near = enemies.filter(e => e.hp > 0 && onScreen(e));
     for (let i = 0; i < n; i++) {
       let x, y;
       if (near.length && Math.random() < 0.5 + 0.35 * clamp((L - 1) / 6)) { const e = pick(near); x = e.x; y = e.y; } else { const a = rnd(0, Math.PI * 2), d = rnd(40, 190); x = clamp(P.x + Math.cos(a) * d, P.x - W / 2 + 15, P.x + W / 2 - 15); y = clamp(P.y + Math.sin(a) * d, P.y - H / 2 + 15, P.y + H / 2 - 15); }
-      const d0 = dmg() * 3 * (1 + 0.07 * (L - 1)), hit = new Set(), pts = [[x, y]];
+      const d0 = dmg() * 3, hit = new Set(), pts = [[x, y]];
       let cx = x, cy = y;
-      for (const e of enemies) if (e.hp > 0 && onScreen(e) && (e.x - x) ** 2 + (e.y - y) ** 2 < (36 + e.r) ** 2) { hurt(e, d0); hit.add(e); }
+      for (const e of enemies) if (e.hp > 0 && onScreen(e) && (e.x - x) ** 2 + (e.y - y) ** 2 < (zone + e.r) ** 2) { hurt(e, d0); hit.add(e); }
       for (let c = 0; c < chain; c++) {
         let best = null, bd = 130 * 130;
         for (const e of enemies) { if (e.hp <= 0 || hit.has(e) || !onScreen(e)) continue; const d = (e.x - cx) ** 2 + (e.y - cy) ** 2; if (d < bd) { bd = d; best = e; } }
         if (!best) break;
-        hurt(best, d0 * 0.7); hit.add(best); cx = best.x; cy = best.y; pts.push([cx, cy]);
+        hurt(best, d0 * (L >= 5 ? 1 : 0.7)); hit.add(best); cx = best.x; cy = best.y; pts.push([cx, cy]);
       }
       bolts.push({ x, y, pts, life: 0.28, seed: Math.random() * 99 });
     }
@@ -286,7 +286,7 @@ export function startGame(canvas, profile, opts, ui) {
 
     // enemies
     for (const e of enemies) {
-      const dx = P.x - e.x, dy = P.y - e.y, l = Math.hypot(dx, dy) || 1, k = e.slow > t ? 0.45 : 1;
+      const dx = P.x - e.x, dy = P.y - e.y, l = Math.hypot(dx, dy) || 1, k = e.slow > t ? (e.slowK || 0.45) : 1;
       e.x = clamp(e.x + (dx / l) * e.sp * k * dt, -AX - 20, AX + 20); e.y = clamp(e.y + (dy / l) * e.sp * k * dt, -AY - 20, AY + 20); e.vx = dx; e.hit = Math.max(0, e.hit - dt); e.ph += dt * 6;
       if (l < e.r + 10 && P.inv <= 0 && buffs.inv <= 0) { P.hp -= e.dmg * (1 - FX.guard); P.inv = 0.6; ui.shake(); if (P.hp <= 0) { if (FX.revive && !revived) { revived = true; P.hp = P.maxHp * 0.5; P.inv = 2.5; ui.banner('Phoenix Ledger: back on your feet!'); } else return finish(false); } }
     }
@@ -339,14 +339,14 @@ export function startGame(canvas, profile, opts, ui) {
     for (let i = flasks.length - 1; i >= 0; i--) {
       const f = flasks[i];
       if (t >= f.at) {
-        puddles.push({ x: f.x, y: f.y, r: f.r, life: 3.5 + 0.35 * f.L, tick: 0, dmg: dmg() * 0.45 * (1 + 0.06 * (f.L - 1)) });
+        puddles.push({ x: f.x, y: f.y, r: f.r, life: 3.5 * (f.L >= 5 ? 1.6 : 1), tick: 0, L: f.L, dmg: dmg() * 0.45 * (f.L >= 3 ? 1.4 : 1) * (f.L >= 6 ? 1.2 : 1) });
         flasks.splice(i, 1);
       }
     }
     for (let i = puddles.length - 1; i >= 0; i--) {
       const p = puddles[i]; p.life -= dt; p.tick -= dt;
       const doTick = p.tick <= 0; if (doTick) p.tick = 0.5;
-      for (const e of enemies) if (e.hp > 0 && (e.x - p.x) ** 2 + (e.y - p.y) ** 2 < (p.r + e.r) ** 2) { e.slow = t + 0.3; if (doTick) hurt(e, p.dmg); }
+      for (const e of enemies) if (e.hp > 0 && (e.x - p.x) ** 2 + (e.y - p.y) ** 2 < (p.r + e.r) ** 2) { e.slow = t + 0.3; e.slowK = p.L >= 6 ? 0.3 : 0.45; if (doTick) hurt(e, p.dmg); }
       if (p.life <= 0) puddles.splice(i, 1);
     }
     for (let i = bolts.length - 1; i >= 0; i--) { bolts[i].life -= dt; if (bolts[i].life <= 0) bolts.splice(i, 1); }
@@ -355,14 +355,14 @@ export function startGame(canvas, profile, opts, ui) {
     for (let i = novas.length - 1; i >= 0; i--) { novas[i].life -= dt; if (novas[i].life <= 0) novas.splice(i, 1); }
     // sword: blades circling the hero (the whole blade hits). Faster fire rate = faster spin
     if (up.sword > 0) {
-      orbAng += dt * (2.2 + 1.3 * rate());
+      orbAng += dt * (2.2 + 1.3 * rate()) * (up.sword >= 3 ? 1.25 : 1);
       const L = up.sword;
       for (const ring of rings()) {
         const half = ring.size * 0.46;
         for (let k = 0; k < ring.n; k++) {
           const a = orbAng * ring.dir + (k * Math.PI * 2) / ring.n, ux = Math.cos(a), uy = Math.sin(a);
           const cx = P.x + ux * ring.rad, cy = P.y + uy * ring.rad;
-          for (const e of enemies) if (e.hp > 0 && (!e.swCd || e.swCd < t) && distSeg(e.x, e.y, cx - ux * half, cy - uy * half, cx + ux * half, cy + uy * half) < e.r + 3) { e.swCd = t + 0.4; hurt(e, dmg() * 1.5 * wmul('sword') * (1 + 0.07 * (L - 1))); }
+          for (const e of enemies) if (e.hp > 0 && (!e.swCd || e.swCd < t) && distSeg(e.x, e.y, cx - ux * half, cy - uy * half, cx + ux * half, cy + uy * half) < e.r + 3) { e.swCd = t + 0.4; hurt(e, dmg() * 1.5 * wmul('sword')); }
         }
       }
     }
@@ -393,8 +393,8 @@ export function startGame(canvas, profile, opts, ui) {
   }
   const rings = () => {
     const L = up.sword; if (L <= 0) return [];
-    const n = Math.min(MAX_BLADES_PER_RING, 1 + Math.floor(L / 2) + (isMain('sword') && R >= 2 ? 1 : 0) + up.dup), size = 34 * (1 + 0.04 * (L - 1));
-    const r = [{ rad: 40 + 3 * L, n, dir: 1, size }];
+    const n = Math.min(MAX_BLADES_PER_RING, 1 + (L >= 2 ? 1 : 0) + (L >= 4 ? 1 : 0) + (L >= 6 ? 1 : 0) + (isMain('sword') && R >= 2 ? 1 : 0) + up.dup), size = 34 * (L >= 5 ? 1.25 : 1);
+    const r = [{ rad: 42 + (L >= 5 ? 14 : 0), n, dir: 1, size }];
     if (L >= 7) r.push({ rad: 90, n: Math.min(MAX_BLADES_PER_RING, n - up.dup + 2), dir: -0.8, size });
     return r;
   };
