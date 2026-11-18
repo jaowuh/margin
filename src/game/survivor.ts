@@ -11,9 +11,9 @@ const SLOTS = 3; // weapons a hero can carry at once
 // What reaching each weapon level gives (index = level)
 const LV = {
   arrow: [null, 'Arrows fly the way you face', '+15% damage, pierces 1 more', '+1 arrow per shot', '+15% damage, pierces 1 more', '+1 arrow per shot', '+15% damage, pierces 1 more', 'MAX Arrow Storm: a non-stop wall of arrows'],
-  magic: [null, 'Homing bolts that hit one monster', '+14% damage', '+1 bolt per cast', '+14% damage', '+1 bolt per cast', '+14% damage', 'MAX Seeker Swarm: 6 bolts every cast'],
+  magic: [null, 'Homing bolts that hit one monster', '+14% damage', '+1 bolt per cast', '+14% damage', '+1 bolt per cast', '+14% damage', 'MAX Seeker Swarm: fires 2x faster, every hit splits into 2 homing shards'],
   sword: [null, 'Blades circle you', '+15% damage', '+1 blade', '+15% damage', '+1 blade', '+15% damage', 'MAX Blade Tempest: a second ring spinning the other way'],
-  potion: [null, 'Flasks make slowing, poisonous puddles', 'Bigger puddles', '+1 flask', 'Stronger poison, longer puddles', '+1 flask', 'Bigger, stronger puddles', 'MAX Toxic Fog: huge puddles, double flasks'],
+  potion: [null, 'Flasks make slowing, poisonous puddles', 'Bigger puddles', '+1 flask', 'Stronger poison, longer puddles', '+1 flask', 'Bigger, stronger puddles', 'MAX Toxic Fog: flasks sweep a clockwise ring all around you'],
   lightning: [null, 'Lightning strikes and jumps to a nearby monster', '+1 chain', '+1 strike', '+1 chain', '+1 strike', '+1 chain', 'MAX Thunderstorm: double strikes, chains to 6'],
 };
 const GENERIC = [
@@ -49,7 +49,7 @@ export function startGame(canvas, profile, opts, ui) {
   const wmul = k => (k === main ? [1.3, 1.5, 1.8][profile.rank - 1] : 1);
   const owned = () => WIDS.filter(k => up[k] > 0);
 
-  let t = 0, kills = 0, arrowCd = 0, magicCd = 0, potionCd = 1, lightCd = 1, orbAng = 0, spawnCd = 0, novaCd = 5, bossA = false, bossB = false, over = false;
+  let sweep = 0, t = 0, kills = 0, arrowCd = 0, magicCd = 0, potionCd = 1, lightCd = 1, orbAng = 0, spawnCd = 0, novaCd = 5, bossA = false, bossB = false, over = false;
   let nextMini = D / 5, nextSwarm = D * 0.3, miniN = 0;
   const buffs = { inv: 0, speed: 0 };
   const enemies = [], shots = [], gems = [], pops = [], items = [], puddles = [], flasks = [], bolts = [], novas = [], delayed = [];
@@ -94,7 +94,7 @@ export function startGame(canvas, profile, opts, ui) {
     const T = TYPES[type], a = o.angle ?? rnd(0, Math.PI * 2), d = o.dist ?? Math.max(W, H) / 2 + 50;
     const p = progress();
     // early monsters are soft (die in one hit); late ones get much tougher and hit harder
-    const hpScale = (T.boss ? 1 + p * 2.4 : 0.55 + 4.5 * Math.pow(p, 1.6)) * (o.hp || 1), dmgScale = 0.8 + 1.4 * p;
+    const hpScale = (T.boss ? 1 + p * 2.4 : 0.5 + 4 * Math.pow(p, 1.5) + 9 * Math.pow(p, 3)) * (o.hp || 1), dmgScale = 0.8 + 1.4 * p;
     const big = o.mini ? 2.1 : 1;
     enemies.push({ type, x: P.x + Math.cos(a) * d, y: P.y + Math.sin(a) * d, r: T.r * big, hp: T.hp * hpScale, maxHp: T.hp * hpScale, sp: T.sp * (1 + progress() * 0.5) * (o.sp || 1), dmg: T.dmg * dmgScale * (o.mini ? 1.5 : 1), xp: T.xp * (o.mini ? 4 : 1), boss: !!T.boss || !!o.mini, mini: !!o.mini, hit: 0, ph: Math.random() * 6, slow: 0 });
   }
@@ -202,14 +202,26 @@ export function startGame(canvas, profile, opts, ui) {
     const n = Math.min(want, near.length);
     for (let i = 0; i < n; i++) {
       const e = near[i], a = Math.atan2(e.y - P.y, e.x - P.x), up2 = isMain('magic') && R >= 2 ? 1.25 : 1;
-      shots.push({ kind: 'magic', x: P.x, y: P.y, a, sp: 150 * up2, target: e, turn: 4 * up2, life: 3.6, dmg: dmg() * 3.2 * wmul('magic') * (1 + 0.14 * (L - 1)), reseek: isMain('magic') && R >= 3 ? 1 : 0 });
+      shots.push({ kind: 'magic', x: P.x, y: P.y, a, sp: 150 * up2, target: e, turn: 4 * up2, life: 3.6, dmg: dmg() * 3.2 * wmul('magic') * (1 + 0.14 * (L - 1)) * (L >= 7 ? 1.3 : 1), reseek: isMain('magic') && R >= 3 ? 1 : 0 });
     }
   }
+  function shards(from, d) {
+    const others = enemies.filter(o => o !== from && o.hp > 0 && (o.x - from.x) ** 2 + (o.y - from.y) ** 2 < 260 * 260).sort((a, b) => (a.x - from.x) ** 2 + (a.y - from.y) ** 2 - (b.x - from.x) ** 2 - (b.y - from.y) ** 2).slice(0, 2);
+    for (const o of others) shots.push({ kind: 'magic', shard: true, x: from.x, y: from.y, a: Math.atan2(o.y - from.y, o.x - from.x), sp: 230, target: o, turn: 7, life: 1.4, dmg: d, reseek: 0 });
+  }
   const anyInView = () => enemies.some(e => e.hp > 0 && inView(e));
-  const potionR = L => (34 + 5 * L) * (L >= 7 ? 1.3 : 1);
+  const potionR = L => (34 + 5 * L) * (L >= 7 ? 1.1 : 1);
   function throwPotions() {
     // Flasks land around you, roughly on the 8 compass directions. Low level = loose and random, high level = a tidy ring. Never on top of another puddle.
     const L = up.potion, n = (1 + Math.floor(L / 3) + up.dup) * (L >= 7 ? 2 : 1), r = potionR(L), pred = clamp((L - 1) / 6);
+    if (L >= 7) {   // max level: flasks fly out one after another in a clockwise ring that surrounds you
+      sweep += Math.PI / n;
+      for (let i = 0; i < n; i++) later(i * 0.1, () => {
+        const a = sweep + (i * Math.PI * 2) / n, d = 70 + r, x = P.x + Math.cos(a) * d, y = P.y + Math.sin(a) * d;
+        flasks.push({ x0: P.x, y0: P.y, x, y, at: t + 0.55, dur: 0.55, L, r });
+      });
+      return;
+    }
     const start = Math.floor(Math.random() * 8);
     const taken = (x, y) => puddles.some(q => (q.x - x) ** 2 + (q.y - y) ** 2 < ((q.r + r) * 0.8) ** 2) || flasks.some(q => (q.x - x) ** 2 + (q.y - y) ** 2 < ((q.r + r) * 0.8) ** 2);
     for (let i = 0; i < n; i++) {
@@ -279,7 +291,7 @@ export function startGame(canvas, profile, opts, ui) {
     }
     // magic: homing bolts, one monster each. Level 7 = Seeker Swarm
     magicCd -= dt;
-    if (up.magic > 0 && magicCd <= 0 && anyInView()) { magicCd = 2.1 / rate(); volley(fireMagic); }
+    if (up.magic > 0 && magicCd <= 0 && anyInView()) { magicCd = 2.1 / rate() / (up.magic >= 7 ? 2 : 1); volley(fireMagic); }
     // potion
     potionCd -= dt;
     if (up.potion > 0 && potionCd <= 0) { potionCd = 3.2 / rate(); volley(throwPotions); }
@@ -303,6 +315,7 @@ export function startGame(canvas, profile, opts, ui) {
           if (s.kind === 'magic') {
             if (s.target && e !== s.target) continue; // seekers only hit their own target
             hurt(e, s.dmg); s.life = 0;
+            if (up.magic >= 7 && !s.shard) shards(e, s.dmg * 0.6);
           } else if (!s.hit.includes(e)) { s.hit.push(e); hurt(e, s.dmg); if (--s.pierce <= 0) s.life = 0; }
         }
       }
