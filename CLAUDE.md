@@ -89,3 +89,4 @@ Hidden coloring game (`src/components/CreditsGame.tsx` = painting card only; `cr
 - Lightning targets a monster 50% (Lv1) to 85% (Lv7) of strikes; otherwise a random spot within 190px of the hero.
 - v2.6: lightning only hits (and chains to) monsters on screen; damage: upgrade +8%, weapon levels +10% each, late factor x(1-0.65p^1.1).
 - v2.7: HP curve 0.5+5p^1.5+45p^3 (about 50x at the end), bosses x(1+4p); player damage x(1-0.75p^1.1), upgrade +6%, weapon levels +7%.
+- v2.8: fewer bolts/flasks/strikes: magic, potion, lightning get +1 at L4 and L6 (L7: 4 bolts, 5 flasks, 4 strikes); Duplicate always adds exactly +1 (no doubling at L7); second sword ring ignores Duplicate.

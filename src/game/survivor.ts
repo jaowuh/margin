@@ -11,10 +11,10 @@ const SLOTS = 3; // weapons a hero can carry at once
 // What reaching each weapon level gives (index = level)
 const LV = {
   arrow: [null, 'Arrows fly the way you face', '+7% damage, pierces 1 more', '+1 arrow per shot', '+7% damage, pierces 1 more', '+1 arrow per shot', '+7% damage, pierces 1 more', 'MAX Arrow Storm: a non-stop wall of arrows'],
-  magic: [null, 'Homing bolts that hit one monster', '+7% damage', '+1 bolt per cast', '+7% damage', '+1 bolt per cast', '+7% damage', 'MAX Seeker Swarm: every hit splits into 2 homing shards'],
+  magic: [null, 'Homing bolts that hit one monster', '+7% damage', '+7% damage', '+1 bolt per cast', '+7% damage', '+1 bolt per cast', 'MAX Seeker Swarm: every hit splits into 2 homing shards'],
   sword: [null, 'Blades circle you', '+7% damage', '+1 blade', '+7% damage', '+1 blade', '+7% damage', 'MAX Blade Tempest: a second ring spinning the other way'],
-  potion: [null, 'Flasks make slowing, poisonous puddles', 'Bigger puddles', '+1 flask', 'Stronger poison, longer puddles', '+1 flask', 'Bigger, stronger puddles', 'MAX Toxic Fog: flasks sweep a clockwise ring all around you'],
-  lightning: [null, 'Lightning strikes and jumps to a nearby monster', '+1 chain', '+1 strike', '+1 chain', '+1 strike', '+1 chain', 'MAX Thunderstorm: double strikes, chains to 6'],
+  potion: [null, 'Flasks make slowing, poisonous puddles', 'Bigger puddles', 'Stronger poison, longer puddles', '+1 flask', 'Bigger, stronger puddles', '+1 flask', 'MAX Toxic Fog: flasks sweep a clockwise ring all around you'],
+  lightning: [null, 'Lightning strikes and jumps to a nearby monster', '+1 chain', 'Stronger strikes', '+1 chain and +1 strike', 'Stronger strikes', '+1 chain and +1 strike', 'MAX Thunderstorm: 4 strikes at once, chains to 6'],
 };
 const GENERIC = [
   { id: 'dup', name: 'Duplicate', desc: '+1 projectile, blade or strike for all weapons', max: 2, rare: 0.22 },
@@ -203,7 +203,7 @@ export function startGame(canvas, profile, opts, ui) {
   }
   function fireMagic() {
     // like arrows: only fires when a monster is on screen, nearest first, one bolt per monster
-    const L = up.magic, want = (L >= 7 ? 6 : 1 + Math.floor((L - 1) / 2)) + up.dup;
+    const L = up.magic, want = (L >= 7 ? 4 : 1 + (L >= 4 ? 1 : 0) + (L >= 6 ? 1 : 0)) + up.dup;
     const near = enemies.filter(e => e.hp > 0 && inView(e)).sort((a, b) => (a.x - P.x) ** 2 + (a.y - P.y) ** 2 - (b.x - P.x) ** 2 - (b.y - P.y) ** 2);
     const n = Math.min(want, near.length);
     for (let i = 0; i < n; i++) {
@@ -219,7 +219,7 @@ export function startGame(canvas, profile, opts, ui) {
   const potionR = L => (34 + 5 * L) * (L >= 7 ? 1.1 : 1);
   function throwPotions() {
     // Flasks land around you, roughly on the 8 compass directions. Low level = loose and random, high level = a tidy ring. Never on top of another puddle.
-    const L = up.potion, n = (1 + Math.floor(L / 3) + up.dup) * (L >= 7 ? 2 : 1), r = potionR(L), pred = clamp((L - 1) / 6);
+    const L = up.potion, n = (L >= 7 ? 5 : 1 + (L >= 4 ? 1 : 0) + (L >= 6 ? 1 : 0)) + up.dup, r = potionR(L), pred = clamp((L - 1) / 6);
     if (L >= 7) {   // max level: flasks fly out one after another in a clockwise ring that surrounds you
       sweep += Math.PI / n;
       for (let i = 0; i < n; i++) later(i * 0.1, () => {
@@ -242,7 +242,7 @@ export function startGame(canvas, profile, opts, ui) {
     }
   }
   function strikeLightning() {
-    const L = up.lightning, n = (1 + Math.floor((L - 1) / 2) + up.dup) * (L >= 7 ? 2 : 1), chain = L >= 7 ? 6 : 1 + Math.floor(L / 2);
+    const L = up.lightning, n = (L >= 7 ? 4 : 1 + (L >= 4 ? 1 : 0) + (L >= 6 ? 1 : 0)) + up.dup, chain = L >= 7 ? 6 : 1 + Math.floor(L / 2);
     const near = enemies.filter(e => e.hp > 0 && onScreen(e));
     for (let i = 0; i < n; i++) {
       let x, y;
@@ -385,7 +385,7 @@ export function startGame(canvas, profile, opts, ui) {
     const L = up.sword; if (L <= 0) return [];
     const n = Math.min(MAX_BLADES_PER_RING, 1 + Math.floor(L / 2) + (isMain('sword') && R >= 2 ? 1 : 0) + up.dup), size = 34 * (1 + 0.04 * (L - 1));
     const r = [{ rad: 40 + 3 * L, n, dir: 1, size }];
-    if (L >= 7) r.push({ rad: 90, n: Math.min(MAX_BLADES_PER_RING, n + 2), dir: -0.8, size });
+    if (L >= 7) r.push({ rad: 90, n: Math.min(MAX_BLADES_PER_RING, n - up.dup + 2), dir: -0.8, size });
     return r;
   };
   function pop(x, y, v) { if (pops.length < 60) pops.push({ x, y, v, life: 0.5 }); }
