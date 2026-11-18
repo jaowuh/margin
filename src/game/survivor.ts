@@ -193,7 +193,7 @@ export function startGame(canvas, profile, opts, ui) {
     if (e.mini) { items.push({ x: e.x, y: e.y, type: 'chest', life: 1e9 }); return; }
     if (e.boss) return;
     const low = P.hp < P.maxHp * 0.4;
-    if (Math.random() > (low ? 0.022 : 0.014) * (1 + FX.drop)) return;
+    if (Math.random() > (low ? 0.022 : 0.014) * (1 + FX.drop) / (1 + 5 * Math.pow(progress(), 1.5))) return; // fewer drops per kill late, when there are far more kills
     const w = [['heart', low ? 0.3 : 0.1], ['magnet', 0.25], ['shield', 0.25], ['boots', 0.25]], sum = w.reduce((s, x) => s + x[1], 0);
     let r = Math.random() * sum, type = 'heart';
     for (const [k, v] of w) { if ((r -= v) <= 0) { type = k; break; } }
