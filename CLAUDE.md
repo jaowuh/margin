@@ -97,3 +97,4 @@ Hidden coloring game (`src/components/CreditsGame.tsx` = painting card only; `cr
 - v3.2: hallway runs across the map (AX 1000, AY 400). Game overlay blocks text selection, long-press callout and tap highlight (user-select none, selectstart/contextmenu prevented on the canvas).
 - v3.3: arena AX 650, AY 330.
 - v3.4: arena AX 450, AY 280.
+- v3.5: arena AX 800, AY 280.

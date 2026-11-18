@@ -28,7 +28,7 @@ const GENERIC = [
 ];
 const PRIMARY = { archer: 'arrow', mage: 'magic', swordsman: 'sword' };
 const GLYPH = { heart: '❤️', magnet: '🧲', shield: '🛡️', boots: '⚡', chest: '🎁' };
-const AX = 450, AY = 280; // the play field is a long hallway running across the map: x from -AX to AX, y from -AY to AY
+const AX = 800, AY = 280; // the play field is a long hallway running across the map: x from -AX to AX, y from -AY to AY
 const MAX_BLADES_PER_RING = 6; // 12 blades total with the second ring
 
 export function startGame(canvas, profile, opts, ui) {
