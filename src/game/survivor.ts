@@ -19,7 +19,7 @@ const LV = {
 const GENERIC = [
   { id: 'dup', name: 'Duplicate', desc: '+1 projectile, blade or strike for all weapons', max: 2, rare: 0.22 },
   { id: 'multi', name: 'Multishot', desc: 'Every attack repeats once more right after', max: 2, rare: 0.22 },
-  { id: 'dmg', name: 'Sharper edge', desc: '+25% damage to everything', max: 8 },
+  { id: 'dmg', name: 'Sharper edge', desc: '+18% damage to everything', max: 8 },
   { id: 'rate', name: 'Quick hands', desc: '+20% fire rate (blades spin faster too)', max: 8 },
   { id: 'speed', name: 'Swift boots', desc: '+10% move speed', max: 5 },
   { id: 'hp', name: 'Vitality', desc: '+30 max health and heal 30', max: 6 },
@@ -41,7 +41,7 @@ export function startGame(canvas, profile, opts, ui) {
 
   const FX = opts.fx || { dmg: 0, rate: 0, hp: 0, speed: 0, magnet: 0, xp: 0, drop: 0, revive: 0 };
   let revived = false;
-  const P = { x: 0, y: 0, hp: profile.maxHp + FX.hp, maxHp: profile.maxHp + FX.hp, inv: 0, face: 1, dir: 0, level: 1, xp: 0, need: 8 };
+  const P = { x: 0, y: 0, hp: profile.maxHp + FX.hp, maxHp: profile.maxHp + FX.hp, inv: 0, face: 1, dir: 0, level: 1, xp: 0, need: 3 };
   const main = PRIMARY[profile.job] || 'arrow';
   const R = profile.rank, isMain = k => k === main;
   const up = { arrow: 0, magic: 0, sword: 0, potion: 0, lightning: 0, dup: 0, multi: 0, dmg: 0, rate: 0, speed: 0, hp: 0, magnet: 0, heal: 0 };
@@ -49,7 +49,7 @@ export function startGame(canvas, profile, opts, ui) {
   const wmul = k => (k === main ? [1.3, 1.5, 1.8][profile.rank - 1] : 1);
   const owned = () => WIDS.filter(k => up[k] > 0);
 
-  let sweep = 0, t = 0, kills = 0, arrowCd = 0, magicCd = 0, potionCd = 1, lightCd = 1, orbAng = 0, spawnCd = 0, novaCd = 5, bossA = false, bossB = false, over = false;
+  let firstDone = false, sweep = 0, t = 0, kills = 0, arrowCd = 0, magicCd = 0, potionCd = 1, lightCd = 1, orbAng = 0, spawnCd = 0, novaCd = 5, bossA = false, bossB = false, over = false;
   let nextMini = D / 5, nextSwarm = D * 0.3, miniN = 0;
   const buffs = { inv: 0, speed: 0 };
   const enemies = [], shots = [], gems = [], pops = [], items = [], puddles = [], flasks = [], bolts = [], novas = [], delayed = [];
@@ -73,7 +73,7 @@ export function startGame(canvas, profile, opts, ui) {
   document.addEventListener('visibilitychange', vis);
 
   /* ---------- stats ---------- */
-  const dmg = () => 10 * profile.damage * (1 + 0.25 * up.dmg) * (1 + FX.dmg);
+  const dmg = () => 10 * profile.damage * (1 + 0.18 * up.dmg) * (1 + FX.dmg) * (1 - 0.35 * Math.pow(progress(), 1.2)); // damage eases off late so late monsters don't melt
   const rate = () => 1.1 * (1 + 0.2 * up.rate) * (1 + FX.rate);
   const spd = () => 125 * profile.speed * (1 + 0.1 * up.speed) * (1 + FX.speed) * (buffs.speed > 0 ? 1.5 : 1);
   const magnet = () => 70 * (1 + 0.4 * up.magnet) * (1 + FX.magnet);
@@ -112,9 +112,10 @@ export function startGame(canvas, profile, opts, ui) {
   function spawnWave(dt) {
     const p = progress();
     spawnCd -= dt;
-    if (spawnCd <= 0 && enemies.length < 320) {
-      spawnCd = 1.8 + 5.5 * Math.pow(1 - p, 1.3);
-      const n = 3 + Math.floor(Math.pow(p, 1.6) * 60) + Math.floor(p * 4), a0 = rnd(0, Math.PI * 2), main = pickType(p);
+    if (spawnCd <= 0 && enemies.length < 380) {
+      const first = !firstDone; firstDone = true;
+      spawnCd = 1.4 + 4.5 * Math.pow(1 - p, 1.3);
+      const n = first ? 4 : 4 + Math.floor(Math.pow(p, 1.5) * 85) + Math.floor(p * 6), a0 = rnd(0, Math.PI * 2), main = pickType(p);
       for (let i = 0; i < n; i++) spawn(Math.random() < 0.7 ? main : pickType(p), { angle: a0 + rnd(-0.7, 0.7), dist: Math.max(W, H) / 2 + 50 + rnd(0, 90) });
     }
     if (!bossA && p >= 0.5) { bossA = true; spawn('king'); ui.banner('The Ogre King approaches!'); }

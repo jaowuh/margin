@@ -84,3 +84,4 @@ Hidden coloring game (`src/components/CreditsGame.tsx` = painting card only; `cr
 - Boss HP: Ogre King 9000, Dragon 24000 (x(1+2.4p)); champions x40 base HP. Tuned against fully maxed builds.
 - Waves: monsters arrive in bursts from one side (gap 1.8+5.5(1-p)^1.3 s, size 3+60p^1.6+4p), no waves counter, next burst doesn't wait. Magic cooldown 2.1s and bolt speed 150; lightning cooldown 3.6s; potion cooldown 3.2s and flasks land on 8 compass slots around the hero without overlapping puddles (tidier ring as level rises).
 - v2.3: HP curve 0.5+4p^1.5+9p^3. Potion L7 = clockwise ring sweep (flasks 0.1s apart). Magic L7 = each hit splits into 2 homing shards (no extra rate or damage).
+- v2.4: player damage eases off late (x(1-0.35p^1.2)), dmg upgrade +18%; first level-up needs only 3 XP and the first wave is 4 slimes so it triggers level 1; wave gap 1.4+4.5(1-p)^1.3 s, size 4+85p^1.5+6p, cap 380.
