@@ -3,7 +3,7 @@ import { Pause, Play, Swords, X } from 'lucide-react';
 import type { Job } from '../game/profile';
 import { JOB_IDS, JOBS } from '../game/profile';
 import { useActive, useStore } from '../lib/store';
-import { chestFor, loadSave, profileFor, RELICS, RELIC_FX, RELIC_SLOTS, relicFx, writeSave } from '../game/profile';
+import { TIERS, chestFor, loadSave, profileFor, RELICS, RELIC_FX, RELIC_SLOTS, relicFx, writeSave } from '../game/profile';
 import type { GameSave, Tier } from '../game/profile';
 import { startGame } from '../game/survivor';
 import { loadSprites } from '../game/sprites';
@@ -99,6 +99,8 @@ export function PlayTab({ month }: { month: string }) {
 type Phase = 'intro' | 'play' | 'result';
 interface Hud { hp: number; maxHp: number; xp: number; need: number; level: number; t: number; D: number; kills: number; weapons?: any[]; buffs?: any }
 
+const TIER_NAME: Record<Tier, string> = { wood: 'Wooden', bronze: 'Bronze', silver: 'Silver', gold: 'Golden', legendary: 'Epic' };
+
 function MonsterGame({ month, job, onClose }: { month: string; job: Job; onClose: () => void }) {
   const { data } = useStore();
   const { ws } = useActive();
@@ -111,7 +113,8 @@ function MonsterGame({ month, job, onClose }: { month: string; job: Job; onClose
   const [banner, setBanner] = useState('');
   const [shake, setShake] = useState(false);
   const [paused, setPaused] = useState(false);
-  const [result, setResult] = useState<{ won: boolean; timeout?: boolean; seconds: number; kills: number; tier: Tier; coins: number; relic: string; save: GameSave } | null>(null);
+  const [result, setResult] = useState<{ won: boolean; timeout?: boolean; seconds: number; kills: number; tier: Tier; finalTier: Tier; lucky: boolean; coins: number; relic: string; save: GameSave } | null>(null);
+  const [chestStep, setChestStep] = useState(0); // 0 closed, 1 shaking, 2 open
   const canvas = useRef<HTMLCanvasElement>(null);
   const game = useRef<any>(null);
   const pick = useRef<((id: string) => void) | null>(null);
@@ -128,12 +131,17 @@ function MonsterGame({ month, job, onClose }: { month: string; job: Job; onClose
       shake: () => { setShake(true); setTimeout(() => setShake(false), 150); },
       end: ({ won, seconds, kills, timeout }: any) => {
         const c = chestFor(profile, won, seconds, D, kills);
-        const pool = RELICS[c.tier];
+        const luckyChance = 0.1 + 0.15 * Math.max(0, profile.luck - 1) / 0.8;   // 10% to 25%, better with a higher savings rate
+        const lucky = TIERS.indexOf(c.tier) < 4 && Math.random() < luckyChance;
+        const finalTier: Tier = lucky ? TIERS[TIERS.indexOf(c.tier) + 1] : c.tier;
+        const coinsWon = lucky ? Math.round(c.coins * 1.5) : c.coins;
+        const pool = RELICS[finalTier];
         const relic = pool[Math.floor(Math.random() * pool.length)];
         const s = loadSave();
-        const next: GameSave = { coins: s.coins + c.coins, relics: s.relics.includes(relic) ? s.relics : [...s.relics, relic], equipped: s.equipped, bestSeconds: Math.max(s.bestSeconds, seconds), runs: s.runs + 1, job: s.job };
+        const next: GameSave = { coins: s.coins + coinsWon, relics: s.relics.includes(relic) ? s.relics : [...s.relics, relic], equipped: s.equipped, bestSeconds: Math.max(s.bestSeconds, seconds), runs: s.runs + 1, job: s.job };
         writeSave(next);
-        setResult({ won, timeout, seconds, kills, tier: c.tier, coins: c.coins, relic, save: next });
+        setChestStep(0);
+        setResult({ won, timeout, seconds, kills, tier: c.tier, lucky, finalTier, coins: coinsWon, relic, save: next });
         setPhase('result');
       },
     });
@@ -185,13 +193,22 @@ function MonsterGame({ month, job, onClose }: { month: string; job: Job; onClose
           <p className="mg-kicker">{result.won ? 'You slew the Dragon!' : result.timeout ? 'Time ran out' : 'You fell'}</p>
           <h2 className="mg-title">{result.won ? 'Victory' : 'Defeated'}</h2>
           <p className="mg-blurb">{fmt(result.seconds)} survived · {result.kills} monsters slain</p>
-          <div className={`mg-chest open t-${result.tier}`}>
-            <span>{result.tier} chest</span>
-            <strong>+{result.coins} coins</strong>
-            <em>Relic found: {result.relic}</em>
-          </div>
-          <p className="mg-how">{result.won ? 'Bigger savings means a better chest.' : `Saving more raises your chest tier. Win a run for an even better one.`}</p>
-          <p className="mg-meta">{result.save.coins} coins · {result.save.relics.length} relics</p>
+          {chestStep < 2 ? (
+            <button className={`mg-chestbox t-${result.tier} ${chestStep === 1 ? 'shake' : ''}`} disabled={chestStep === 1} onClick={() => { setChestStep(1); setTimeout(() => setChestStep(2), 900); }}>
+              <b>🧰</b><span>{TIER_NAME[result.tier]} chest</span><em>{chestStep === 1 ? 'Opening...' : 'Tap to open'}</em>
+            </button>
+          ) : (
+            <>
+              {result.lucky && <p className="mg-lucky">✨ Lucky! Your chest upgraded to {TIER_NAME[result.finalTier]} ✨</p>}
+              <div className={`mg-chest open t-${result.finalTier}`}>
+                <span>{TIER_NAME[result.finalTier]} chest</span>
+                <strong>+{result.coins} coins</strong>
+                <em>Relic found: {result.relic}</em>
+              </div>
+              <p className="mg-how">{result.won ? 'Bigger savings means a better chest.' : `Saving more raises your chest tier. Win a run for an even better one.`}</p>
+              <p className="mg-meta">{result.save.coins} coins · {result.save.relics.length} relics</p>
+            </>
+          )}
           <div className="mg-row">
             <button className="btn" onClick={close}>Done</button>
             <button className="btn primary" onClick={() => { setResult(null); setHud(null); setPhase('play'); }}>Play again</button>

@@ -484,3 +484,14 @@ input[type='date'] { color-scheme: dark; }
 .mg-relic.on{border-color:#B9684D;background:#3a2a24}
 .mg-relic.on em{color:#DCA289}
 .mg-relic:disabled{opacity:.45}
+
+.mg-chestbox{display:grid;gap:4px;justify-items:center;width:100%;margin:0 0 12px;padding:22px 12px;border-radius:14px;background:#171717;border:2px solid #3F3A37;color:#F5F5F4;font:inherit}
+.mg-chestbox b{font-size:56px;line-height:1;font-weight:400}
+.mg-chestbox span{font-size:13px;text-transform:uppercase;letter-spacing:.08em;color:#DCA289}
+.mg-chestbox em{font-style:normal;font-size:12px;color:#A8A29E}
+.mg-chestbox.t-wood{border-color:#7a5a3a}.mg-chestbox.t-bronze{border-color:#B9684D}.mg-chestbox.t-silver{border-color:#cfd4d8}.mg-chestbox.t-gold{border-color:#e0a94f}.mg-chestbox.t-legendary{border-color:#F2B48C;box-shadow:0 0 18px #F2B48C66}
+.mg-chestbox.shake b{animation:mgshake .3s infinite}
+@keyframes mgshake{0%,100%{transform:rotate(0)}25%{transform:rotate(-12deg) scale(1.08)}75%{transform:rotate(12deg) scale(1.08)}}
+.mg-lucky{margin:0 0 10px;font-weight:700;color:#F2B48C;text-align:center;animation:mgpop .5s}
+@keyframes mgpop{from{transform:scale(.7);opacity:0}to{transform:scale(1);opacity:1}}
+@media (prefers-reduced-motion:reduce){.mg-chestbox.shake b,.mg-lucky{animation:none}}
