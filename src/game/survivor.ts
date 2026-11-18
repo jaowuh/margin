@@ -401,8 +401,9 @@ export function startGame(canvas, profile, opts, ui) {
       while (loopers.length < nR) { const a = rnd(0, Math.PI * 2); loopers.push({ x: P.x, y: P.y, vx: Math.cos(a) * 320, vy: Math.sin(a) * 320, spin: 0 }); }
       for (const b of loopers) {
         b.x += b.vx * dt; b.y += b.vy * dt; b.spin += dt * 16;
-        if (b.x < -AX) { b.x = -AX; b.vx = Math.abs(b.vx); } if (b.x > AX) { b.x = AX; b.vx = -Math.abs(b.vx); }
-        if (b.y < -AY) { b.y = -AY; b.vy = Math.abs(b.vy); } if (b.y > AY) { b.y = AY; b.vy = -Math.abs(b.vy); }
+        const wob = () => { const a = Math.atan2(b.vy, b.vx) + rnd(-0.4, 0.4), v = Math.hypot(b.vx, b.vy); b.vx = Math.cos(a) * v; b.vy = Math.sin(a) * v; };   // random turn on each wall bounce so the paths don't repeat
+        if (b.x < -AX) { b.x = -AX; b.vx = Math.abs(b.vx); wob(); b.vx = Math.max(b.vx, 40); } if (b.x > AX) { b.x = AX; b.vx = -Math.abs(b.vx); wob(); b.vx = Math.min(b.vx, -40); }
+        if (b.y < -AY) { b.y = -AY; b.vy = Math.abs(b.vy); wob(); b.vy = Math.max(b.vy, 40); } if (b.y > AY) { b.y = AY; b.vy = -Math.abs(b.vy); wob(); b.vy = Math.min(b.vy, -40); }
         for (const e of enemies) if (e.hp > 0 && (!e.bmCd || e.bmCd < t) && (e.x - b.x) ** 2 + (e.y - b.y) ** 2 < (e.r + 14) ** 2) { e.bmCd = t + 0.4; hurt(e, dmg() * 2.6 * wl(7)); }
       }
     }
