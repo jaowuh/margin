@@ -19,7 +19,7 @@ const LV = {
 const GENERIC = [
   { id: 'dup', name: 'Duplicate', desc: '+1 projectile, blade or strike for all weapons', max: 2, rare: 0.22 },
   { id: 'multi', name: 'Multishot', desc: 'Every attack repeats once more right after', max: 2, rare: 0.22 },
-  { id: 'dmg', name: 'Sharper edge', desc: '+6% damage to everything', max: 8 },
+  { id: 'dmg', name: 'Sharper edge', desc: '+7% damage to everything', max: 8 },
   { id: 'rate', name: 'Quick hands', desc: '+20% fire rate (blades spin faster too)', max: 8 },
   { id: 'speed', name: 'Swift boots', desc: '+10% move speed', max: 5 },
   { id: 'hp', name: 'Vitality', desc: '+30 max health and heal 30', max: 6 },
@@ -28,7 +28,7 @@ const GENERIC = [
 ];
 const PRIMARY = { archer: 'arrow', mage: 'magic', swordsman: 'sword' };
 const GLYPH = { heart: '❤️', magnet: '🧲', shield: '🛡️', boots: '⚡', chest: '🎁' };
-const ARENA = 620; // the play field is a square from -ARENA to +ARENA
+const AX = 270, AY = 950; // the play field is a long hallway: x from -AX to AX, y from -AY to AY
 const MAX_BLADES_PER_RING = 6; // 12 blades total with the second ring
 
 export function startGame(canvas, profile, opts, ui) {
@@ -75,7 +75,7 @@ export function startGame(canvas, profile, opts, ui) {
   document.addEventListener('visibilitychange', vis);
 
   /* ---------- stats ---------- */
-  const dmg = () => 10 * profile.damage * (1 + 0.06 * up.dmg) * (1 + FX.dmg) * (1 - 0.75 * Math.pow(progress(), 1.1)); // damage eases off late so late monsters don't melt
+  const dmg = () => 10 * profile.damage * (1 + 0.07 * up.dmg) * (1 + FX.dmg) * (1 - 0.68 * Math.pow(progress(), 1.1)); // damage eases off late so late monsters don't melt
   const rate = () => 1.1 * (1 + 0.2 * up.rate) * (1 + FX.rate);
   const spd = () => 125 * profile.speed * (1 + 0.1 * up.speed) * (1 + FX.speed) * (buffs.speed > 0 ? 1.5 : 1);
   const magnet = () => 70 * (1 + 0.4 * up.magnet) * (1 + FX.magnet);
@@ -99,9 +99,9 @@ export function startGame(canvas, profile, opts, ui) {
     const hpScale = (T.boss ? 1 + p * 4 : 0.5 + 5 * Math.pow(p, 1.5) + 45 * Math.pow(p, 3)) * (o.hp || 1), dmgScale = 0.8 + 1.4 * p;
     const big = o.mini ? 2.1 : 1;
     let sx = P.x + Math.cos(a) * d, sy = P.y + Math.sin(a) * d;
-    if (Math.abs(sx) > ARENA) sx = P.x - Math.cos(a) * d;
-    if (Math.abs(sy) > ARENA) sy = P.y - Math.sin(a) * d;
-    sx = clamp(sx, -ARENA, ARENA); sy = clamp(sy, -ARENA, ARENA);
+    if (Math.abs(sx) > AX) sx = P.x - Math.cos(a) * d;
+    if (Math.abs(sy) > AY) sy = P.y - Math.sin(a) * d;
+    sx = clamp(sx, -AX, AX); sy = clamp(sy, -AY, AY);
     enemies.push({ type, x: sx, y: sy, r: T.r * big, hp: T.hp * hpScale, maxHp: T.hp * hpScale, sp: T.sp * (1 + progress() * 0.5) * (o.sp || 1), dmg: T.dmg * dmgScale * (o.mini ? 1.5 : 1), xp: T.xp * (o.mini ? 4 : 1), boss: !!T.boss || !!o.mini, mini: !!o.mini, hit: 0, ph: Math.random() * 6, slow: 0 });
   }
   function pickType(p) {
@@ -189,7 +189,7 @@ export function startGame(canvas, profile, opts, ui) {
     if (e.mini) { items.push({ x: e.x, y: e.y, type: 'chest', life: 1e9 }); return; }
     if (e.boss) return;
     const low = P.hp < P.maxHp * 0.4;
-    if (Math.random() > (low ? 0.035 : 0.025) * (1 + FX.drop)) return;
+    if (Math.random() > (low ? 0.022 : 0.014) * (1 + FX.drop)) return;
     const w = [['heart', low ? 0.3 : 0.1], ['magnet', 0.25], ['shield', 0.25], ['boots', 0.25]], sum = w.reduce((s, x) => s + x[1], 0);
     let r = Math.random() * sum, type = 'heart';
     for (const [k, v] of w) { if ((r -= v) <= 0) { type = k; break; } }
@@ -275,7 +275,7 @@ export function startGame(canvas, profile, opts, ui) {
     if (keys['arrowup'] || keys['w']) my -= 1; if (keys['arrowdown'] || keys['s']) my += 1;
     if (joy) { const dx = joy.x - joy.ox, dy = joy.y - joy.oy, l = Math.hypot(dx, dy); if (l > 6) { mx = dx / Math.max(l, 40); my = dy / Math.max(l, 40); } }
     const ml = Math.hypot(mx, my); if (ml > 1) { mx /= ml; my /= ml; }
-    P.x = clamp(P.x + mx * spd() * dt, -ARENA, ARENA); P.y = clamp(P.y + my * spd() * dt, -ARENA, ARENA);
+    P.x = clamp(P.x + mx * spd() * dt, -AX, AX); P.y = clamp(P.y + my * spd() * dt, -AY, AY);
     if (ml > 0.05) { P.dir = Math.atan2(my, mx); if (Math.abs(mx) > 0.05) P.face = mx > 0 ? 1 : -1; }
     P.inv = Math.max(0, P.inv - dt);
     spawnWave(dt);
@@ -284,7 +284,7 @@ export function startGame(canvas, profile, opts, ui) {
     // enemies
     for (const e of enemies) {
       const dx = P.x - e.x, dy = P.y - e.y, l = Math.hypot(dx, dy) || 1, k = e.slow > t ? 0.45 : 1;
-      e.x = clamp(e.x + (dx / l) * e.sp * k * dt, -ARENA - 20, ARENA + 20); e.y = clamp(e.y + (dy / l) * e.sp * k * dt, -ARENA - 20, ARENA + 20); e.vx = dx; e.hit = Math.max(0, e.hit - dt); e.ph += dt * 6;
+      e.x = clamp(e.x + (dx / l) * e.sp * k * dt, -AX - 20, AX + 20); e.y = clamp(e.y + (dy / l) * e.sp * k * dt, -AY - 20, AY + 20); e.vx = dx; e.hit = Math.max(0, e.hit - dt); e.ph += dt * 6;
       if (l < e.r + 10 && P.inv <= 0 && buffs.inv <= 0) { P.hp -= e.dmg; P.inv = 0.6; ui.shake(); if (P.hp <= 0) { if (FX.revive && !revived) { revived = true; P.hp = P.maxHp * 0.5; P.inv = 2.5; ui.banner('Phoenix Ledger: back on your feet!'); } else return finish(false); } }
     }
     // soft separation so monsters don't stack into one dot
@@ -434,10 +434,10 @@ export function startGame(canvas, profile, opts, ui) {
     const c = ctx; c.setTransform(DPR, 0, 0, DPR, 0, 0);
     c.fillStyle = '#0c0b0a'; c.fillRect(0, 0, W, H);
     const ox = W / 2 - P.x, oy = H / 2 - P.y, G = 64;
-    c.fillStyle = '#1b1917'; c.fillRect(-ARENA + ox, -ARENA + oy, ARENA * 2, ARENA * 2);
+    c.fillStyle = '#1b1917'; c.fillRect(-AX + ox, -AY + oy, AX * 2, AY * 2);
     c.fillStyle = '#2a2623';
-    for (let gx = Math.floor((P.x - W / 2) / G) * G; gx < P.x + W / 2 + G; gx += G) for (let gy = Math.floor((P.y - H / 2) / G) * G; gy < P.y + H / 2 + G; gy += G) { if (Math.abs(gx) > ARENA || Math.abs(gy) > ARENA) continue; c.beginPath(); c.arc(gx + ox, gy + oy, 2, 0, 7); c.fill(); }
-    c.strokeStyle = '#B9684D'; c.lineWidth = 6; c.shadowColor = '#B9684D'; c.shadowBlur = 14; c.strokeRect(-ARENA + ox, -ARENA + oy, ARENA * 2, ARENA * 2); c.shadowBlur = 0;
+    for (let gx = Math.floor((P.x - W / 2) / G) * G; gx < P.x + W / 2 + G; gx += G) for (let gy = Math.floor((P.y - H / 2) / G) * G; gy < P.y + H / 2 + G; gy += G) { if (Math.abs(gx) > AX || Math.abs(gy) > AY) continue; c.beginPath(); c.arc(gx + ox, gy + oy, 2, 0, 7); c.fill(); }
+    c.strokeStyle = '#B9684D'; c.lineWidth = 6; c.shadowColor = '#B9684D'; c.shadowBlur = 14; c.strokeRect(-AX + ox, -AY + oy, AX * 2, AY * 2); c.shadowBlur = 0;
     for (const p of puddles) { c.globalAlpha = clamp(p.life, 0, 1) * 0.45; c.fillStyle = '#6fd36f'; c.beginPath(); c.arc(p.x + ox, p.y + oy, p.r, 0, 7); c.fill(); c.globalAlpha = clamp(p.life, 0, 1) * 0.8; c.strokeStyle = '#b8f5a8'; c.lineWidth = 2; c.stroke(); for (let i = 0; i < 4; i++) { const a = i * 1.7 + t * 1.5; c.beginPath(); c.arc(p.x + ox + Math.cos(a) * p.r * 0.5, p.y + oy + Math.sin(a * 1.3) * p.r * 0.5, 3, 0, 7); c.fillStyle = '#d6ffcf'; c.fill(); } c.globalAlpha = 1; }
     for (const g of gems) { c.fillStyle = '#6FC3FF'; c.beginPath(); c.moveTo(g.x + ox, g.y + oy - 5); c.lineTo(g.x + ox + 4, g.y + oy); c.lineTo(g.x + ox, g.y + oy + 5); c.lineTo(g.x + ox - 4, g.y + oy); c.fill(); }
     c.textAlign = 'center'; c.textBaseline = 'middle';
