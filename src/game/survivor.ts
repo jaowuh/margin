@@ -16,7 +16,7 @@ const LV = {
   potion: [null, 'Flasks make slowing, poisonous puddles', 'Bigger puddles', 'Stronger poison (+40%)', '+1 flask', 'Puddles last 60% longer', '+1 flask, heavier slow, +20% poison', 'MAX Toxic Fog: flasks sweep a clockwise ring all around you'],
   axe: [null, 'A heavy swing in a wide arc where you face', 'Wider arc', 'A shockwave rolls forward after the swing', 'Half-second stun on hit', 'Double swing: forward, then a backswing', 'Bigger shockwave that travels further', 'MAX Earthsplitter: the shockwave crosses the whole map'],
   boomerang: [null, 'Thrown at the nearest monster, curves back to you, hits both ways', 'Flies faster', '+1 boomerang', 'Bigger, wider arc', 'The return trip hits 50% harder', '+1 boomerang', 'MAX Orbit: boomerangs never land and loop around you'],
-  laser: [null, 'A beam locks onto the nearest monster and burns the whole line', 'Longer beam', 'Wider beam', 'Shorter rest between beams', '+1 beam on another monster', 'Monsters it hits keep burning', 'MAX Twin Sweep: two beams spin a full circle around you'],
+  laser: [null, 'A beam locks onto the nearest monster and burns the whole line', 'Longer reach', 'Wider beam and more reach', 'Shorter rest between beams, more reach', '+1 beam on another monster, more reach', 'Monsters it hits keep burning, more reach', 'MAX Twin Sweep: two beams spin around you and run all the way to the wall'],
   lightning: [null, 'Lightning strikes and jumps to a nearby monster', '+1 chain', 'Wider strike zone', '+1 strike', 'Chains keep full damage', '+1 strike and +1 chain', 'MAX Thunderstorm: 4 strikes at once, chains to 6'],
 };
 const GENERIC = [
@@ -240,13 +240,19 @@ export function startGame(canvas, profile, opts, ui) {
   function startLaser() {
     const L = up.laser, nb = (L >= 7 ? 2 : 1 + (L >= 5 ? 1 : 0)) + up.dup;
     beams.length = 0;
-    const near = enemies.filter(e => e.hp > 0 && inView(e)).sort((a, b) => (a.x - P.x) ** 2 + (a.y - P.y) ** 2 - (b.x - P.x) ** 2 - (b.y - P.y) ** 2);
+    const near = enemies.filter(inLaser).sort((a, b) => (a.x - P.x) ** 2 + (a.y - P.y) ** 2 - (b.x - P.x) ** 2 - (b.y - P.y) ** 2);
     for (let i = 0; i < nb; i++) {
       if (L >= 7) beams.push({ a: P.dir + (i * Math.PI * 2) / nb });
       else { const e = near[i % Math.max(1, near.length)]; beams.push({ target: e, a: e ? Math.atan2(e.y - P.y, e.x - P.x) : P.dir }); }
     }
   }
-  const laserLen = () => (up.laser >= 7 ? 440 : up.laser >= 2 ? 380 : 270);
+  const laserRange = () => up.laser >= 7 ? 1e9 : [0, 260, 340, 380, 430, 480, 540][up.laser] || 260;   // how far it can lock on AND how far the beam reaches
+  const laserLen = a => {   // max level: the beam runs on until it hits a wall
+    if (up.laser < 7) return laserRange();
+    const ux = Math.cos(a), uy = Math.sin(a), tx = ux > 1e-6 ? (AX - P.x) / ux : ux < -1e-6 ? (-AX - P.x) / ux : 1e9, ty = uy > 1e-6 ? (AY - P.y) / uy : uy < -1e-6 ? (-AY - P.y) / uy : 1e9;
+    return Math.max(40, Math.min(tx, ty));
+  };
+  const inLaser = e => e.hp > 0 && (e.x - P.x) ** 2 + (e.y - P.y) ** 2 < laserRange() ** 2;
   function fireArrows() {
     const L = up.arrow, storm = L >= 7, n = storm ? 7 + up.dup : 1 + (L >= 3 ? 1 : 0) + (L >= 5 ? 1 : 0) + up.dup;
     for (let i = 0; i < n; i++) {
@@ -399,19 +405,20 @@ export function startGame(canvas, profile, opts, ui) {
     // laser
     if (up.laser > 0) {
       const L = up.laser; laserT -= dt;
-      if (!laserOn) { if (laserT <= 0 && anyInView()) { laserOn = true; laserT = L >= 7 ? 3 : 2; laserTick = 0; startLaser(); } }
+      if (!laserOn) { if (laserT <= 0 && enemies.some(inLaser)) { laserOn = true; laserT = L >= 7 ? 3 : 2; laserTick = 0; startLaser(); } }
       else {
         for (const b of beams) {
           if (L >= 7) b.a += 1.3 * dt;
           else {
-            if (!b.target || b.target.hp <= 0 || !inView(b.target)) { let best = null, bd = 1e9; for (const e of enemies) { if (e.hp <= 0 || !inView(e)) continue; const d = (e.x - P.x) ** 2 + (e.y - P.y) ** 2; if (d < bd) { bd = d; best = e; } } b.target = best; }
+            if (!b.target || !inLaser(b.target)) { let best = null, bd = 1e9; for (const e of enemies) { if (!inLaser(e)) continue; const d = (e.x - P.x) ** 2 + (e.y - P.y) ** 2; if (d < bd) { bd = d; best = e; } } b.target = best; }
             if (b.target) { let df = Math.atan2(b.target.y - P.y, b.target.x - P.x) - b.a; df = Math.atan2(Math.sin(df), Math.cos(df)); b.a += clamp(df, -4 * dt, 4 * dt); }
           }
         }
         laserTick -= dt;
         if (laserTick <= 0) {
-          laserTick = 0.1; const len = laserLen(), half = (L >= 3 ? 14 : 8) / 2;
+          laserTick = 0.1; const half = (L >= 3 ? 14 : 8) / 2;
           for (const b of beams) {
+            const len = laserLen(b.a);
             const ex = P.x + Math.cos(b.a) * len, ey = P.y + Math.sin(b.a) * len;
             for (const e of enemies) if (e.hp > 0 && distSeg(e.x, e.y, P.x, P.y, ex, ey) < half + e.r * 0.75) { hurt(e, dmg() * 0.7 * wl(L)); if (L >= 6) { e.burn = t + 1.5; e.burnD = dmg() * 0.25 * wl(L); } }
           }
@@ -584,7 +591,7 @@ export function startGame(canvas, profile, opts, ui) {
     for (const sw of swings) { c.globalAlpha = clamp(sw.life * 4); c.strokeStyle = '#ffe2b8'; c.lineWidth = 12; c.lineCap = 'round'; c.beginPath(); c.arc(sw.x + ox, sw.y + oy, sw.reach * 0.8, sw.a - sw.half, sw.a + sw.half); c.stroke(); c.globalAlpha = 1; }
     for (const b of booms.concat(loopers)) { c.save(); c.translate(b.x + ox, b.y + oy); c.rotate(b.spin); c.strokeStyle = '#d49a5a'; c.lineWidth = 5; c.lineCap = 'round'; c.lineJoin = 'round'; if (up.boomerang >= 7) { c.shadowColor = '#ffd36b'; c.shadowBlur = 10; } c.beginPath(); c.moveTo(-10, -6); c.lineTo(0, 4); c.lineTo(10, -6); c.stroke(); c.restore(); }
     if (laserOn) for (const b of beams) {
-      const len = laserLen(), w = up.laser >= 3 ? 14 : 8, ex = W / 2 + Math.cos(b.a) * len, ey = H / 2 + Math.sin(b.a) * len;
+      const len = laserLen(b.a), w = up.laser >= 3 ? 14 : 8, ex = W / 2 + Math.cos(b.a) * len, ey = H / 2 + Math.sin(b.a) * len;
       c.lineCap = 'round'; c.shadowColor = '#ff5a3d'; c.shadowBlur = 16; c.strokeStyle = '#ff5a3d'; c.globalAlpha = 0.85; c.lineWidth = w; c.beginPath(); c.moveTo(W / 2, H / 2); c.lineTo(ex, ey); c.stroke();
       c.shadowBlur = 0; c.globalAlpha = 1; c.strokeStyle = '#fff'; c.lineWidth = w * 0.35; c.beginPath(); c.moveTo(W / 2, H / 2); c.lineTo(ex, ey); c.stroke();
     }
