@@ -90,3 +90,4 @@ Hidden coloring game (`src/components/CreditsGame.tsx` = painting card only; `cr
 - v2.6: lightning only hits (and chains to) monsters on screen; damage: upgrade +8%, weapon levels +10% each, late factor x(1-0.65p^1.1).
 - v2.7: HP curve 0.5+5p^1.5+45p^3 (about 50x at the end), bosses x(1+4p); player damage x(1-0.75p^1.1), upgrade +6%, weapon levels +7%.
 - v2.8: fewer bolts/flasks/strikes: magic, potion, lightning get +1 at L4 and L6 (L7: 4 bolts, 5 flasks, 4 strikes); Duplicate always adds exactly +1 (no doubling at L7); second sword ring ignores Duplicate.
+- v2.9: walled arena (`ARENA` 620 each way, copper border); spawns mirror to the far side near walls. No more win by surviving: the run is lost if the Dragon is alive at t >= D (10 min), with a 30s warning banner. Only killing the Dragon wins.

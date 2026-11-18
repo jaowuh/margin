@@ -111,7 +111,7 @@ function MonsterGame({ month, job, onClose }: { month: string; job: Job; onClose
   const [banner, setBanner] = useState('');
   const [shake, setShake] = useState(false);
   const [paused, setPaused] = useState(false);
-  const [result, setResult] = useState<{ won: boolean; seconds: number; kills: number; tier: Tier; coins: number; relic: string; save: GameSave } | null>(null);
+  const [result, setResult] = useState<{ won: boolean; timeout?: boolean; seconds: number; kills: number; tier: Tier; coins: number; relic: string; save: GameSave } | null>(null);
   const canvas = useRef<HTMLCanvasElement>(null);
   const game = useRef<any>(null);
   const pick = useRef<((id: string) => void) | null>(null);
@@ -126,14 +126,14 @@ function MonsterGame({ month, job, onClose }: { month: string; job: Job; onClose
       levelUp: (opts: any[], cb: (id: string) => void, title?: string) => { pick.current = cb; setLvTitle(title || 'Level up!'); setChoices(opts); },
       banner: (m: string) => { setBanner(m); clearTimeout(bt); bt = setTimeout(() => setBanner(''), 2500); },
       shake: () => { setShake(true); setTimeout(() => setShake(false), 150); },
-      end: ({ won, seconds, kills }: any) => {
+      end: ({ won, seconds, kills, timeout }: any) => {
         const c = chestFor(profile, won, seconds, D, kills);
         const pool = RELICS[c.tier];
         const relic = pool[Math.floor(Math.random() * pool.length)];
         const s = loadSave();
         const next: GameSave = { coins: s.coins + c.coins, relics: s.relics.includes(relic) ? s.relics : [...s.relics, relic], equipped: s.equipped, bestSeconds: Math.max(s.bestSeconds, seconds), runs: s.runs + 1, job: s.job };
         writeSave(next);
-        setResult({ won, seconds, kills, tier: c.tier, coins: c.coins, relic, save: next });
+        setResult({ won, timeout, seconds, kills, tier: c.tier, coins: c.coins, relic, save: next });
         setPhase('result');
       },
     });
@@ -182,7 +182,7 @@ function MonsterGame({ month, job, onClose }: { month: string; job: Job; onClose
       )}
       {phase === 'result' && result && (
         <div className="mg-panel">
-          <p className="mg-kicker">{result.won ? 'You survived!' : 'You fell'}</p>
+          <p className="mg-kicker">{result.won ? 'You slew the Dragon!' : result.timeout ? 'Time ran out' : 'You fell'}</p>
           <h2 className="mg-title">{result.won ? 'Victory' : 'Defeated'}</h2>
           <p className="mg-blurb">{fmt(result.seconds)} survived · {result.kills} monsters slain</p>
           <div className={`mg-chest open t-${result.tier}`}>
