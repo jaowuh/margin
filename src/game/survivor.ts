@@ -19,7 +19,7 @@ const LV = {
 const GENERIC = [
   { id: 'dup', name: 'Duplicate', desc: '+1 projectile, blade or strike for all weapons', max: 2, rare: 0.22 },
   { id: 'multi', name: 'Multishot', desc: 'Every attack repeats once more right after', max: 2, rare: 0.22 },
-  { id: 'dmg', name: 'Sharper edge', desc: '+18% damage to everything', max: 8 },
+  { id: 'dmg', name: 'Sharper edge', desc: '+12% damage to everything', max: 8 },
   { id: 'rate', name: 'Quick hands', desc: '+20% fire rate (blades spin faster too)', max: 8 },
   { id: 'speed', name: 'Swift boots', desc: '+10% move speed', max: 5 },
   { id: 'hp', name: 'Vitality', desc: '+30 max health and heal 30', max: 6 },
@@ -73,7 +73,7 @@ export function startGame(canvas, profile, opts, ui) {
   document.addEventListener('visibilitychange', vis);
 
   /* ---------- stats ---------- */
-  const dmg = () => 10 * profile.damage * (1 + 0.18 * up.dmg) * (1 + FX.dmg) * (1 - 0.35 * Math.pow(progress(), 1.2)); // damage eases off late so late monsters don't melt
+  const dmg = () => 10 * profile.damage * (1 + 0.12 * up.dmg) * (1 + FX.dmg) * (1 - 0.5 * Math.pow(progress(), 1.2)); // damage eases off late so late monsters don't melt
   const rate = () => 1.1 * (1 + 0.2 * up.rate) * (1 + FX.rate);
   const spd = () => 125 * profile.speed * (1 + 0.1 * up.speed) * (1 + FX.speed) * (buffs.speed > 0 ? 1.5 : 1);
   const magnet = () => 70 * (1 + 0.4 * up.magnet) * (1 + FX.magnet);
@@ -94,7 +94,7 @@ export function startGame(canvas, profile, opts, ui) {
     const T = TYPES[type], a = o.angle ?? rnd(0, Math.PI * 2), d = o.dist ?? Math.max(W, H) / 2 + 50;
     const p = progress();
     // early monsters are soft (die in one hit); late ones get much tougher and hit harder
-    const hpScale = (T.boss ? 1 + p * 2.4 : 0.5 + 4 * Math.pow(p, 1.5) + 9 * Math.pow(p, 3)) * (o.hp || 1), dmgScale = 0.8 + 1.4 * p;
+    const hpScale = (T.boss ? 1 + p * 2.4 : 0.5 + 4 * Math.pow(p, 1.5) + 22 * Math.pow(p, 3)) * (o.hp || 1), dmgScale = 0.8 + 1.4 * p;
     const big = o.mini ? 2.1 : 1;
     enemies.push({ type, x: P.x + Math.cos(a) * d, y: P.y + Math.sin(a) * d, r: T.r * big, hp: T.hp * hpScale, maxHp: T.hp * hpScale, sp: T.sp * (1 + progress() * 0.5) * (o.sp || 1), dmg: T.dmg * dmgScale * (o.mini ? 1.5 : 1), xp: T.xp * (o.mini ? 4 : 1), boss: !!T.boss || !!o.mini, mini: !!o.mini, hit: 0, ph: Math.random() * 6, slow: 0 });
   }
