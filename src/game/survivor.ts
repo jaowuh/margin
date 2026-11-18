@@ -10,16 +10,16 @@ const WIDS = Object.keys(WNAMES);
 const SLOTS = 3; // weapons a hero can carry at once
 // What reaching each weapon level gives (index = level)
 const LV = {
-  arrow: [null, 'Arrows fly the way you face', '+10% damage, pierces 1 more', '+1 arrow per shot', '+10% damage, pierces 1 more', '+1 arrow per shot', '+10% damage, pierces 1 more', 'MAX Arrow Storm: a non-stop wall of arrows'],
-  magic: [null, 'Homing bolts that hit one monster', '+10% damage', '+1 bolt per cast', '+10% damage', '+1 bolt per cast', '+10% damage', 'MAX Seeker Swarm: every hit splits into 2 homing shards'],
-  sword: [null, 'Blades circle you', '+10% damage', '+1 blade', '+10% damage', '+1 blade', '+10% damage', 'MAX Blade Tempest: a second ring spinning the other way'],
+  arrow: [null, 'Arrows fly the way you face', '+7% damage, pierces 1 more', '+1 arrow per shot', '+7% damage, pierces 1 more', '+1 arrow per shot', '+7% damage, pierces 1 more', 'MAX Arrow Storm: a non-stop wall of arrows'],
+  magic: [null, 'Homing bolts that hit one monster', '+7% damage', '+1 bolt per cast', '+7% damage', '+1 bolt per cast', '+7% damage', 'MAX Seeker Swarm: every hit splits into 2 homing shards'],
+  sword: [null, 'Blades circle you', '+7% damage', '+1 blade', '+7% damage', '+1 blade', '+7% damage', 'MAX Blade Tempest: a second ring spinning the other way'],
   potion: [null, 'Flasks make slowing, poisonous puddles', 'Bigger puddles', '+1 flask', 'Stronger poison, longer puddles', '+1 flask', 'Bigger, stronger puddles', 'MAX Toxic Fog: flasks sweep a clockwise ring all around you'],
   lightning: [null, 'Lightning strikes and jumps to a nearby monster', '+1 chain', '+1 strike', '+1 chain', '+1 strike', '+1 chain', 'MAX Thunderstorm: double strikes, chains to 6'],
 };
 const GENERIC = [
   { id: 'dup', name: 'Duplicate', desc: '+1 projectile, blade or strike for all weapons', max: 2, rare: 0.22 },
   { id: 'multi', name: 'Multishot', desc: 'Every attack repeats once more right after', max: 2, rare: 0.22 },
-  { id: 'dmg', name: 'Sharper edge', desc: '+8% damage to everything', max: 8 },
+  { id: 'dmg', name: 'Sharper edge', desc: '+6% damage to everything', max: 8 },
   { id: 'rate', name: 'Quick hands', desc: '+20% fire rate (blades spin faster too)', max: 8 },
   { id: 'speed', name: 'Swift boots', desc: '+10% move speed', max: 5 },
   { id: 'hp', name: 'Vitality', desc: '+30 max health and heal 30', max: 6 },
@@ -74,7 +74,7 @@ export function startGame(canvas, profile, opts, ui) {
   document.addEventListener('visibilitychange', vis);
 
   /* ---------- stats ---------- */
-  const dmg = () => 10 * profile.damage * (1 + 0.08 * up.dmg) * (1 + FX.dmg) * (1 - 0.65 * Math.pow(progress(), 1.1)); // damage eases off late so late monsters don't melt
+  const dmg = () => 10 * profile.damage * (1 + 0.06 * up.dmg) * (1 + FX.dmg) * (1 - 0.75 * Math.pow(progress(), 1.1)); // damage eases off late so late monsters don't melt
   const rate = () => 1.1 * (1 + 0.2 * up.rate) * (1 + FX.rate);
   const spd = () => 125 * profile.speed * (1 + 0.1 * up.speed) * (1 + FX.speed) * (buffs.speed > 0 ? 1.5 : 1);
   const magnet = () => 70 * (1 + 0.4 * up.magnet) * (1 + FX.magnet);
@@ -95,7 +95,7 @@ export function startGame(canvas, profile, opts, ui) {
     const T = TYPES[type], a = o.angle ?? rnd(0, Math.PI * 2), d = o.dist ?? Math.max(W, H) / 2 + 50;
     const p = progress();
     // early monsters are soft (die in one hit); late ones get much tougher and hit harder
-    const hpScale = (T.boss ? 1 + p * 2.4 : 0.5 + 4 * Math.pow(p, 1.5) + 22 * Math.pow(p, 3)) * (o.hp || 1), dmgScale = 0.8 + 1.4 * p;
+    const hpScale = (T.boss ? 1 + p * 4 : 0.5 + 5 * Math.pow(p, 1.5) + 45 * Math.pow(p, 3)) * (o.hp || 1), dmgScale = 0.8 + 1.4 * p;
     const big = o.mini ? 2.1 : 1;
     enemies.push({ type, x: P.x + Math.cos(a) * d, y: P.y + Math.sin(a) * d, r: T.r * big, hp: T.hp * hpScale, maxHp: T.hp * hpScale, sp: T.sp * (1 + progress() * 0.5) * (o.sp || 1), dmg: T.dmg * dmgScale * (o.mini ? 1.5 : 1), xp: T.xp * (o.mini ? 4 : 1), boss: !!T.boss || !!o.mini, mini: !!o.mini, hit: 0, ph: Math.random() * 6, slow: 0 });
   }
@@ -198,7 +198,7 @@ export function startGame(canvas, profile, opts, ui) {
       const off = i - (n - 1) / 2, a = storm ? P.dir + rnd(-0.03, 0.03) : P.dir + off * 0.14;
       const px = storm ? P.x - Math.sin(P.dir) * off * 8 : P.x, py = storm ? P.y + Math.cos(P.dir) * off * 8 : P.y;
       const crit = isMain('arrow') && R >= 3 && Math.random() < 0.25;
-      shots.push({ kind: 'arrow', x: px, y: py, a, vx: Math.cos(a) * 420, vy: Math.sin(a) * 420, life: 1.2, dmg: dmg() * wmul('arrow') * (1 + 0.1 * (L - 1)) * (storm ? 0.8 : 1) * (crit ? 2 : 1), crit: crit || storm, pierce: 1 + Math.floor(L / 2) + (isMain('arrow') && R >= 2 ? 1 : 0), hit: [] });
+      shots.push({ kind: 'arrow', x: px, y: py, a, vx: Math.cos(a) * 420, vy: Math.sin(a) * 420, life: 1.2, dmg: dmg() * wmul('arrow') * (1 + 0.07 * (L - 1)) * (storm ? 0.8 : 1) * (crit ? 2 : 1), crit: crit || storm, pierce: 1 + Math.floor(L / 2) + (isMain('arrow') && R >= 2 ? 1 : 0), hit: [] });
     }
   }
   function fireMagic() {
@@ -208,7 +208,7 @@ export function startGame(canvas, profile, opts, ui) {
     const n = Math.min(want, near.length);
     for (let i = 0; i < n; i++) {
       const e = near[i], a = Math.atan2(e.y - P.y, e.x - P.x), up2 = isMain('magic') && R >= 2 ? 1.25 : 1;
-      shots.push({ kind: 'magic', x: P.x, y: P.y, a, sp: 150 * up2, target: e, turn: 4 * up2, life: 3.6, dmg: dmg() * 3.2 * wmul('magic') * (1 + 0.1 * (L - 1)), reseek: isMain('magic') && R >= 3 ? 1 : 0 });
+      shots.push({ kind: 'magic', x: P.x, y: P.y, a, sp: 150 * up2, target: e, turn: 4 * up2, life: 3.6, dmg: dmg() * 3.2 * wmul('magic') * (1 + 0.07 * (L - 1)), reseek: isMain('magic') && R >= 3 ? 1 : 0 });
     }
   }
   function shards(from, d) {
@@ -247,7 +247,7 @@ export function startGame(canvas, profile, opts, ui) {
     for (let i = 0; i < n; i++) {
       let x, y;
       if (near.length && Math.random() < 0.5 + 0.35 * clamp((L - 1) / 6)) { const e = pick(near); x = e.x; y = e.y; } else { const a = rnd(0, Math.PI * 2), d = rnd(40, 190); x = clamp(P.x + Math.cos(a) * d, P.x - W / 2 + 15, P.x + W / 2 - 15); y = clamp(P.y + Math.sin(a) * d, P.y - H / 2 + 15, P.y + H / 2 - 15); }
-      const d0 = dmg() * 3 * (1 + 0.1 * (L - 1)), hit = new Set(), pts = [[x, y]];
+      const d0 = dmg() * 3 * (1 + 0.07 * (L - 1)), hit = new Set(), pts = [[x, y]];
       let cx = x, cy = y;
       for (const e of enemies) if (e.hp > 0 && onScreen(e) && (e.x - x) ** 2 + (e.y - y) ** 2 < (36 + e.r) ** 2) { hurt(e, d0); hit.add(e); }
       for (let c = 0; c < chain; c++) {
@@ -330,7 +330,7 @@ export function startGame(canvas, profile, opts, ui) {
     for (let i = flasks.length - 1; i >= 0; i--) {
       const f = flasks[i];
       if (t >= f.at) {
-        puddles.push({ x: f.x, y: f.y, r: f.r, life: 3.5 + 0.35 * f.L, tick: 0, dmg: dmg() * 0.45 * (1 + 0.08 * (f.L - 1)) });
+        puddles.push({ x: f.x, y: f.y, r: f.r, life: 3.5 + 0.35 * f.L, tick: 0, dmg: dmg() * 0.45 * (1 + 0.06 * (f.L - 1)) });
         flasks.splice(i, 1);
       }
     }
@@ -353,7 +353,7 @@ export function startGame(canvas, profile, opts, ui) {
         for (let k = 0; k < ring.n; k++) {
           const a = orbAng * ring.dir + (k * Math.PI * 2) / ring.n, ux = Math.cos(a), uy = Math.sin(a);
           const cx = P.x + ux * ring.rad, cy = P.y + uy * ring.rad;
-          for (const e of enemies) if (e.hp > 0 && (!e.swCd || e.swCd < t) && distSeg(e.x, e.y, cx - ux * half, cy - uy * half, cx + ux * half, cy + uy * half) < e.r + 3) { e.swCd = t + 0.4; hurt(e, dmg() * 1.5 * wmul('sword') * (1 + 0.1 * (L - 1))); }
+          for (const e of enemies) if (e.hp > 0 && (!e.swCd || e.swCd < t) && distSeg(e.x, e.y, cx - ux * half, cy - uy * half, cx + ux * half, cy + uy * half) < e.r + 3) { e.swCd = t + 0.4; hurt(e, dmg() * 1.5 * wmul('sword') * (1 + 0.07 * (L - 1))); }
         }
       }
     }
