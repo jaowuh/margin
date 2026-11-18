@@ -245,7 +245,7 @@ export function startGame(canvas, profile, opts, ui) {
     const near = enemies.filter(e => e.hp > 0 && inView(e));
     for (let i = 0; i < n; i++) {
       let x, y;
-      if (near.length && Math.random() < 0.65) { const e = pick(near); x = e.x; y = e.y; } else { x = P.x + rnd(-W * 0.45, W * 0.45); y = P.y + rnd(-H * 0.45, H * 0.45); }
+      if (near.length && Math.random() < 0.5 + 0.35 * clamp((L - 1) / 6)) { const e = pick(near); x = e.x; y = e.y; } else { const a = rnd(0, Math.PI * 2), d = rnd(40, 190); x = P.x + Math.cos(a) * d; y = P.y + Math.sin(a) * d; }
       const d0 = dmg() * 3 * (1 + 0.15 * (L - 1)), hit = new Set(), pts = [[x, y]];
       let cx = x, cy = y;
       for (const e of enemies) if (e.hp > 0 && (e.x - x) ** 2 + (e.y - y) ** 2 < (36 + e.r) ** 2) { hurt(e, d0); hit.add(e); }
