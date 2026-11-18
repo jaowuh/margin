@@ -11,7 +11,7 @@ const SLOTS = 3; // weapons a hero can carry at once
 // What reaching each weapon level gives (index = level)
 const LV = {
   arrow: [null, 'Arrows fly the way you face', '+15% damage, pierces 1 more', '+1 arrow per shot', '+15% damage, pierces 1 more', '+1 arrow per shot', '+15% damage, pierces 1 more', 'MAX Arrow Storm: a non-stop wall of arrows'],
-  magic: [null, 'Homing bolts that hit one monster', '+14% damage', '+1 bolt per cast', '+14% damage', '+1 bolt per cast', '+14% damage', 'MAX Seeker Swarm: fires 2x faster, every hit splits into 2 homing shards'],
+  magic: [null, 'Homing bolts that hit one monster', '+14% damage', '+1 bolt per cast', '+14% damage', '+1 bolt per cast', '+14% damage', 'MAX Seeker Swarm: every hit splits into 2 homing shards'],
   sword: [null, 'Blades circle you', '+15% damage', '+1 blade', '+15% damage', '+1 blade', '+15% damage', 'MAX Blade Tempest: a second ring spinning the other way'],
   potion: [null, 'Flasks make slowing, poisonous puddles', 'Bigger puddles', '+1 flask', 'Stronger poison, longer puddles', '+1 flask', 'Bigger, stronger puddles', 'MAX Toxic Fog: flasks sweep a clockwise ring all around you'],
   lightning: [null, 'Lightning strikes and jumps to a nearby monster', '+1 chain', '+1 strike', '+1 chain', '+1 strike', '+1 chain', 'MAX Thunderstorm: double strikes, chains to 6'],
@@ -202,7 +202,7 @@ export function startGame(canvas, profile, opts, ui) {
     const n = Math.min(want, near.length);
     for (let i = 0; i < n; i++) {
       const e = near[i], a = Math.atan2(e.y - P.y, e.x - P.x), up2 = isMain('magic') && R >= 2 ? 1.25 : 1;
-      shots.push({ kind: 'magic', x: P.x, y: P.y, a, sp: 150 * up2, target: e, turn: 4 * up2, life: 3.6, dmg: dmg() * 3.2 * wmul('magic') * (1 + 0.14 * (L - 1)) * (L >= 7 ? 1.3 : 1), reseek: isMain('magic') && R >= 3 ? 1 : 0 });
+      shots.push({ kind: 'magic', x: P.x, y: P.y, a, sp: 150 * up2, target: e, turn: 4 * up2, life: 3.6, dmg: dmg() * 3.2 * wmul('magic') * (1 + 0.14 * (L - 1)), reseek: isMain('magic') && R >= 3 ? 1 : 0 });
     }
   }
   function shards(from, d) {
@@ -291,7 +291,7 @@ export function startGame(canvas, profile, opts, ui) {
     }
     // magic: homing bolts, one monster each. Level 7 = Seeker Swarm
     magicCd -= dt;
-    if (up.magic > 0 && magicCd <= 0 && anyInView()) { magicCd = 2.1 / rate() / (up.magic >= 7 ? 2 : 1); volley(fireMagic); }
+    if (up.magic > 0 && magicCd <= 0 && anyInView()) { magicCd = 2.1 / rate(); volley(fireMagic); }
     // potion
     potionCd -= dt;
     if (up.potion > 0 && potionCd <= 0) { potionCd = 3.2 / rate(); volley(throwPotions); }

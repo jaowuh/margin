@@ -83,4 +83,4 @@ Hidden coloring game (`src/components/CreditsGame.tsx` = painting card only; `cr
 - Difficulty curve: non-boss HP = 0.55+4.5*p^1.6 (early monsters die in 1 hit), damage = 0.8+1.4*p, spawn gap 0.1+1.5*(1-p)^1.5 with 1+floor(8p^2) per wave, cap 320, swarms 30+70p. Bosses keep 1+2.4p HP scaling.
 - Boss HP: Ogre King 9000, Dragon 24000 (x(1+2.4p)); champions x40 base HP. Tuned against fully maxed builds.
 - Waves: monsters arrive in bursts from one side (gap 1.8+5.5(1-p)^1.3 s, size 3+60p^1.6+4p), no waves counter, next burst doesn't wait. Magic cooldown 2.1s and bolt speed 150; lightning cooldown 3.6s; potion cooldown 3.2s and flasks land on 8 compass slots around the hero without overlapping puddles (tidier ring as level rises).
-- v2.3: HP curve 0.5+4p^1.5+9p^3. Potion L7 = clockwise ring sweep (flasks 0.1s apart). Magic L7 = 2x cast rate, +30% dmg, each hit splits into 2 homing shards.
+- v2.3: HP curve 0.5+4p^1.5+9p^3. Potion L7 = clockwise ring sweep (flasks 0.1s apart). Magic L7 = each hit splits into 2 homing shards (no extra rate or damage).
