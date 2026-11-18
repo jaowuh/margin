@@ -106,3 +106,4 @@ Hidden coloring game (`src/components/CreditsGame.tsx` = painting card only; `cr
 - v4.1: sword blade damage x2.4 (was 1.5) and Super nova x4.5 (was 3): melee risks more, so it hits harder.
 - v4.2: monster speed x(1+0.7p) (was 0.5p); hearts heal exactly 20% of max HP.
 - v4.3: pickup drop chance per kill is divided by 1+5p^1.5 (about 1/6 at the end).
+- v4.1b: swordsman hero = animated armored knight from the 'Free Knight' pack (aamatniekss; 120x80 frames cropped to 31x40, run+idle, in src/assets/knight-sprites.png; no license file in the zip, check the itch.io page). Credit added on the Play tab.
