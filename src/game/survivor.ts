@@ -105,7 +105,7 @@ export function startGame(canvas, profile, opts, ui) {
     if (Math.abs(sx) > AX) sx = P.x - Math.cos(a) * d;
     if (Math.abs(sy) > AY) sy = P.y - Math.sin(a) * d;
     sx = clamp(sx, -AX, AX); sy = clamp(sy, -AY, AY);
-    enemies.push({ type, x: sx, y: sy, r: T.r * big, hp: T.hp * hpScale, maxHp: T.hp * hpScale, sp: T.sp * (1 + progress() * 0.5) * (o.sp || 1), dmg: T.dmg * dmgScale * (o.mini ? 1.5 : 1), xp: T.xp * (o.mini ? 4 : 1), boss: !!T.boss || !!o.mini, mini: !!o.mini, hit: 0, ph: Math.random() * 6, slow: 0 });
+    enemies.push({ type, x: sx, y: sy, r: T.r * big, hp: T.hp * hpScale, maxHp: T.hp * hpScale, sp: T.sp * (1 + progress() * 0.7) * (o.sp || 1), dmg: T.dmg * dmgScale * (o.mini ? 1.5 : 1), xp: T.xp * (o.mini ? 4 : 1), boss: !!T.boss || !!o.mini, mini: !!o.mini, hit: 0, ph: Math.random() * 6, slow: 0 });
   }
   function pickType(p) {
     const roll = Math.random();
@@ -183,7 +183,7 @@ export function startGame(canvas, profile, opts, ui) {
     showChoices('Treasure!');
   }
   function collect(it) {
-    if (it.type === 'heart') { P.hp = Math.min(P.maxHp, P.hp + Math.max(15, P.maxHp * 0.25)); pop(P.x, P.y - 20, '+HP'); }
+    if (it.type === 'heart') { P.hp = Math.min(P.maxHp, P.hp + P.maxHp * 0.2); pop(P.x, P.y - 20, '+HP'); }
     else if (it.type === 'magnet') { for (const g of gems) g.vac = true; ui.banner('Magnet!'); }
     else if (it.type === 'shield') { buffs.inv = 6; ui.banner('Invincible!'); }
     else if (it.type === 'boots') { buffs.speed = 8; ui.banner('Speed boost!'); }

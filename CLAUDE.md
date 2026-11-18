@@ -104,3 +104,4 @@ Hidden coloring game (`src/components/CreditsGame.tsx` = painting card only; `cr
 - v3.9: sword gets blades early: +1 at L2, L3, L6; spin +25% at L4; longer at L5.
 - v4.0: weapon damage grows per level via wl(L)=1+0.12(L-1), x1.15 at max (L7 about 2x L1). XP needed per level 8+5L+0.9L^1.7. Late waves x(1+0.8p), gap 1.2+4(1-p)^1.3, swarm every 0.22D (40+90p), cap 450.
 - v4.1: sword blade damage x2.4 (was 1.5) and Super nova x4.5 (was 3): melee risks more, so it hits harder.
+- v4.2: monster speed x(1+0.7p) (was 0.5p); hearts heal exactly 20% of max HP.
