@@ -9,7 +9,7 @@ export const JOB_IDS: Job[] = ['archer', 'mage', 'swordsman'];
 
 export const JOBS: Record<Job, { titles: [string, string, string]; weapon: string; perks: [string, string, string]; weaponDesc: string; color: string; hp: number; speed: number; damage: number }> = {
   archer: { titles: ['Archer', 'Ranger', 'Skyhunter'], weapon: 'Arrows', perks: ['Arrows start at level 1, +30% weapon damage', 'Arrows pierce one more monster and fire 15% faster, +50% weapon damage', 'Arrows crit for double damage 25% of the time and glow gold, +80% weapon damage'], weaponDesc: 'Fast arrows from range that pierce monsters', color: '#6FA8A0', hp: 90, speed: 1.1, damage: 1 },
-  mage: { titles: ['Apprentice', 'Sorcerer', 'Archmage'], weapon: 'Magic', perks: ['Magic starts at level 1, +30% weapon damage', 'Bolts home in faster and fly quicker, +50% weapon damage', 'Bolts that kill seek a second monster, +80% weapon damage'], weaponDesc: 'Homing bolts that each hit one monster', color: '#9A86E0', hp: 80, speed: 1, damage: 1.1 },
+  mage: { titles: ['Apprentice', 'Sorcerer', 'Archmage'], weapon: 'Magic', perks: ['Magic starts at level 1, +30% weapon damage', 'Bolts home in faster and fly quicker, +50% weapon damage', 'Bolts that kill seek a second monster, +80% weapon damage'], weaponDesc: 'Homing bolts with a small blast', color: '#9A86E0', hp: 80, speed: 1, damage: 1.1 },
   swordsman: { titles: ['Squire', 'Swordsman', 'Blademaster'], weapon: 'Sword', perks: ['Sword starts at level 1, +30% weapon damage', 'One extra blade, +50% weapon damage', 'A slash nova bursts around you every 5 seconds, +80% weapon damage'], weaponDesc: 'Blades that circle you and cut close monsters', color: '#DCA289', hp: 130, speed: 0.95, damage: 1 },
 };
 

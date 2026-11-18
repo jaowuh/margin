@@ -98,3 +98,4 @@ Hidden coloring game (`src/components/CreditsGame.tsx` = painting card only; `cr
 - v3.3: arena AX 650, AY 330.
 - v3.4: arena AX 450, AY 280.
 - v3.5: arena AX 800, AY 280.
+- v3.6: Ogre King base HP 4500. Magic: +1 bolt at L3 and L5 (L7 = 5), small blast on hit (30px, 35% damage to neighbours), shards have no blast.
