@@ -11,7 +11,7 @@ const SLOTS = 3; // weapons a hero can carry at once
 // What reaching each weapon level gives (index = level)
 const LV = {
   arrow: [null, 'Arrows fly the way you face', '+7% damage, pierces 1 more', '+1 arrow per shot', '+7% damage, pierces 1 more', '+1 arrow per shot', '+7% damage, pierces 1 more', 'MAX Arrow Storm: a non-stop wall of arrows'],
-  magic: [null, 'Homing bolts with a small blast on hit', '+7% damage', '+1 bolt per cast', '+7% damage', '+1 bolt per cast', '+7% damage', 'MAX Seeker Swarm: every hit splits into 2 homing shards'],
+  magic: [null, 'Homing bolts that each hit one monster', 'Faster, sharper homing', '+1 bolt per cast', 'Small blast: monsters next to the target take 35% damage', '+1 bolt per cast', 'Bigger blast, 50% damage', 'MAX Seeker Swarm: every hit splits into 2 homing shards'],
   sword: [null, 'Blades circle you', '+7% damage', '+1 blade', '+7% damage', '+1 blade', '+7% damage', 'MAX Blade Tempest: a second ring spinning the other way'],
   potion: [null, 'Flasks make slowing, poisonous puddles', 'Bigger puddles', 'Stronger poison, longer puddles', '+1 flask', 'Bigger, stronger puddles', '+1 flask', 'MAX Toxic Fog: flasks sweep a clockwise ring all around you'],
   lightning: [null, 'Lightning strikes and jumps to a nearby monster', '+1 chain', 'Stronger strikes', '+1 chain and +1 strike', 'Stronger strikes', '+1 chain and +1 strike', 'MAX Thunderstorm: 4 strikes at once, chains to 6'],
@@ -211,12 +211,12 @@ export function startGame(canvas, profile, opts, ui) {
   }
   function fireMagic() {
     // like arrows: only fires when a monster is on screen, nearest first, one bolt per monster
-    const L = up.magic, want = (L >= 7 ? 5 : 1 + (L >= 3 ? 1 : 0) + (L >= 5 ? 1 : 0)) + up.dup;
+    const L = up.magic, want = (L >= 7 ? 4 : 1 + (L >= 3 ? 1 : 0) + (L >= 5 ? 1 : 0)) + up.dup;
     const near = enemies.filter(e => e.hp > 0 && inView(e)).sort((a, b) => (a.x - P.x) ** 2 + (a.y - P.y) ** 2 - (b.x - P.x) ** 2 - (b.y - P.y) ** 2);
     const n = Math.min(want, near.length);
     for (let i = 0; i < n; i++) {
       const e = near[i], a = Math.atan2(e.y - P.y, e.x - P.x), up2 = isMain('magic') && R >= 2 ? 1.25 : 1;
-      shots.push({ kind: 'magic', x: P.x, y: P.y, a, sp: 150 * up2, target: e, turn: 4 * up2, life: 3.6, dmg: dmg() * 3.2 * wmul('magic') * (1 + 0.07 * (L - 1)), reseek: isMain('magic') && R >= 3 ? 1 : 0 });
+      shots.push({ kind: 'magic', x: P.x, y: P.y, a, sp: 150 * up2 * (L >= 2 ? 1.2 : 1), target: e, turn: 4 * up2 * (L >= 2 ? 1.5 : 1), life: 3.6, dmg: dmg() * 3.2 * wmul('magic') * (1 + 0.07 * (L - 1)), reseek: isMain('magic') && R >= 3 ? 1 : 0 });
     }
   }
   function shards(from, d) {
@@ -329,7 +329,7 @@ export function startGame(canvas, profile, opts, ui) {
           if (s.kind === 'magic') {
             if (s.target && e !== s.target) continue; // seekers only hit their own target
             hurt(e, s.dmg); s.life = 0;
-            if (!s.shard) for (const o of enemies) if (o !== e && o.hp > 0 && (o.x - s.x) ** 2 + (o.y - s.y) ** 2 < (30 + o.r) ** 2) hurt(o, s.dmg * 0.35); // small blast
+            if (!s.shard && up.magic >= 4) { const big = up.magic >= 6; for (const o of enemies) if (o !== e && o.hp > 0 && (o.x - s.x) ** 2 + (o.y - s.y) ** 2 < ((big ? 44 : 30) + o.r) ** 2) hurt(o, s.dmg * (big ? 0.5 : 0.35)); } // blast is a magic upgrade (L4, bigger at L6)
             if (up.magic >= 7 && !s.shard) shards(e, s.dmg * 0.6);
           } else if (!s.hit.includes(e)) { s.hit.push(e); hurt(e, s.dmg); if (--s.pierce <= 0) s.life = 0; }
         }
