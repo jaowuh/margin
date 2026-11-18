@@ -121,10 +121,10 @@ export function startGame(canvas, profile, opts, ui) {
   function spawnWave(dt) {
     const p = progress();
     spawnCd -= dt;
-    if (spawnCd <= 0 && enemies.length < 380) {
+    if (spawnCd <= 0 && enemies.length < 450) {
       const first = !firstDone; firstDone = true;
-      spawnCd = 1.4 + 4.5 * Math.pow(1 - p, 1.3);
-      const n = first ? 4 : Math.round((4 + Math.floor(Math.pow(p, 1.5) * 85) + Math.floor(p * 6)) * HARD.wave), a0 = rnd(0, Math.PI * 2), main = pickType(p);
+      spawnCd = 1.2 + 4 * Math.pow(1 - p, 1.3);
+      const n = first ? 4 : Math.round((4 + Math.floor(Math.pow(p, 1.5) * 85) + Math.floor(p * 6)) * HARD.wave * (1 + 0.8 * p)), a0 = rnd(0, Math.PI * 2), main = pickType(p);
       for (let i = 0; i < n; i++) spawn(Math.random() < 0.7 ? main : pickType(p), { angle: a0 + rnd(-0.7, 0.7), dist: Math.max(W, H) / 2 + 50 + rnd(0, 90) });
     }
     if (!bossA && p >= 0.5) { bossA = true; spawn('king'); ui.banner('The Ogre King approaches!'); }
@@ -132,16 +132,17 @@ export function startGame(canvas, profile, opts, ui) {
     // a champion every D/5 (2 minutes in a full run); each drops a treasure chest
     if (t >= nextMini && p < 0.86) { nextMini += D / 5; const ty = ['goblin', 'skeleton', 'mushroom', 'ogre'][miniN++ % 4]; spawn(ty, { mini: true, hp: 40, sp: 0.9 }); ui.banner('A champion appears!'); }
     // a swarm every 0.3D (3 minutes in a full run)
-    if (t >= nextSwarm && p < 0.86) { nextSwarm += D * 0.3; swarm(); }
+    if (t >= nextSwarm && p < 0.86) { nextSwarm += D * 0.22; swarm(); }
   }
   function swarm() {
-    const n = 30 + Math.floor(progress() * 70), dist = Math.max(W, H) * 0.55;
+    const n = 40 + Math.floor(progress() * 90), dist = Math.max(W, H) * 0.55;
     for (let i = 0; i < n; i++) spawn(Math.random() < 0.65 ? 'bat' : (progress() > 0.4 && Math.random() < 0.3 ? 'goblin' : 'slime'), { angle: (i / n) * Math.PI * 2, dist, hp: 0.6, sp: 1.15 });
     ui.banner('A swarm is coming!');
   }
 
   /* ---------- level up and rewards ---------- */
-  const wopt = k => ({ id: k, weapon: true, name: up[k] ? `${WNAMES[k]} Lv ${up[k] + 1}` : `New: ${WNAMES[k]}`, desc: LV[k][up[k] + 1], have: up[k] });
+  const wl = L => (1 + 0.12 * (L - 1)) * (L >= 7 ? 1.15 : 1); // weapon damage grows with level, with a bonus at max
+  const wopt = k => ({ id: k, weapon: true, name: up[k] ? `${WNAMES[k]} Lv ${up[k] + 1}` : `New: ${WNAMES[k]}`, desc: LV[k][up[k] + 1] + (up[k] >= 1 && up[k] < 6 ? ' · +12% damage' : up[k] === 6 ? ' · +32% damage' : ''), have: up[k] });
   function choices() {
     const slotsFree = owned().length < SLOTS, list = [];
     for (const k of WIDS) if ((up[k] > 0 && up[k] < 7) || (up[k] === 0 && slotsFree)) list.push(wopt(k));
@@ -170,7 +171,7 @@ export function startGame(canvas, profile, opts, ui) {
   }
   function addXp(v) {
     P.xp += v * (1 + FX.xp);
-    if (P.xp >= P.need) { P.xp -= P.need; P.level++; P.need = Math.round(8 + P.level * 5); showChoices('Level up!'); }
+    if (P.xp >= P.need) { P.xp -= P.need; P.level++; P.need = Math.round(8 + P.level * 5 + Math.pow(P.level, 1.7) * 0.9); showChoices('Level up!'); }
   }
   function openChest() {
     const r = Math.random();
@@ -206,7 +207,7 @@ export function startGame(canvas, profile, opts, ui) {
       const off = i - (n - 1) / 2, a = storm ? P.dir + rnd(-0.03, 0.03) : P.dir + off * 0.14;
       const px = storm ? P.x - Math.sin(P.dir) * off * 8 : P.x, py = storm ? P.y + Math.cos(P.dir) * off * 8 : P.y;
       const crit = Math.random() < (isMain('arrow') && R >= 3 ? 0.25 : 0) + (L >= 4 ? 0.15 : 0);
-      shots.push({ kind: 'arrow', x: px, y: py, a, vx: Math.cos(a) * 420 * (L >= 2 ? 1.25 : 1), vy: Math.sin(a) * 420 * (L >= 2 ? 1.25 : 1), life: 1.2, dmg: dmg() * wmul('arrow') * (storm ? 0.8 : 1) * (crit ? 2 : 1), crit: crit || storm, pierce: 1 + (L >= 2 ? 1 : 0) + (L >= 6 ? 2 : 0) + (isMain('arrow') && R >= 2 ? 1 : 0), hit: [] });
+      shots.push({ kind: 'arrow', x: px, y: py, a, vx: Math.cos(a) * 420 * (L >= 2 ? 1.25 : 1), vy: Math.sin(a) * 420 * (L >= 2 ? 1.25 : 1), life: 1.2, dmg: dmg() * wmul('arrow') * wl(L) * (storm ? 0.8 : 1) * (crit ? 2 : 1), crit: crit || storm, pierce: 1 + (L >= 2 ? 1 : 0) + (L >= 6 ? 2 : 0) + (isMain('arrow') && R >= 2 ? 1 : 0), hit: [] });
     }
   }
   function fireMagic() {
@@ -216,7 +217,7 @@ export function startGame(canvas, profile, opts, ui) {
     const n = Math.min(want, near.length);
     for (let i = 0; i < n; i++) {
       const e = near[i], a = Math.atan2(e.y - P.y, e.x - P.x), up2 = isMain('magic') && R >= 2 ? 1.25 : 1;
-      shots.push({ kind: 'magic', x: P.x, y: P.y, a, sp: 150 * up2 * (L >= 2 ? 1.2 : 1), target: e, turn: 4 * up2 * (L >= 2 ? 1.5 : 1), life: 3.6, dmg: dmg() * 3.2 * wmul('magic') * (1 + 0.07 * (L - 1)), reseek: isMain('magic') && R >= 3 ? 1 : 0 });
+      shots.push({ kind: 'magic', x: P.x, y: P.y, a, sp: 150 * up2 * (L >= 2 ? 1.2 : 1), target: e, turn: 4 * up2 * (L >= 2 ? 1.5 : 1), life: 3.6, dmg: dmg() * 3.2 * wmul('magic') * wl(L), reseek: isMain('magic') && R >= 3 ? 1 : 0 });
     }
   }
   function shards(from, d) {
@@ -255,7 +256,7 @@ export function startGame(canvas, profile, opts, ui) {
     for (let i = 0; i < n; i++) {
       let x, y;
       if (near.length && Math.random() < 0.5 + 0.35 * clamp((L - 1) / 6)) { const e = pick(near); x = e.x; y = e.y; } else { const a = rnd(0, Math.PI * 2), d = rnd(40, 190); x = clamp(P.x + Math.cos(a) * d, P.x - W / 2 + 15, P.x + W / 2 - 15); y = clamp(P.y + Math.sin(a) * d, P.y - H / 2 + 15, P.y + H / 2 - 15); }
-      const d0 = dmg() * 3, hit = new Set(), pts = [[x, y]];
+      const d0 = dmg() * 3 * wl(L), hit = new Set(), pts = [[x, y]];
       let cx = x, cy = y;
       for (const e of enemies) if (e.hp > 0 && onScreen(e) && (e.x - x) ** 2 + (e.y - y) ** 2 < (zone + e.r) ** 2) { hurt(e, d0); hit.add(e); }
       for (let c = 0; c < chain; c++) {
@@ -339,7 +340,7 @@ export function startGame(canvas, profile, opts, ui) {
     for (let i = flasks.length - 1; i >= 0; i--) {
       const f = flasks[i];
       if (t >= f.at) {
-        puddles.push({ x: f.x, y: f.y, r: f.r, life: 3.5 * (f.L >= 5 ? 1.6 : 1), tick: 0, L: f.L, dmg: dmg() * 0.45 * (f.L >= 3 ? 1.4 : 1) * (f.L >= 6 ? 1.2 : 1) });
+        puddles.push({ x: f.x, y: f.y, r: f.r, life: 3.5 * (f.L >= 5 ? 1.6 : 1), tick: 0, L: f.L, dmg: dmg() * 0.45 * wl(f.L) * (f.L >= 3 ? 1.4 : 1) * (f.L >= 6 ? 1.2 : 1) });
         flasks.splice(i, 1);
       }
     }
@@ -362,7 +363,7 @@ export function startGame(canvas, profile, opts, ui) {
         for (let k = 0; k < ring.n; k++) {
           const a = orbAng * ring.dir + (k * Math.PI * 2) / ring.n, ux = Math.cos(a), uy = Math.sin(a);
           const cx = P.x + ux * ring.rad, cy = P.y + uy * ring.rad;
-          for (const e of enemies) if (e.hp > 0 && (!e.swCd || e.swCd < t) && distSeg(e.x, e.y, cx - ux * half, cy - uy * half, cx + ux * half, cy + uy * half) < e.r + 3) { e.swCd = t + 0.4; hurt(e, dmg() * 1.5 * wmul('sword')); }
+          for (const e of enemies) if (e.hp > 0 && (!e.swCd || e.swCd < t) && distSeg(e.x, e.y, cx - ux * half, cy - uy * half, cx + ux * half, cy + uy * half) < e.r + 3) { e.swCd = t + 0.4; hurt(e, dmg() * 1.5 * wmul('sword') * wl(L)); }
         }
       }
     }
