@@ -69,10 +69,10 @@ export const RELICS: Record<Tier, string[]> = {
   bronze: ['Bronze Badge', 'Copper Ring', 'Lucky Penny'],
   silver: ['Silver Crown', 'Moonlit Purse', 'Steady Shield'],
   gold: ['Golden Goblet', 'Sunstone Vault', 'Hoarder’s Crest'],
-  legendary: ['Dragon’s Hoard', 'Crown of Compound Interest', 'Phoenix Ledger', 'Heart of the Tarasque', 'Alucard’s Thirst'],
+  legendary: ['Dragon’s Hoard', 'Crown of Compound Interest', 'Phoenix Ledger', 'Heart of the Tarasque', 'Alucard’s Thirst', 'Devil’s Bargain', 'Monkey’s Paw'],
 };
 
-export interface RelicFx { dmg?: number; rate?: number; hp?: number; speed?: number; magnet?: number; xp?: number; drop?: number; revive?: number; guard?: number; regen?: number; steal?: number }
+export interface RelicFx { dmg?: number; rate?: number; hp?: number; speed?: number; magnet?: number; xp?: number; drop?: number; revive?: number; guard?: number; regen?: number; steal?: number; halfhp?: number; slots?: number }
 export const RELIC_FX: Record<string, { desc: string; fx: RelicFx }> = {
   'Rusty Coin': { desc: '+20% XP from gems', fx: { xp: 0.2 } },
   'Cracked Piggy': { desc: '+40% gem pickup range', fx: { magnet: 0.4 } },
@@ -87,14 +87,18 @@ export const RELIC_FX: Record<string, { desc: string; fx: RelicFx }> = {
   'Sunstone Vault': { desc: '+20% fire rate', fx: { rate: 0.2 } },
   'Hoarder’s Crest': { desc: '+15% move speed, take 10% less damage', fx: { speed: 0.15, guard: 0.1 } },
   'Alucard’s Thirst': { desc: 'Heal for 2% of the damage you deal (at most 2.5% of max health per second)', fx: { steal: 0.02 } },
+  'Devil’s Bargain': { desc: 'Your max health is cut in half, but you deal +60% damage and attack 40% faster', fx: { dmg: 0.6, rate: 0.4, halfhp: 1 } },
+  'Monkey’s Paw': { desc: 'Takes up 2 relic slots, but you can carry a 4th weapon', fx: { slots: 1 } },
   'Dragon’s Hoard': { desc: '+30% damage and +40 max health', fx: { dmg: 0.3, hp: 40 } },
   'Crown of Compound Interest': { desc: '+50% XP from gems and +10% damage', fx: { xp: 0.5, dmg: 0.1 } },
   'Heart of the Tarasque': { desc: 'Regenerate 0.7% of your max health every second, and +30 max health', fx: { regen: 0.007, hp: 30 } },
   'Phoenix Ledger': { desc: '+40 max health, and once per run come back at half health', fx: { revive: 1, hp: 40 } },
 };
 export const RELIC_SLOTS = 3;
+export const RELIC_COST: Record<string, number> = { 'Monkey’s Paw': 2 };   // relic slots a relic takes up (default 1)
+export const relicUsed = (names: string[]) => names.reduce((a, n) => a + (RELIC_COST[n] || 1), 0);
 export function relicFx(names: string[]): Required<RelicFx> {
-  const t = { dmg: 0, rate: 0, hp: 0, speed: 0, magnet: 0, xp: 0, drop: 0, revive: 0, guard: 0, regen: 0, steal: 0 };
+  const t = { dmg: 0, rate: 0, hp: 0, speed: 0, magnet: 0, xp: 0, drop: 0, revive: 0, guard: 0, regen: 0, steal: 0, halfhp: 0, slots: 0 };
   for (const n of names.slice(0, RELIC_SLOTS)) { const f = RELIC_FX[n]?.fx; if (f) for (const k in f) (t as any)[k] += (f as any)[k]; }
   return t;
 }

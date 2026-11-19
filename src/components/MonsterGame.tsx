@@ -3,7 +3,7 @@ import { Pause, Play, Swords, X } from 'lucide-react';
 import type { Job } from '../game/profile';
 import { JOB_IDS, JOBS } from '../game/profile';
 import { useActive, useStore } from '../lib/store';
-import { TIERS, chestFor, loadSave, profileFor, RELICS, RELIC_FX, RELIC_SLOTS, relicFx, writeSave } from '../game/profile';
+import { TIERS, chestFor, loadSave, profileFor, RELICS, RELIC_FX, RELIC_SLOTS, relicFx, relicUsed, RELIC_COST, writeSave } from '../game/profile';
 import type { GameSave, Tier } from '../game/profile';
 import { startGame } from '../game/survivor';
 import { loadSprites } from '../game/sprites';
@@ -84,10 +84,10 @@ export function PlayTab({ month }: { month: string }) {
         <div className="card-head"><div><h2>Your loot</h2><p>{save.coins} coins · best {save.runs > 0 ? fmt(save.bestSeconds) : '–'} · {save.runs} runs</p></div></div>
         {save.relics.length > 0 ? (
           <>
-            <p className="muted">Equip up to {RELIC_SLOTS} relics ({save.equipped.length}/{RELIC_SLOTS}). They help in every run.</p>
+            <p className="muted">Equip up to {RELIC_SLOTS} relics ({relicUsed(save.equipped)}/{RELIC_SLOTS}). They help in every run.</p>
             <div className="mg-relicgrid">
               {save.relics.map(r => {
-                const on = save.equipped.includes(r), full = !on && save.equipped.length >= RELIC_SLOTS;
+                const on = save.equipped.includes(r), full = !on && relicUsed(save.equipped) + (RELIC_COST[r] || 1) > RELIC_SLOTS;
                 return (
                   <button key={r} className={`mg-relic ${on ? 'on' : ''}`} disabled={full} onClick={() => { const next = { ...save, equipped: on ? save.equipped.filter(x => x !== r) : [...save.equipped, r] }; writeSave(next); setSave(next); }}>
                     <strong>{r}</strong><span>{RELIC_FX[r]?.desc}</span><em>{on ? 'Equipped' : 'Tap to equip'}</em>
@@ -175,9 +175,9 @@ function MonsterGame({ month, job, onClose }: { month: string; job: Job; onClose
               <div className="mg-top"><span>Lv {hud.level}</span><strong data-testid="mg-time">{fmt(Math.max(0, hud.D - hud.t))}</strong><span>{hud.kills} slain</span></div>
               <div className="mg-chips">
                 <div className="mg-slots">
-                  {Array.from({ length: hud.slots || 3 }).map((_, i) => { const w = (hud.weapons || [])[i]; return <span key={i} className={`mg-slot ${w ? '' : 'empty'} ${w && w.level >= 7 ? 'max' : ''}`}>{w && <><WIcon id={w.id} size={22} /><b>{w.level >= 7 ? '★' : w.level}</b></>}</span>; })}
+                  {Array.from({ length: hud.slots || 3 }).map((_, i) => { const w = (hud.weapons || [])[i]; return <span key={i} className={`mg-slot ${w ? '' : 'empty'} ${w && w.level >= 7 ? 'max' : ''}`}>{w && <><WIcon id={w.id} size={20} /><b>{w.level >= 7 ? '★' : w.level}</b></>}</span>; })}
                   <i className="mg-sep" />
-                  {Array.from({ length: hud.islots || 5 }).map((_, i) => { const w = (hud.items || [])[i]; return <span key={i} className={`mg-slot item ${w ? '' : 'empty'} ${w && w.level >= w.max ? 'max' : ''}`}>{w && <><WIcon id={w.id} size={22} /><b>{w.level >= w.max ? '★' : w.level}</b></>}</span>; })}
+                  {Array.from({ length: hud.islots || 5 }).map((_, i) => { const w = (hud.items || [])[i]; return <span key={i} className={`mg-slot item ${w ? '' : 'empty'} ${w && w.level >= w.max ? 'max' : ''}`}>{w && <><WIcon id={w.id} size={20} /><b>{w.level >= w.max ? '★' : w.level}</b></>}</span>; })}
                 </div>
                 {hud.buffs?.inv > 0 && <span className="mg-chip buff">🛡️ {Math.ceil(hud.buffs.inv)}s</span>}
                 {hud.buffs?.speed > 0 && <span className="mg-chip buff">⚡ {Math.ceil(hud.buffs.speed)}s</span>}

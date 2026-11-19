@@ -7,7 +7,6 @@ const pick = arr => arr[Math.floor(Math.random() * arr.length)];
 
 const WNAMES = { arrow: 'Bow', magic: 'Magic', sword: 'Sword', potion: 'Potion', lightning: 'Lightning', axe: 'Axe', boomerang: 'Boomerang', laser: 'Laser' };
 const WIDS = Object.keys(WNAMES);
-const SLOTS = 3; // weapons a hero can carry at once
 // What reaching each weapon level gives (index = level)
 const LV = {
   arrow: [null, 'Arrows fly the way you face', '+1 arrow per shot', 'Arrows pierce 1 more monster', '+1 arrow per shot', 'Faster arrows and a 15% chance for a double-damage crit', 'Pierce 2 more monsters', 'MAX Arrow Storm: a rapid wall of 7 arrows'],
@@ -53,7 +52,8 @@ export function startGame(canvas, profile, opts, ui) {
   const FX = opts.fx || { dmg: 0, rate: 0, hp: 0, speed: 0, magnet: 0, xp: 0, drop: 0, revive: 0, guard: 0 };
   const HARD = { hp: 1.2, dmg: 1.3, wave: 1.2 }; // base difficulty: harsh for new players, relics bring it back down
   let revived = false;
-  const P = { x: 0, y: 0, hp: profile.maxHp + FX.hp, maxHp: profile.maxHp + FX.hp, inv: 0, face: 1, dir: 0, level: 1, xp: 0, need: 3 };
+  const SLOTS = 3 + (FX.slots || 0);   // Monkey's Paw adds a weapon slot
+  const P = { x: 0, y: 0, hp: Math.round((profile.maxHp + FX.hp) * (FX.halfhp ? 0.5 : 1)), maxHp: Math.round((profile.maxHp + FX.hp) * (FX.halfhp ? 0.5 : 1)), inv: 0, face: 1, dir: 0, level: 1, xp: 0, need: 3 };
   const main = PRIMARY[profile.job] || 'arrow';
   const R = profile.rank, isMain = k => k === main;
   const up = { arrow: 0, magic: 0, sword: 0, potion: 0, lightning: 0, axe: 0, boomerang: 0, laser: 0, dup: 0, multi: 0, dmg: 0, rate: 0, speed: 0, hp: 0, magnet: 0, heal: 0, ricochet: 0, aegis: 0, chill: 0, ignite: 0, enlarge: 0, crit: 0 };

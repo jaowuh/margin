@@ -171,3 +171,5 @@ Hidden coloring game (`src/components/CreditsGame.tsx` = painting card only; `cr
 - v9.8: new Golden-tier relic Alucard's Thirst: lifesteal 2% of damage dealt, healing capped at 2.5% max HP/s (lsAcc bucket in hurt()).
 
 - v9.9: Alucard's Thirst moved to the Epic (legendary) tier.
+
+- v10.0: Epic relics Devil's Bargain (half max HP, +60% dmg, +40% fire rate) and Monkey's Paw (takes 2 relic slots via RELIC_COST/relicUsed, +1 weapon slot via FX.slots). HUD slots shrunk to 26px so 4+5 fit one row.
