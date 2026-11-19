@@ -10,7 +10,7 @@ const WIDS = Object.keys(WNAMES);
 const SLOTS = 3; // weapons a hero can carry at once
 // What reaching each weapon level gives (index = level)
 const LV = {
-  arrow: [null, 'Arrows fly the way you face', '+1 arrow per shot', '15% chance for a double-damage crit', '+1 arrow per shot', 'Faster arrows, pierce 1 more', 'Pierce 2 more monsters', 'MAX Arrow Storm: a non-stop wall of arrows'],
+  arrow: [null, 'Arrows fly the way you face', '+1 arrow per shot', '15% chance for a double-damage crit', '+1 arrow per shot', 'Faster arrows, pierce 1 more', 'Pierce 2 more monsters', 'MAX Arrow Storm: a rapid wall of 7 arrows'],
   magic: [null, 'Homing bolts that each hit one monster', '+1 bolt per cast', 'Small blast: monsters next to the target take 35% damage', '+1 bolt per cast', 'Faster, sharper homing', 'Bigger blast, 50% damage', 'MAX Seeker Swarm: every hit splits into 2 homing shards, +1 bolt'],
   sword: [null, 'Blades circle you', '+1 blade', 'Blades spin 25% faster', '+1 blade', 'Longer blades, wider orbit', '+1 blade', 'MAX Blade Tempest: a second ring spinning the other way'],
   potion: [null, 'Flasks make slowing, poisonous puddles', '+1 flask', 'Bigger puddles', '+1 flask', 'Stronger poison (+40%)', 'Puddles last 60% longer and slow harder', 'MAX Toxic Fog: flasks sweep a clockwise ring all around you'],
@@ -264,7 +264,7 @@ export function startGame(canvas, profile, opts, ui) {
       const off = i - (n - 1) / 2, a = storm ? P.dir + rnd(-0.03, 0.03) : P.dir + off * 0.14;
       const px = storm ? P.x - Math.sin(P.dir) * off * 8 : P.x, py = storm ? P.y + Math.cos(P.dir) * off * 8 : P.y;
       const crit = Math.random() < (isMain('arrow') && R >= 3 ? 0.25 : 0) + (L >= 3 ? 0.15 : 0);
-      shots.push({ kind: 'arrow', x: px, y: py, a, vx: Math.cos(a) * 420 * (L >= 5 ? 1.25 : 1), vy: Math.sin(a) * 420 * (L >= 5 ? 1.25 : 1), life: 1.2, dmg: dmg() * wmul('arrow') * wl(L) * (storm ? 0.8 : 1) * (crit ? 2 : 1), crit: crit || storm, pierce: 1 + (L >= 5 ? 1 : 0) + (L >= 6 ? 2 : 0) + (isMain('arrow') && R >= 2 ? 1 : 0), hit: [] });
+      shots.push({ kind: 'arrow', x: px, y: py, a, vx: Math.cos(a) * 420 * (L >= 5 ? 1.25 : 1), vy: Math.sin(a) * 420 * (L >= 5 ? 1.25 : 1), life: 1.2, dmg: dmg() * wmul('arrow') * wl(L) * (storm ? 0.6 : 1) * (crit ? 2 : 1), crit: crit || storm, pierce: 1 + (L >= 5 ? 1 : 0) + (L >= 6 ? 2 : 0) + (isMain('arrow') && R >= 2 ? 1 : 0), hit: [] });
     }
   }
   function fireMagic() {
@@ -359,7 +359,7 @@ export function startGame(canvas, profile, opts, ui) {
     // arrows: only in the direction you face. Level 7 = Arrow Storm
     arrowCd -= dt;
     if (up.arrow > 0 && arrowCd <= 0) {
-      arrowCd = 0.85 / rate() / (isMain('arrow') && R >= 2 ? 1.15 : 1) / (up.arrow >= 7 ? 4 : 1);
+      arrowCd = 0.85 / rate() / (isMain('arrow') && R >= 2 ? 1.15 : 1) / (up.arrow >= 7 ? 2.5 : 1);
       volley(fireArrows);
     }
     // magic: homing bolts, one monster each. Level 7 = Seeker Swarm
