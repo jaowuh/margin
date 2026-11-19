@@ -15,7 +15,7 @@ const LV = {
   sword: [null, 'Blades circle you', '+1 blade', 'Blades spin 25% faster', '+1 blade', 'Longer blades, wider orbit', '+1 blade', 'MAX Blade Tempest: a second ring spinning the other way'],
   potion: [null, 'Flasks make slowing, poisonous puddles', '+1 flask', 'Bigger puddles', '+1 flask', 'Stronger poison (+40%)', 'Puddles last 60% longer and slow harder', 'MAX Toxic Fog: flasks sweep a clockwise ring all around you'],
   axe: [null, 'A heavy swing in a wide arc where you face', 'Double swing: forward, then a backswing', 'A shockwave rolls forward after the swing', 'Wider arc', 'Half-second stun on hit', 'Bigger shockwave that travels further', 'MAX Earthsplitter: the shockwave crosses the whole map'],
-  boomerang: [null, 'Thrown at the nearest monster, flies its full range, then returns, hitting both ways (range grows a little each level); the next throw waits for it', '+1 boomerang', 'Ricochet: bounces to 1 other monster after its first hit', '+1 boomerang', 'The return trip hits 50% harder', 'Faster, bigger arc and 2 bounces', 'MAX Rampage: boomerangs never come back, they bounce off the walls on their own'],
+  boomerang: [null, 'Thrown at the nearest monster, flies its full range, then returns, hitting both ways (range grows a little each level); the next throw waits for it', '+1 boomerang', 'Ricochet: bounces to 1 other monster after its first hit', '+1 boomerang', 'The return trip hits 50% harder', 'Faster, bigger arc and 2 bounces', 'MAX Rampage: your throws fly 60% farther, bigger, through every monster; extra boomerangs roam the arena on their own, bouncing toward the crowd'],
   laser: [null, 'An orb circles you and zaps a straight beam toward the nearest monster, full reach', '+1 orb', 'Burn: monsters it hits keep burning, longer reach', '+1 orb', 'Burning monsters take 40% more beam damage', 'Shorter rest between beams, longer reach', 'MAX Worldbreaker: +1 orb, beams run to the wall, almost no rest'],
   lightning: [null, 'Lightning strikes and jumps to a nearby monster', '+1 strike', '+1 chain', '+1 strike', 'Wider strike zone', 'Chains keep full damage and +1 chain', 'MAX Thunderstorm: 4 strikes at once, chains to 6'],
 };
@@ -233,7 +233,7 @@ export function startGame(canvas, profile, opts, ui) {
     for (const e of enemies) if (e.hp > 0 && inView(e)) { const d = (e.x - P.x) ** 2 + (e.y - P.y) ** 2; if (d < bd) { bd = d; ba = Math.atan2(e.y - P.y, e.x - P.x); } }
     for (let i = 0; i < n; i++) {
       const a = ba + (i % 2 ? -0.25 : 0.25) * Math.floor((i + 1) / 2);
-      booms.push({ x: P.x, y: P.y, a, sp: 340 * (L >= 6 ? 1.3 : 1), curve: 0, phase: 0, t: 0, out: (130 + 10 * (L - 1)) / (340 * (L >= 6 ? 1.3 : 1)), hit: new Set(), r: L >= 6 ? 14 : 10, spin: 0, bounces: L >= 6 ? 2 : L >= 3 ? 1 : 0 });
+      booms.push({ x: P.x, y: P.y, a, sp: 340 * (L >= 6 ? 1.3 : 1), curve: 0, phase: 0, t: 0, out: (130 + 10 * (L - 1)) * (L >= 7 ? 1.6 : 1) / (340 * (L >= 6 ? 1.3 : 1)), hit: new Set(), r: L >= 7 ? 21 : L >= 6 ? 14 : 10, spin: 0, bounces: L >= 7 ? 0 : L >= 6 ? 2 : L >= 3 ? 1 : 0 });
     }
   }
   /* ----- laser: a beam that locks on and burns the whole line ----- */
@@ -404,13 +404,13 @@ export function startGame(canvas, profile, opts, ui) {
     }
     if (up.boomerang >= 7) {   // max: boomerangs never come back; they bounce off the arena walls on their own
       const nR = 3 + up.dup;
-      while (loopers.length < nR) { const a = rnd(0, Math.PI * 2); loopers.push({ x: P.x, y: P.y, vx: Math.cos(a) * 320, vy: Math.sin(a) * 320, spin: 0 }); }
+      while (loopers.length < nR) { const a = rnd(0, Math.PI * 2); loopers.push({ x: P.x, y: P.y, vx: Math.cos(a) * 320, vy: Math.sin(a) * 320, spin: 0, r: 20 }); }
       for (const b of loopers) {
         b.x += b.vx * dt; b.y += b.vy * dt; b.spin += dt * 16;
-        const wob = () => { const a = Math.atan2(b.vy, b.vx) + rnd(-0.4, 0.4), v = Math.hypot(b.vx, b.vy); b.vx = Math.cos(a) * v; b.vy = Math.sin(a) * v; };   // random turn on each wall bounce so the paths don't repeat
+        const wob = () => { let sx = 0, sy = 0, k = 0; for (const e of enemies) if (e.hp > 0 && inView(e)) { sx += e.x; sy += e.y; k++; } const a = (k ? Math.atan2(sy / k - b.y, sx / k - b.x) : Math.atan2(b.vy, b.vx)) + rnd(-0.4, 0.4), v = Math.hypot(b.vx, b.vy); b.vx = Math.cos(a) * v; b.vy = Math.sin(a) * v; };   // random turn on each wall bounce so the paths don't repeat
         if (b.x < -AX) { b.x = -AX; b.vx = Math.abs(b.vx); wob(); b.vx = Math.max(b.vx, 40); } if (b.x > AX) { b.x = AX; b.vx = -Math.abs(b.vx); wob(); b.vx = Math.min(b.vx, -40); }
         if (b.y < -AY) { b.y = -AY; b.vy = Math.abs(b.vy); wob(); b.vy = Math.max(b.vy, 40); } if (b.y > AY) { b.y = AY; b.vy = -Math.abs(b.vy); wob(); b.vy = Math.min(b.vy, -40); }
-        for (const e of enemies) if (e.hp > 0 && (!e.bmCd || e.bmCd < t) && (e.x - b.x) ** 2 + (e.y - b.y) ** 2 < (e.r + 14) ** 2) { e.bmCd = t + 0.4; hurt(e, dmg() * 2.6 * wl(7)); }
+        for (const e of enemies) if (e.hp > 0 && (!e.bmCd || e.bmCd < t) && (e.x - b.x) ** 2 + (e.y - b.y) ** 2 < (e.r + 22) ** 2) { e.bmCd = t + 0.4; hurt(e, dmg() * 4.2 * wl(7)); }
       }
     }
     // laser: orbs circle you; each locks the direction of its target, shows a warning line, then fires a straight beam that does not turn

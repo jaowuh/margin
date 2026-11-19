@@ -136,3 +136,4 @@ Hidden coloring game (`src/components/CreditsGame.tsx` = painting card only; `cr
 - v7.6: Earthsplitter leaves a jagged dark ground crack (fades in 1.3s) instead of the orange line; potion icon is a green flask (hand-drawn).
 - v7.7: Arrow Storm (bow L7) nerfed: fire rate x2.5 (was x4), arrow damage 60% (was 80%). Bow pierce: 1 monster per arrow until L5 (2), L6 (4); saver rank 2+ main bow +1.
 - v7.8: lightning strike animation trimmed to a single strike (the pack's version re-strikes 3 times and arcs along the ground); at boomerang L7 the player still throws boomerangs in addition to the roaming Rampage ones.
+- v7.9: boomerang L7: thrown ones fly +60% range, bigger (r 21), no ricochet (they pass through every monster once per leg); roaming Rampage boomerangs do x4.2 (was 2.6), bigger (r 20, hit radius +22) and bounce toward the crowd (centroid of on-screen monsters) with a small random wobble. No return shockwave (user found it excessive).
