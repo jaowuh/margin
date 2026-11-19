@@ -155,3 +155,5 @@ Hidden coloring game (`src/components/CreditsGame.tsx` = painting card only; `cr
 - v9.0: item slots. Max 5 different items (Snack free); GENERIC list now also has Ricochet (2), Pierce (3), Chill (3, freeze chance at max), Ignite (3), Enlarge (4, en() scales axe reach, potion, lightning zone, magic blast, boomerang, sword size, laser width, Finger of God), Critical (4, in hurt()). hurt(e,d,"dot") skips crit/ignite/chill for burn and poison ticks. HUD shows item chips.
 
 - v9.1: HUD shows icon slots (3 weapon + 5 item, level badge, gold star at max). New src/assets/item-icons.png (8 icons: dup, multi, ricochet, pierce, chill, ignite, enlarge, crit), used by WIcon. New weapons/items show a 52px icon on the level-up card. Stats (dmg, rate, speed, hp, magnet) and Snack are free:true and take no item slot.
+
+- v9.2: Pierce item replaced by Knockback (max 3): hits push monsters 18/26/34px away via kbNudge (1.5s per-monster cooldown, bosses immune). Icon slot 3 of item-icons.png is now a push arrow.

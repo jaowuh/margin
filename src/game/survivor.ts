@@ -28,7 +28,7 @@ const GENERIC = [
   { id: 'hp', name: 'Vitality', desc: '+30 max health and heal 30', max: 6, free: true },
   { id: 'magnet', name: 'Magnet', desc: '+40% gem pickup range', max: 4, free: true },
   { id: 'ricochet', name: 'Ricochet', desc: 'Arrows, bolts and magic bounce to another monster after a hit (per level)', max: 2 },
-  { id: 'pierce', name: 'Pierce', desc: '+1 pierce for arrows and blaster bolts', max: 3 },
+  { id: 'knock', name: 'Knockback', desc: 'Hits push monsters away from you (each monster at most once every 1.5s)', max: 3 },
   { id: 'chill', name: 'Chill', desc: 'Hits slow monsters; at max they sometimes freeze solid', max: 3 },
   { id: 'ignite', name: 'Ignite', desc: 'Hits set monsters burning, hotter each level', max: 3 },
   { id: 'enlarge', name: 'Enlarge', desc: '+15% size and area on your weapons', max: 4 },
@@ -56,7 +56,7 @@ export function startGame(canvas, profile, opts, ui) {
   const P = { x: 0, y: 0, hp: profile.maxHp + FX.hp, maxHp: profile.maxHp + FX.hp, inv: 0, face: 1, dir: 0, level: 1, xp: 0, need: 3 };
   const main = PRIMARY[profile.job] || 'arrow';
   const R = profile.rank, isMain = k => k === main;
-  const up = { arrow: 0, magic: 0, sword: 0, potion: 0, lightning: 0, axe: 0, boomerang: 0, laser: 0, dup: 0, multi: 0, dmg: 0, rate: 0, speed: 0, hp: 0, magnet: 0, heal: 0, ricochet: 0, pierce: 0, chill: 0, ignite: 0, enlarge: 0, crit: 0 };
+  const up = { arrow: 0, magic: 0, sword: 0, potion: 0, lightning: 0, axe: 0, boomerang: 0, laser: 0, dup: 0, multi: 0, dmg: 0, rate: 0, speed: 0, hp: 0, magnet: 0, heal: 0, ricochet: 0, knock: 0, chill: 0, ignite: 0, enlarge: 0, crit: 0 };
   const en = () => 1 + 0.15 * up.enlarge, itemsOwned = () => GENERIC.filter(u => !u.free && up[u.id] > 0);
   up[main] = profile.rank; // your job's weapon starts at your saver level
   const wmul = k => (k === main ? [1.3, 1.5, 1.8][profile.rank - 1] : 1);
@@ -272,7 +272,7 @@ export function startGame(canvas, profile, opts, ui) {
       const off = i - (n - 1) / 2, a = storm ? P.dir + rnd(-0.03, 0.03) : P.dir + off * 0.14;
       const px = storm ? P.x - Math.sin(P.dir) * off * 8 : P.x, py = storm ? P.y + Math.cos(P.dir) * off * 8 : P.y;
       const crit = Math.random() < (isMain('arrow') && R >= 3 ? 0.25 : 0) + (L >= 5 ? 0.15 : 0);
-      shots.push({ kind: 'arrow', x: px, y: py, a, vx: Math.cos(a) * 420 * (L >= 5 ? 1.25 : 1), vy: Math.sin(a) * 420 * (L >= 5 ? 1.25 : 1), life: 1.2, dmg: dmg() * wmul('arrow') * wl(L) * (storm ? 0.8 : 1) * (crit ? 2 : 1), crit: crit || storm, pierce: 1 + up.pierce + (L >= 3 ? 1 : 0) + (L >= 6 ? 2 : 0) + (isMain('arrow') && R >= 2 ? 1 : 0), hit: [], bnc: 0 });
+      shots.push({ kind: 'arrow', x: px, y: py, a, vx: Math.cos(a) * 420 * (L >= 5 ? 1.25 : 1), vy: Math.sin(a) * 420 * (L >= 5 ? 1.25 : 1), life: 1.2, dmg: dmg() * wmul('arrow') * wl(L) * (storm ? 0.8 : 1) * (crit ? 2 : 1), crit: crit || storm, pierce: 1 + (L >= 3 ? 1 : 0) + (L >= 6 ? 2 : 0) + (isMain('arrow') && R >= 2 ? 1 : 0), hit: [], bnc: 0 });
     }
   }
   function fireMagic() {
@@ -429,7 +429,7 @@ export function startGame(canvas, profile, opts, ui) {
         if (blastCd <= 0) {
           blastI = (blastI + 1) % blasters(); const [bx, by] = blastPos(blastI); let tg = null, bd = 1e18;
           for (const e of enemies) { if (!inLaser(e)) continue; const d = (e.x - bx) ** 2 + (e.y - by) ** 2; if (d < bd) { bd = d; tg = e; } }
-          if (tg) { const a = Math.atan2(tg.y - by, tg.x - bx); shots.push({ kind: 'bolt', x: bx, y: by, a, vx: Math.cos(a) * 520, vy: Math.sin(a) * 520, life: 0.8, dmg: dmg() * 0.6 * wl(L), pierce: (L >= 6 ? 2 : 1) + up.pierce, hit: [], bnc: 0 }); blastCd = (L >= 6 ? 0.22 : 0.34) / blasters() / rate(); }
+          if (tg) { const a = Math.atan2(tg.y - by, tg.x - bx); shots.push({ kind: 'bolt', x: bx, y: by, a, vx: Math.cos(a) * 520, vy: Math.sin(a) * 520, life: 0.8, dmg: dmg() * 0.6 * wl(L), pierce: (L >= 6 ? 2 : 1), hit: [], bnc: 0 }); blastCd = (L >= 6 ? 0.22 : 0.34) / blasters() / rate(); }
           else blastCd = 0.15;
         }
       }
@@ -571,6 +571,7 @@ export function startGame(canvas, profile, opts, ui) {
   function hurt(e, d, k) {
     if (k !== 'dot') {
       if (up.crit && Math.random() < 0.08 * up.crit) d *= 2;
+      if (up.knock) kbNudge(e, P.x, P.y, 10 + 8 * up.knock);
       if (up.ignite) { e.burn = Math.max(e.burn || 0, t + 1.2 + 0.5 * up.ignite); e.burnD = Math.max(e.burn > t && e.burnD ? e.burnD : 0, dmg() * 0.12 * up.ignite); }
       if (up.chill) {
         const was = e.slow > t, kk = 0.7 - 0.12 * up.chill; e.slow = Math.max(e.slow || 0, t + 0.8 + 0.3 * up.chill); e.slowK = was ? Math.min(e.slowK || 0.45, kk) : kk;
