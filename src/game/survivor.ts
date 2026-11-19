@@ -10,10 +10,10 @@ const WIDS = Object.keys(WNAMES);
 const SLOTS = 3; // weapons a hero can carry at once
 // What reaching each weapon level gives (index = level)
 const LV = {
-  arrow: [null, 'Arrows fly the way you face', '+1 arrow per shot', '15% chance for a double-damage crit', '+1 arrow per shot', 'Faster arrows, pierce 1 more', 'Pierce 2 more monsters', 'MAX Arrow Storm: a rapid wall of 7 arrows'],
+  arrow: [null, 'Arrows fly the way you face', '+1 arrow per shot', 'Arrows pierce 1 more monster', '+1 arrow per shot', 'Faster arrows and a 15% chance for a double-damage crit', 'Pierce 2 more monsters', 'MAX Arrow Storm: a rapid wall of 7 arrows'],
   magic: [null, 'Homing bolts that each hit one monster', '+1 bolt per cast', 'Small blast: monsters next to the target take 35% damage', '+1 bolt per cast', 'Faster, sharper homing', 'Bigger blast, 50% damage', 'MAX Seeker Swarm: every hit splits into 2 homing shards, +1 bolt'],
-  sword: [null, 'Blades circle you', '+1 blade', 'Blades spin 25% faster', '+1 blade', 'Longer blades, wider orbit', '+1 blade', 'MAX Blade Tempest: a second ring spinning the other way'],
-  potion: [null, 'Flasks make slowing, poisonous puddles', '+1 flask', 'Bigger puddles', '+1 flask', 'Stronger poison (+40%)', 'Puddles last 60% longer and slow harder', 'MAX Toxic Fog: flasks sweep a clockwise ring all around you'],
+  sword: [null, 'Blades circle you', '+1 blade', 'Blades spin 25% faster, are longer and orbit wider', '+1 blade', 'Bloodlust: blades turn crimson and every 20th hit heals you 2% HP', '+1 blade', 'MAX Blade Tempest: a second ring spinning the other way'],
+  potion: [null, 'Flasks make slowing, poisonous puddles', '+1 flask', 'Bigger puddles', '+1 flask', 'Stronger poison (+40%); monsters that die in poison leave a small puddle', 'Puddles last 60% longer and slow harder', 'MAX Toxic Fog: flasks sweep a clockwise ring all around you'],
   axe: [null, 'A heavy swing in a wide arc where you face', 'Double swing: forward, then a backswing', 'A shockwave rolls forward after the swing', 'Wider arc', 'Half-second stun on hit', 'Bigger shockwave that travels further', 'MAX Earthsplitter: the shockwave crosses the whole map'],
   boomerang: [null, 'Thrown at the nearest monster, flies its full range, then returns, hitting both ways (range grows a little each level); the next throw waits for it', '+1 boomerang', 'Ricochet: bounces to 1 other monster after its first hit', '+1 boomerang', 'The return trip hits 50% harder', 'Faster, bigger arc and 2 bounces', 'MAX Rampage: your throws fly 60% farther, bigger, through every monster; extra boomerangs roam the arena on their own, bouncing toward the crowd'],
   laser: [null, 'An orb circles you and zaps a straight beam toward the nearest monster, full reach', '+1 orb', 'Burn: monsters it hits keep burning, longer reach', '+1 orb', 'Burning monsters take 40% more beam damage', 'Shorter rest between beams, longer reach', 'MAX Worldbreaker: +1 orb, beams run to the wall, almost no rest'],
@@ -54,6 +54,7 @@ export function startGame(canvas, profile, opts, ui) {
   const wmul = k => (k === main ? [1.3, 1.5, 1.8][profile.rank - 1] : 1);
   const owned = () => WIDS.filter(k => up[k] > 0);
 
+  let swHits = 0, redSword = null;
   let warned = false, firstDone = false, sweep = 0, t = 0, kills = 0, arrowCd = 0, magicCd = 0, potionCd = 1, lightCd = 1, orbAng = 0, spawnCd = 0, novaCd = 5, bossA = false, bossB = false, over = false;
   let nextMini = D / 5, nextSwarm = D * 0.3, miniN = 0;
   const buffs = { inv: 0, speed: 0 };
@@ -263,8 +264,8 @@ export function startGame(canvas, profile, opts, ui) {
     for (let i = 0; i < n; i++) {
       const off = i - (n - 1) / 2, a = storm ? P.dir + rnd(-0.03, 0.03) : P.dir + off * 0.14;
       const px = storm ? P.x - Math.sin(P.dir) * off * 8 : P.x, py = storm ? P.y + Math.cos(P.dir) * off * 8 : P.y;
-      const crit = Math.random() < (isMain('arrow') && R >= 3 ? 0.25 : 0) + (L >= 3 ? 0.15 : 0);
-      shots.push({ kind: 'arrow', x: px, y: py, a, vx: Math.cos(a) * 420 * (L >= 5 ? 1.25 : 1), vy: Math.sin(a) * 420 * (L >= 5 ? 1.25 : 1), life: 1.2, dmg: dmg() * wmul('arrow') * wl(L) * (storm ? 0.6 : 1) * (crit ? 2 : 1), crit: crit || storm, pierce: 1 + (L >= 5 ? 1 : 0) + (L >= 6 ? 2 : 0) + (isMain('arrow') && R >= 2 ? 1 : 0), hit: [] });
+      const crit = Math.random() < (isMain('arrow') && R >= 3 ? 0.25 : 0) + (L >= 5 ? 0.15 : 0);
+      shots.push({ kind: 'arrow', x: px, y: py, a, vx: Math.cos(a) * 420 * (L >= 5 ? 1.25 : 1), vy: Math.sin(a) * 420 * (L >= 5 ? 1.25 : 1), life: 1.2, dmg: dmg() * wmul('arrow') * wl(L) * (storm ? 0.6 : 1) * (crit ? 2 : 1), crit: crit || storm, pierce: 1 + (L >= 3 ? 1 : 0) + (L >= 6 ? 2 : 0) + (isMain('arrow') && R >= 2 ? 1 : 0), hit: [] });
     }
   }
   function fireMagic() {
@@ -475,7 +476,7 @@ export function startGame(canvas, profile, opts, ui) {
         for (let k = 0; k < ring.n; k++) {
           const a = orbAng * ring.dir + (k * Math.PI * 2) / ring.n, ux = Math.cos(a), uy = Math.sin(a);
           const cx = P.x + ux * ring.rad, cy = P.y + uy * ring.rad;
-          for (const e of enemies) if (e.hp > 0 && (!e.swCd || e.swCd < t) && distSeg(e.x, e.y, cx - ux * half, cy - uy * half, cx + ux * half, cy + uy * half) < e.r + 3) { e.swCd = t + 0.4; hurt(e, dmg() * 2.4 * wmul('sword') * wl(L)); }
+          for (const e of enemies) if (e.hp > 0 && (!e.swCd || e.swCd < t) && distSeg(e.x, e.y, cx - ux * half, cy - uy * half, cx + ux * half, cy + uy * half) < e.r + 3) { e.swCd = t + 0.4; hurt(e, dmg() * 2.4 * wmul('sword') * wl(L)); if (L >= 5 && ++swHits % 20 === 0) { P.hp = Math.min(P.maxHp, P.hp + P.maxHp * 0.02); pop(P.x, P.y - 20, '+HP'); } }
         }
       }
     }
@@ -484,6 +485,7 @@ export function startGame(canvas, profile, opts, ui) {
       const e = enemies[i];
       if (e.hp <= 0) {
         kills++; enemies.splice(i, 1);
+        if (e.poison > t && up.potion >= 5 && puddles.length < 40) puddles.push({ x: e.x, y: e.y, r: 24, life: 1.8, tick: 0, L: up.potion, dmg: dmg() * 0.45 * wl(up.potion) * 0.6 });
         const n = e.boss ? 14 : 1; for (let k = 0; k < n; k++) gems.push({ x: e.x + rnd(-14, 14), y: e.y + rnd(-14, 14), v: e.boss ? Math.ceil(e.xp / 7) : e.xp });
         dropFor(e);
         if (e.boss && e.type === 'dragon') return finish(true);
@@ -505,10 +507,15 @@ export function startGame(canvas, profile, opts, ui) {
     if (t >= D - 30 && !warned) { warned = true; ui.banner('30 seconds left to slay the Dragon!'); }
     if (t >= D) finish(false, true); // time is up and the Dragon still lives
   }
+  function swordImg() {   // from level 5 the blades turn crimson (tinted copy made once)
+    if (up.sword < 5) return SP.sword;
+    if (!redSword) { const cv = document.createElement('canvas'); cv.width = SP.sword.width || 32; cv.height = SP.sword.height || 32; const x = cv.getContext('2d'); x.imageSmoothingEnabled = false; x.drawImage(SP.sword, 0, 0); x.globalCompositeOperation = 'source-atop'; x.fillStyle = 'rgba(210,25,55,0.55)'; x.fillRect(0, 0, cv.width, cv.height); redSword = cv; }
+    return redSword;
+  }
   const rings = () => {
     const L = up.sword; if (L <= 0) return [];
-    const n = Math.min(MAX_BLADES_PER_RING, 1 + (L >= 2 ? 1 : 0) + (L >= 4 ? 1 : 0) + (L >= 6 ? 1 : 0) + (isMain('sword') && R >= 2 ? 1 : 0) + up.dup), size = 34 * (L >= 5 ? 1.25 : 1);
-    const r = [{ rad: 42 + (L >= 5 ? 14 : 0), n, dir: 1, size }];
+    const n = Math.min(MAX_BLADES_PER_RING, 1 + (L >= 2 ? 1 : 0) + (L >= 4 ? 1 : 0) + (L >= 6 ? 1 : 0) + (isMain('sword') && R >= 2 ? 1 : 0) + up.dup), size = 34 * (L >= 3 ? 1.25 : 1);
+    const r = [{ rad: 42 + (L >= 3 ? 14 : 0), n, dir: 1, size }];
     if (L >= 7) r.push({ rad: 90, n: Math.min(MAX_BLADES_PER_RING, n - up.dup + 2), dir: -0.8, size });
     return r;
   };
@@ -518,14 +525,17 @@ export function startGame(canvas, profile, opts, ui) {
   function finish(won, timeout) { if (over) return; over = true; ui.end({ won, timeout: !!timeout, seconds: Math.min(t, D), kills, level: P.level }); stop(); }
 
   /* ---------- drawing ---------- */
-  function statusFx(e, sx, sy) {   // looping status effects on a monster: burn, poison, slow, shock, stun
-    if (!SP || !SP.fx) return;
+  function statusFx(e, sx, sy) {   // small status icons float above the monster's head (stun keeps its spinning stars)
+    if (!SP || !SP.fx || !SP.status) return;
     ctx.imageSmoothingEnabled = false;
     const list = [];
-    if (e.burn > t) list.push('burn'); if (e.poison > t) list.push('poison'); else if (e.slow > t && !(e.stun > t)) list.push('slow'); if (e.shock > t) list.push('shock'); if (e.stun > t) list.push('stun');
-    for (const k of list) {
-      const row = SP.fx.rows[k], fw = row.w, fh = row.h, k0 = Math.floor(t * 14 + e.ph * 3) % row.n, dw = Math.max(34, e.r * (k === 'stun' ? 2.4 : 2.6)), dh = dw * fh / fw, ay = k === 'stun' ? -e.r * 0.9 : e.r * 0.85;
-      ctx.drawImage(SP.fx.img, k0 * fw, row.y, fw, fh, sx - dw * row.ax, sy + ay - dh * row.ay, dw, dh);
+    if (e.burn > t) list.push(0); if (e.poison > t) list.push(1); else if (e.slow > t && !(e.stun > t)) list.push(2); if (e.shock > t) list.push(3);
+    const sz = 18, top = sy - e.r - sz - 4 + Math.sin(t * 6 + e.ph) * 2;
+    list.forEach((k, i) => { const x = sx + (i - (list.length - 1) / 2) * (sz + 2) - sz / 2; ctx.globalAlpha = k === 0 ? 0.8 + 0.2 * Math.sin(t * 20 + e.ph) : 1; ctx.drawImage(SP.status, k * 16, 0, 16, 16, x, top, sz, sz); });
+    ctx.globalAlpha = 1;
+    if (e.stun > t) {
+      const row = SP.fx.rows.stun, fw = row.w, fh = row.h, k0 = Math.floor(t * 14 + e.ph * 3) % row.n, dw = Math.max(34, e.r * 2.4), dh = dw * fh / fw;
+      ctx.drawImage(SP.fx.img, k0 * fw, row.y, fw, fh, sx - dw * row.ax, sy - e.r * 0.9 - dh * row.ay, dw, dh);
     }
   }
   function monster(e, sx, sy) { monster0(e, sx, sy); statusFx(e, sx, sy); }
@@ -588,7 +598,7 @@ export function startGame(canvas, profile, opts, ui) {
     for (const ring of rings()) {
       for (let k = 0; k < ring.n; k++) {
         const a = orbAng * ring.dir + (k * Math.PI * 2) / ring.n; c.save(); c.translate(W / 2 + Math.cos(a) * ring.rad, H / 2 + Math.sin(a) * ring.rad); c.rotate(a + Math.PI / 2);
-        if (SP) { c.imageSmoothingEnabled = false; c.rotate(Math.PI / 4); if (up.sword >= 7) { c.shadowColor = '#9fd4ff'; c.shadowBlur = 10; } const z = ring.size; c.drawImage(SP.sword, -z / 2, -z / 2, z, z); c.restore(); continue; }
+        if (SP) { c.imageSmoothingEnabled = false; c.rotate(Math.PI / 4); if (up.sword >= 7) { c.shadowColor = '#9fd4ff'; c.shadowBlur = 10; } const z = ring.size; c.drawImage(swordImg(), -z / 2, -z / 2, z, z); c.restore(); continue; }
         c.fillStyle = '#E8ECEF'; c.beginPath(); c.moveTo(0, -16); c.lineTo(4, 4); c.lineTo(-4, 4); c.fill(); c.restore();
       }
     }
