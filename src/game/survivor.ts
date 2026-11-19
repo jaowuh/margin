@@ -16,7 +16,7 @@ const LV = {
   potion: [null, 'Flasks make slowing, poisonous puddles', '+1 flask', 'Bigger puddles', '+1 flask', 'Stronger poison (+40%)', 'Puddles last 60% longer and slow harder', 'MAX Toxic Fog: flasks sweep a clockwise ring all around you'],
   axe: [null, 'A heavy swing in a wide arc where you face', 'Double swing: forward, then a backswing', 'A shockwave rolls forward after the swing', 'Wider arc', 'Half-second stun on hit', 'Bigger shockwave that travels further', 'MAX Earthsplitter: the shockwave crosses the whole map'],
   boomerang: [null, 'Thrown at the nearest monster, curves back to you, hits both ways', '+1 boomerang', 'Ricochet: bounces to 1 other monster after its first hit', '+1 boomerang', 'The return trip hits 50% harder', 'Faster, bigger arc and 2 bounces', 'MAX Rampage: boomerangs never come back, they bounce off the walls on their own'],
-  laser: [null, 'An orb circles you and fires a beam at the nearest monster', '+1 orb', 'Burn: monsters it hits keep burning, longer reach', '+1 orb', 'Burning monsters take 40% more beam damage', 'Shorter rest between beams, longer reach', 'MAX Worldbreaker: +1 orb, beams run to the wall, almost no rest'],
+  laser: [null, 'An orb circles you and fires a straight beam at the nearest monster (it warns first)', '+1 orb', 'Burn: monsters it hits keep burning, longer reach', '+1 orb', 'Burning monsters take 40% more beam damage', 'Shorter rest between beams, longer reach', 'MAX Worldbreaker: +1 orb, beams run to the wall, almost no rest'],
   lightning: [null, 'Lightning strikes and jumps to a nearby monster', '+1 strike', '+1 chain', '+1 strike', 'Wider strike zone', 'Chains keep full damage and +1 chain', 'MAX Thunderstorm: 4 strikes at once, chains to 6'],
 };
 const GENERIC = [
@@ -249,9 +249,12 @@ export function startGame(canvas, profile, opts, ui) {
     for (const e of enemies) { if (!inLaser(e) || taken.has(e)) continue; const d = (e.x - ox0) ** 2 + (e.y - oy0) ** 2; if (d < bd) { bd = d; best = e; } }
     return best;
   }
-  function startLaser() {
+  function startLaser() {   // each orb locks its target's direction now; the beam keeps that angle, following only your movement
     beams.length = 0; const taken = new Set(), n = laserOrbs();
-    for (let i = 0; i < n; i++) { const e = pickLaserTarget(i, taken) || pickLaserTarget(i, new Set()); if (e) taken.add(e); beams.push({ i, target: e, a: 0 }); }
+    for (let i = 0; i < n; i++) {
+      const e = pickLaserTarget(i, taken) || pickLaserTarget(i, new Set()); if (!e) continue; taken.add(e);
+      const [x0, y0] = orbPos(i); beams.push({ i, dx: x0 - P.x, dy: y0 - P.y, a: Math.atan2(e.y - y0, e.x - x0) });
+    }
   }
   function fireArrows() {
     const L = up.arrow, storm = L >= 7, n = storm ? 7 + up.dup : 1 + (L >= 2 ? 1 : 0) + (L >= 4 ? 1 : 0) + up.dup;
@@ -408,27 +411,22 @@ export function startGame(canvas, profile, opts, ui) {
         for (const e of enemies) if (e.hp > 0 && (!e.bmCd || e.bmCd < t) && (e.x - b.x) ** 2 + (e.y - b.y) ** 2 < (e.r + 14) ** 2) { e.bmCd = t + 0.4; hurt(e, dmg() * 2.6 * wl(7)); }
       }
     }
-    // laser: orbs circle you; each fires a beam at its own target
+    // laser: orbs circle you; each locks the direction of its target, shows a warning line, then fires a straight beam that does not turn
     if (up.laser > 0) {
       const L = up.laser; laserT -= dt; orbL += dt * (0.9 + 0.3 * rate());
-      if (!laserOn) { if (laserT <= 0 && enemies.some(inLaser)) { laserOn = true; laserT = 2; laserTick = 0; startLaser(); } }
+      if (!laserOn) { if (laserT <= 0 && enemies.some(inLaser)) { laserOn = true; laserT = 1.0; laserTick = 0; startLaser(); } }
       else {
-        const taken = new Set(beams.map(b => b.target));
-        for (const b of beams) {
-          if (b.i >= laserOrbs()) continue;
-          if (!b.target || !inLaser(b.target)) { b.target = pickLaserTarget(b.i, taken); if (b.target) taken.add(b.target); }
-          const [ox0, oy0] = orbPos(b.i); b.a = b.target ? Math.atan2(b.target.y - oy0, b.target.x - ox0) : b.a;
-        }
-        laserTick -= dt;
-        if (laserTick <= 0) {
-          laserTick = 0.1;
-          for (const b of beams) {
-            if (!b.target || b.i >= laserOrbs()) continue;
-            const [ox0, oy0] = orbPos(b.i), len = laserLen(ox0, oy0, b.a), ex = ox0 + Math.cos(b.a) * len, ey = oy0 + Math.sin(b.a) * len;
-            for (const e of enemies) if (e.hp > 0 && distSeg(e.x, e.y, ox0, oy0, ex, ey) < 5 + e.r * 0.75) { hurt(e, dmg() * 0.7 * wl(L) * (L >= 5 && e.burn > t ? 1.4 : 1)); if (L >= 3) { e.burn = t + 1.5; e.burnD = dmg() * 0.25 * wl(L); } }
+        if (laserT <= 0.6) {
+          laserTick -= dt;
+          if (laserTick <= 0) {
+            laserTick = 0.1;
+            for (const b of beams) {
+              const x0 = P.x + b.dx, y0 = P.y + b.dy, len = laserLen(x0, y0, b.a), ex = x0 + Math.cos(b.a) * len, ey = y0 + Math.sin(b.a) * len;
+              for (const e of enemies) if (e.hp > 0 && distSeg(e.x, e.y, x0, y0, ex, ey) < 7 + e.r * 0.75) { hurt(e, dmg() * 1.6 * wl(L) * (L >= 5 && e.burn > t ? 1.4 : 1)); if (L >= 3) { e.burn = t + 1.5; e.burnD = dmg() * 0.25 * wl(L); } }
+            }
           }
         }
-        if (laserT <= 0) { laserOn = false; beams.length = 0; laserT = (L >= 7 ? 0.7 : L >= 6 ? 1.5 : 2) * (1 - 0.15 * up.multi); }
+        if (laserT <= 0) { laserOn = false; beams.length = 0; laserT = (L >= 7 ? 0.5 : L >= 6 ? 1.0 : 1.4) * (1 - 0.15 * up.multi); }
       }
     }
     for (const s of shots) {
@@ -597,10 +595,11 @@ export function startGame(canvas, profile, opts, ui) {
     if (up.laser > 0) {
       for (let i = 0; i < laserOrbs(); i++) { const [x0, y0] = orbPos(i); c.fillStyle = '#ff7a5a'; c.shadowColor = '#ff5a3d'; c.shadowBlur = 12; c.beginPath(); c.arc(x0 + ox, y0 + oy, 6, 0, 7); c.fill(); c.shadowBlur = 0; c.fillStyle = '#fff'; c.beginPath(); c.arc(x0 + ox, y0 + oy, 2.5, 0, 7); c.fill(); }
       if (laserOn) for (const b of beams) {
-        if (!b.target || b.i >= laserOrbs()) continue;
-        const [x0, y0] = orbPos(b.i), len = laserLen(x0, y0, b.a), sx = x0 + ox, sy = y0 + oy, ex = sx + Math.cos(b.a) * len, ey = sy + Math.sin(b.a) * len;
-        c.lineCap = 'round'; c.shadowColor = '#ff5a3d'; c.shadowBlur = 14; c.strokeStyle = '#ff5a3d'; c.globalAlpha = 0.85; c.lineWidth = 10; c.beginPath(); c.moveTo(sx, sy); c.lineTo(ex, ey); c.stroke();
-        c.shadowBlur = 0; c.globalAlpha = 1; c.strokeStyle = '#fff'; c.lineWidth = 3.5; c.beginPath(); c.moveTo(sx, sy); c.lineTo(ex, ey); c.stroke();
+        const x0 = P.x + b.dx, y0 = P.y + b.dy, len = laserLen(x0, y0, b.a), sx = x0 + ox, sy = y0 + oy, ex = sx + Math.cos(b.a) * len, ey = sy + Math.sin(b.a) * len;
+        c.lineCap = 'round';
+        if (laserT > 0.6) { c.globalAlpha = 0.35 + 0.35 * Math.sin(t * 40); c.strokeStyle = '#ff5a3d'; c.lineWidth = 2; c.beginPath(); c.moveTo(sx, sy); c.lineTo(ex, ey); c.stroke(); c.globalAlpha = 1; continue; }
+        c.shadowColor = '#ff5a3d'; c.shadowBlur = 14; c.strokeStyle = '#ff5a3d'; c.globalAlpha = 0.85; c.lineWidth = 12; c.beginPath(); c.moveTo(sx, sy); c.lineTo(ex, ey); c.stroke();
+        c.shadowBlur = 0; c.globalAlpha = 1; c.strokeStyle = '#fff'; c.lineWidth = 4; c.beginPath(); c.moveTo(sx, sy); c.lineTo(ex, ey); c.stroke();
       }
     }
     // hero
