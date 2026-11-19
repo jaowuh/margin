@@ -218,7 +218,7 @@ export function startGame(canvas, profile, opts, ui) {
       let da = Math.atan2(dy, dx) - a; da = Math.atan2(Math.sin(da), Math.cos(da));
       if (Math.abs(da) > half && l > e.r + 20) continue;
       hurt(e, d0); kbNudge(e, P.x, P.y, 26);
-      if (L >= 5 && !e.boss && !(e.stunCd > t)) { e.stun = t + 0.5; e.stunCd = t + 1.6; fx('zap', e.x, e.y - e.r, e.r * 2 + 20); }
+      if (L >= 5 && !e.boss && !(e.stunCd > t)) { e.stun = t + 0.5; e.stunCd = t + 1.6; }
     }
     if (L >= 3) waves.push({ x0: P.x, y0: P.y, a, s: 20, max: L >= 7 ? 1e9 : L >= 6 ? 360 : 200, w: L >= 7 ? 95 : L >= 6 ? 62 : 46, d: d0 * (L >= 7 ? 0.9 : 0.6), full: L >= 7, hit: new Set() });
   }
@@ -313,14 +313,14 @@ export function startGame(canvas, profile, opts, ui) {
       if (near.length && Math.random() < 0.5 + 0.35 * clamp((L - 1) / 6)) { const e = pick(near); x = e.x; y = e.y; } else { const a = rnd(0, Math.PI * 2), d = rnd(40, 190); x = clamp(P.x + Math.cos(a) * d, P.x - W / 2 + 15, P.x + W / 2 - 15); y = clamp(P.y + Math.sin(a) * d, P.y - H / 2 + 15, P.y + H / 2 - 15); }
       const d0 = dmg() * 3 * wl(L), hit = new Set(), pts = [[x, y]];
       let cx = x, cy = y;
-      for (const e of enemies) if (e.hp > 0 && onScreen(e) && (e.x - x) ** 2 + (e.y - y) ** 2 < (zone + e.r) ** 2) { hurt(e, d0); hit.add(e); }
+      for (const e of enemies) if (e.hp > 0 && onScreen(e) && (e.x - x) ** 2 + (e.y - y) ** 2 < (zone + e.r) ** 2) { hurt(e, d0); hit.add(e); e.shock = t + 0.55; }
       for (let c = 0; c < chain; c++) {
         let best = null, bd = 130 * 130;
         for (const e of enemies) { if (e.hp <= 0 || hit.has(e) || !onScreen(e)) continue; const d = (e.x - cx) ** 2 + (e.y - cy) ** 2; if (d < bd) { bd = d; best = e; } }
         if (!best) break;
-        hurt(best, d0 * (L >= 6 ? 1 : 0.7)); hit.add(best); cx = best.x; cy = best.y; pts.push([cx, cy]);
+        hurt(best, d0 * (L >= 6 ? 1 : 0.7)); best.shock = t + 0.55; hit.add(best); cx = best.x; cy = best.y; pts.push([cx, cy]);
       }
-      bolts.push({ x, y, pts, life: 0.28, seed: Math.random() * 99 }); fx('bolt', x, y - 20, zone * 3.2);
+      bolts.push({ x, y, pts, life: 0.28, seed: Math.random() * 99 }); fx('strike', x, y + 14, zone * 3.4);
     }
   }
 
@@ -344,7 +344,7 @@ export function startGame(canvas, profile, opts, ui) {
     for (const e of enemies) {
       const dx = P.x - e.x, dy = P.y - e.y, l = Math.hypot(dx, dy) || 1, k = e.stun > t ? 0 : e.slow > t ? (e.slowK || 0.45) : 1;
       e.x = clamp(e.x + (dx / l) * e.sp * k * dt, -AX - 20, AX + 20); e.y = clamp(e.y + (dy / l) * e.sp * k * dt, -AY - 20, AY + 20); e.vx = dx; e.hit = Math.max(0, e.hit - dt); e.ph += dt * 6;
-      if (e.burn > t) { e.bt = (e.bt || 0) - dt; if (e.bt <= 0) { e.bt = 0.5; hurt(e, e.burnD); fx('fire', e.x, e.y - 4, e.r * 2 + 14); } }
+      if (e.burn > t) { e.bt = (e.bt || 0) - dt; if (e.bt <= 0) { e.bt = 0.5; hurt(e, e.burnD); } }
       if (l < e.r + 10 && P.inv <= 0 && buffs.inv <= 0) { P.hp -= e.dmg * (1 - FX.guard); P.inv = 0.6; ui.shake(); if (P.hp <= 0) { if (FX.revive && !revived) { revived = true; P.hp = P.maxHp * 0.5; P.inv = 2.5; ui.banner('Phoenix Ledger: back on your feet!'); } else return finish(false); } }
     }
     // soft separation so monsters don't stack into one dot
@@ -457,7 +457,7 @@ export function startGame(canvas, profile, opts, ui) {
     for (let i = puddles.length - 1; i >= 0; i--) {
       const p = puddles[i]; p.life -= dt; p.tick -= dt;
       const doTick = p.tick <= 0; if (doTick) p.tick = 0.5;
-      for (const e of enemies) if (e.hp > 0 && (e.x - p.x) ** 2 + (e.y - p.y) ** 2 < (p.r + e.r) ** 2) { e.slow = t + 0.3; e.slowK = p.L >= 6 ? 0.3 : 0.45; if (doTick) { hurt(e, p.dmg); fx('leaf', e.x, e.y - 4, e.r * 2 + 14); } }
+      for (const e of enemies) if (e.hp > 0 && (e.x - p.x) ** 2 + (e.y - p.y) ** 2 < (p.r + e.r) ** 2) { e.slow = t + 0.3; e.slowK = p.L >= 6 ? 0.3 : 0.45; e.poison = t + 0.4; if (doTick) hurt(e, p.dmg); }
       if (p.life <= 0) puddles.splice(i, 1);
     }
     for (let i = bolts.length - 1; i >= 0; i--) { bolts[i].life -= dt; if (bolts[i].life <= 0) bolts.splice(i, 1); }
@@ -516,7 +516,18 @@ export function startGame(canvas, profile, opts, ui) {
   function finish(won, timeout) { if (over) return; over = true; ui.end({ won, timeout: !!timeout, seconds: Math.min(t, D), kills, level: P.level }); stop(); }
 
   /* ---------- drawing ---------- */
-  function monster(e, sx, sy) {
+  function statusFx(e, sx, sy) {   // looping status effects on a monster: burn, poison, slow, shock, stun
+    if (!SP || !SP.fx) return;
+    ctx.imageSmoothingEnabled = false;
+    const list = [];
+    if (e.burn > t) list.push('burn'); if (e.poison > t) list.push('poison'); else if (e.slow > t && !(e.stun > t)) list.push('slow'); if (e.shock > t) list.push('shock'); if (e.stun > t) list.push('stun');
+    for (const k of list) {
+      const row = SP.fx.rows[k], fw = row.w, fh = row.h, k0 = Math.floor(t * 14 + e.ph * 3) % row.n, dw = Math.max(34, e.r * (k === 'stun' ? 2.4 : 2.6)), dh = dw * fh / fw, ay = k === 'stun' ? -e.r * 0.9 : e.r * 0.85;
+      ctx.drawImage(SP.fx.img, k0 * fw, row.y, fw, fh, sx - dw * row.ax, sy + ay - dh * row.ay, dw, dh);
+    }
+  }
+  function monster(e, sx, sy) { monster0(e, sx, sy); statusFx(e, sx, sy); }
+  function monster0(e, sx, sy) {
     const c = ctx, r = e.r, flash = e.hit > 0;
     c.save(); c.translate(sx, sy);
     const AN = SP && SP.anim && SP.anim[e.type === 'bat' ? 'eye' : e.type];
@@ -605,7 +616,7 @@ export function startGame(canvas, profile, opts, ui) {
     }
     if (SP && SP.fx) for (const f of fxs) {
       const row = SP.fx.rows[f.k], k = Math.min(row.n - 1, Math.floor((1 - f.life / f.dur) * row.n));
-      c.save(); c.translate(f.x + ox, f.y + oy); if (f.a) c.rotate(f.a); c.imageSmoothingEnabled = false; c.drawImage(SP.fx.img, k * 64, row.y, 64, 64, -f.s / 2, -f.s / 2, f.s, f.s); c.restore();
+      c.save(); c.translate(f.x + ox, f.y + oy); if (f.a) c.rotate(f.a); c.imageSmoothingEnabled = false; const fw = row.w || 64, fh = row.h || 64, dh = f.s * fh / fw; c.drawImage(SP.fx.img, k * fw, row.y, fw, fh, -f.s * (row.ax ?? 0.5), -dh * (row.ay ?? 0.5), f.s, dh); c.restore();
     }
     // hero
     c.save(); c.translate(W / 2, H / 2); if (P.inv > 0 && Math.floor(t * 20) % 2) c.globalAlpha = 0.45;
