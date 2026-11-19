@@ -10,7 +10,7 @@ import { loadSprites } from '../game/sprites';
 import weaponIcons from '../assets/weapon-icons.png';
 import itemIcons from '../assets/item-icons.png';
 const WICON = ['arrow', 'magic', 'sword', 'potion', 'lightning', 'axe', 'boomerang', 'laser'];
-const IICON = ['dup', 'multi', 'ricochet', 'knock', 'chill', 'ignite', 'enlarge', 'crit'];
+const IICON = ['dup', 'multi', 'ricochet', 'aegis', 'chill', 'ignite', 'enlarge', 'crit'];
 const WIcon = ({ id, size = 22 }: { id: string; size?: number }) => {
   const w = WICON.indexOf(id), it = IICON.indexOf(id), n = w >= 0 ? w : it;
   return n < 0 ? null : <i className="mg-wico" style={{ width: size, height: size, backgroundImage: `url(${w >= 0 ? weaponIcons : itemIcons})`, backgroundSize: `${size * 8}px ${size}px`, backgroundPositionX: -n * size }} />;

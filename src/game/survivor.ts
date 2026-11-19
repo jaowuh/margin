@@ -28,7 +28,7 @@ const GENERIC = [
   { id: 'hp', name: 'Vitality', desc: '+30 max health and heal 30', max: 6, free: true },
   { id: 'magnet', name: 'Magnet', desc: '+40% gem pickup range', max: 4, free: true },
   { id: 'ricochet', name: 'Ricochet', desc: 'Arrows, bolts and magic bounce to another monster after a hit (per level)', max: 2 },
-  { id: 'knock', name: 'Knockback', desc: 'Hits push monsters away from you (each monster at most once every 1.5s)', max: 3 },
+  { id: 'aegis', name: 'Aegis', desc: 'A shield forms around you and blocks the next hit, then returns after 14s (11s, 8s)', max: 3 },
   { id: 'chill', name: 'Chill', desc: 'Hits slow monsters; at max they sometimes freeze solid', max: 3 },
   { id: 'ignite', name: 'Ignite', desc: 'Hits set monsters burning, hotter each level', max: 3 },
   { id: 'enlarge', name: 'Enlarge', desc: '+15% size and area on your weapons', max: 4 },
@@ -56,7 +56,7 @@ export function startGame(canvas, profile, opts, ui) {
   const P = { x: 0, y: 0, hp: profile.maxHp + FX.hp, maxHp: profile.maxHp + FX.hp, inv: 0, face: 1, dir: 0, level: 1, xp: 0, need: 3 };
   const main = PRIMARY[profile.job] || 'arrow';
   const R = profile.rank, isMain = k => k === main;
-  const up = { arrow: 0, magic: 0, sword: 0, potion: 0, lightning: 0, axe: 0, boomerang: 0, laser: 0, dup: 0, multi: 0, dmg: 0, rate: 0, speed: 0, hp: 0, magnet: 0, heal: 0, ricochet: 0, knock: 0, chill: 0, ignite: 0, enlarge: 0, crit: 0 };
+  const up = { arrow: 0, magic: 0, sword: 0, potion: 0, lightning: 0, axe: 0, boomerang: 0, laser: 0, dup: 0, multi: 0, dmg: 0, rate: 0, speed: 0, hp: 0, magnet: 0, heal: 0, ricochet: 0, aegis: 0, chill: 0, ignite: 0, enlarge: 0, crit: 0 };
   const en = () => 1 + 0.15 * up.enlarge, itemsOwned = () => GENERIC.filter(u => !u.free && up[u.id] > 0);
   up[main] = profile.rank; // your job's weapon starts at your saver level
   const wmul = k => (k === main ? [1.3, 1.5, 1.8][profile.rank - 1] : 1);
@@ -347,6 +347,7 @@ export function startGame(canvas, profile, opts, ui) {
     P.x = clamp(P.x + mx * spd() * dt, -AX, AX); P.y = clamp(P.y + my * spd() * dt, -AY, AY);
     if (ml > 0.05) { P.dir = Math.atan2(my, mx); if (Math.abs(mx) > 0.05) P.face = mx > 0 ? 1 : -1; }
     P.inv = Math.max(0, P.inv - dt);
+    if (up.aegis && !aegisOn) { aegisCd -= dt; if (aegisCd <= 0) aegisOn = true; }
     spawnWave(dt);
     for (let i = delayed.length - 1; i >= 0; i--) if (t >= delayed[i].at) { const f = delayed[i].fn; delayed.splice(i, 1); f(); }
 
@@ -355,7 +356,7 @@ export function startGame(canvas, profile, opts, ui) {
       const dx = P.x - e.x, dy = P.y - e.y, l = Math.hypot(dx, dy) || 1, k = e.stun > t ? 0 : e.slow > t ? (e.slowK || 0.45) : 1;
       e.x = clamp(e.x + (dx / l) * e.sp * k * dt, -AX - 20, AX + 20); e.y = clamp(e.y + (dy / l) * e.sp * k * dt, -AY - 20, AY + 20); e.vx = dx; e.hit = Math.max(0, e.hit - dt); e.ph += dt * 6;
       if (e.burn > t) { e.bt = (e.bt || 0) - dt; if (e.bt <= 0) { e.bt = 0.5; hurt(e, e.burnD, 'dot'); } }
-      if (l < e.r + 10 && P.inv <= 0 && buffs.inv <= 0) { P.hp -= e.dmg * (1 - FX.guard); P.inv = 0.6; ui.shake(); if (P.hp <= 0) { if (FX.revive && !revived) { revived = true; P.hp = P.maxHp * 0.5; P.inv = 2.5; ui.banner('Phoenix Ledger: back on your feet!'); } else return finish(false); } }
+      if (l < e.r + 10 && P.inv <= 0 && buffs.inv <= 0) { if (!aegisBlock()) P.hp -= e.dmg * (1 - FX.guard); P.inv = 0.6; ui.shake(); if (P.hp <= 0) { if (FX.revive && !revived) { revived = true; P.hp = P.maxHp * 0.5; P.inv = 2.5; ui.banner('Phoenix Ledger: back on your feet!'); } else return finish(false); } }
     }
     // soft separation so monsters don't stack into one dot
     for (let i = 0; i < enemies.length; i += 2) {
@@ -557,6 +558,8 @@ export function startGame(canvas, profile, opts, ui) {
     return r;
   };
   function pop(x, y, v) { if (pops.length < 60) pops.push({ x, y, v, life: 0.5 }); }
+  let aegisOn = false, aegisCd = 2;
+  function aegisBlock() { if (!up.aegis || !aegisOn) return false; aegisOn = false; aegisCd = [0, 14, 11, 8][up.aegis]; pop(P.x, P.y - 24, 'Blocked'); return true; }
   function bounce(s, from) {   // Ricochet item: the shot jumps to another monster nearby
     if (!up.ricochet || (s.bnc || 0) >= up.ricochet) return false;
     let b = null, bd = 220 * 220;
@@ -570,7 +573,6 @@ export function startGame(canvas, profile, opts, ui) {
   function hurt(e, d, k) {
     if (k !== 'dot') {
       if (up.crit && Math.random() < 0.08 * up.crit) d *= 2;
-      if (up.knock) kbNudge(e, P.x, P.y, 10 + 8 * up.knock);
       if (up.ignite) { e.burn = Math.max(e.burn || 0, t + 1.2 + 0.5 * up.ignite); e.burnD = Math.max(e.burn > t && e.burnD ? e.burnD : 0, dmg() * 0.12 * up.ignite); }
       if (up.chill) {
         const was = e.slow > t, kk = 0.7 - 0.12 * up.chill; e.slow = Math.max(e.slow || 0, t + 0.8 + 0.3 * up.chill); e.slowK = was ? Math.min(e.slowK || 0.45, kk) : kk;
@@ -728,6 +730,7 @@ export function startGame(canvas, profile, opts, ui) {
     } else {
       c.fillStyle = profile.color; c.beginPath(); c.arc(0, 0, 12, 0, 7); c.fill();
     }
+    if (aegisOn && up.aegis) { c.globalAlpha = 0.9; c.fillStyle = 'rgba(120,200,255,0.16)'; c.strokeStyle = '#9fdcff'; c.lineWidth = 2; c.shadowColor = '#9fdcff'; c.shadowBlur = 10; c.beginPath(); c.arc(0, 0, 27 + Math.sin(t * 4), 0, 7); c.fill(); c.stroke(); c.shadowBlur = 0; c.globalAlpha = 1; }
     if (buffs.inv > 0) { c.globalAlpha = 0.5 + 0.2 * Math.sin(t * 8); c.strokeStyle = '#ffd36b'; c.lineWidth = 3; c.shadowColor = '#ffd36b'; c.shadowBlur = 12; c.beginPath(); c.arc(0, 0, 30, 0, 7); c.stroke(); c.shadowBlur = 0; }
     c.restore(); c.globalAlpha = 1;
     for (const b of bolts) bolt(c, b, ox, oy);
