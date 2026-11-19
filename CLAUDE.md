@@ -191,3 +191,5 @@ Hidden coloring game (`src/components/CreditsGame.tsx` = painting card only; `cr
 - v10.8: sword Bloodlust: no cap, smaller: every 40th hit heals 0.5% max HP.
 
 - v10.9: potion L7 flasks no longer play the splash effect when they land.
+
+- v11.0: Blot Out the Sun arrows now do full damage (was 80%); fire rate stays x2.5.

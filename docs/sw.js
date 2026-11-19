@@ -1,6 +1,6 @@
 /* Margin service worker — makes the app work offline.
    The version and file list below are filled in at build time (see vite.config.ts). */
-const VERSION = '235cb221df';
+const VERSION = '686c441ea4';
 const CACHE = `margin-${VERSION}`;
 const PRECACHE = [
   "./",
@@ -22,7 +22,7 @@ const PRECACHE = [
   "./assets/knight-sprites-Ca-ACY72.png",
   "./assets/fx-sprites-Dcf2PPZX.png",
   "./assets/index-CqkU-N3Q.css",
-  "./assets/index-CtZvmCQl.js",
+  "./assets/index-rGJRdAK0.js",
   "./manifest.webmanifest",
   "./icons/icon-192.png",
   "./icons/icon-512.png",
