@@ -177,3 +177,5 @@ Hidden coloring game (`src/components/CreditsGame.tsx` = painting card only; `cr
 - v10.1: lightning L7 renamed Thunder God's Wrath.
 
 - v10.2: bow L7 renamed Persian Offensive, with the quote on the level-up card.
+
+- v10.3: bow L7 renamed Blot Out the Sun.
