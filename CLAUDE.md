@@ -143,3 +143,5 @@ Hidden coloring game (`src/components/CreditsGame.tsx` = painting card only; `cr
 - v8.2: laser weapon icon is now a hand-drawn laser beam and orb (slot 7 of weapon-icons.png).
 
 - v8.3: magic L7 is Arcane Detonation (blast radius 64, 70% damage, +1 bolt); homing shards removed.
+
+- v8.4: axe swings only left/right (P.face); Duplicate adds top then bottom swings; L2 backswing is the opposite side.

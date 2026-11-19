@@ -14,7 +14,7 @@ const LV = {
   magic: [null, 'Homing bolts that each hit one monster', '+1 bolt per cast', 'Small blast: monsters next to the target take 35% damage', '+1 bolt per cast', 'Faster, sharper homing', 'Bigger blast, 50% damage', 'MAX Arcane Detonation: huge blast, 70% damage to everything around the target, +1 bolt'],
   sword: [null, 'Blades circle you', '+1 blade', 'Blades spin 25% faster, are longer and orbit wider', '+1 blade', 'Bloodlust: blades turn crimson and every 20th hit heals you 2% HP', '+1 blade', 'MAX Blade Tempest: a second ring spinning the other way'],
   potion: [null, 'Flasks make slowing, poisonous puddles', '+1 flask', 'Bigger puddles', '+1 flask', 'Stronger poison (+40%); monsters that die in poison leave a small puddle', 'Puddles last 60% longer and slow harder', 'MAX Toxic Fog: flasks sweep a clockwise ring all around you'],
-  axe: [null, 'A heavy swing in a wide arc where you face', 'Double swing: forward, then a backswing', 'A shockwave rolls forward after the swing', 'Wider arc', 'Half-second stun on hit', 'Bigger shockwave that travels further', 'MAX Earthsplitter: the shockwave crosses the whole map'],
+  axe: [null, 'A heavy swing in a wide arc, left or right of you', 'Double swing: forward, then a backswing', 'A shockwave rolls forward after the swing', 'Wider arc', 'Half-second stun on hit', 'Bigger shockwave that travels further', 'MAX Earthsplitter: the shockwave crosses the whole map'],
   boomerang: [null, 'Thrown at the nearest monster, flies its full range, then returns, hitting both ways (range grows a little each level); the next throw waits for it', '+1 boomerang', 'Ricochet: bounces to 1 other monster after its first hit', '+1 boomerang', 'The return trip hits 50% harder', 'Faster, bigger arc and 2 bounces', 'MAX Rampage: your throws fly 60% farther, bigger, through every monster; extra boomerangs roam the arena on their own, bouncing toward the crowd'],
   laser: [null, 'An orb circles you and zaps a straight beam toward the nearest monster, full reach', '+1 orb', 'Burn: monsters it hits keep burning, longer reach', '+1 orb', 'Burning monsters take 40% more beam damage', 'Shorter rest between beams, longer reach', 'MAX Worldbreaker: +1 orb, beams run to the wall, almost no rest'],
   lightning: [null, 'Lightning strikes and jumps to a nearby monster', '+1 strike', '+1 chain', '+1 strike', 'Wider strike zone', 'Chains keep full damage and +1 chain', 'MAX Thunderstorm: 4 strikes at once, chains to 6'],
@@ -224,7 +224,7 @@ export function startGame(canvas, profile, opts, ui) {
     if (L >= 3) waves.push({ x0: P.x, y0: P.y, a, s: 20, max: L >= 7 ? 1e9 : L >= 6 ? 360 : 200, w: L >= 7 ? 95 : L >= 6 ? 62 : 46, d: d0 * (L >= 7 ? 0.9 : 0.6), full: L >= 7, hit: new Set() });
   }
   function axeAttack() {
-    const L = up.axe, dirs = [P.dir, P.dir + Math.PI, P.dir + Math.PI / 2].slice(0, 1 + up.dup);
+    const L = up.axe, f = P.face < 0 ? Math.PI : 0, dirs = [f, -Math.PI / 2, Math.PI / 2].slice(0, 1 + up.dup);   // main swing left or right; Duplicate adds up, then down
     dirs.forEach((a, i) => { axeSwing(a); if (L >= 2 && i === 0) later(0.25, () => axeSwing(a + Math.PI)); });
   }
   /* ----- boomerang: curves out, returns; hits both ways. L7 = loops around you ----- */
