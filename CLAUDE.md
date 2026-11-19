@@ -193,3 +193,5 @@ Hidden coloring game (`src/components/CreditsGame.tsx` = painting card only; `cr
 - v10.9: potion L7 flasks no longer play the splash effect when they land.
 
 - v11.0: Blot Out the Sun arrows now do full damage (was 80%); fire rate stays x2.5.
+
+- v11.1: Blot Out the Sun: damage back to 80%, fire rate x3.4 (was x2.5; originally x4).
