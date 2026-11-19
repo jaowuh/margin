@@ -187,3 +187,5 @@ Hidden coloring game (`src/components/CreditsGame.tsx` = painting card only; `cr
 - v10.6: boomerang L7 renamed Sokka's Boomerang.
 
 - v10.7: sword Bloodlust nerfed: every 25th hit heals 1% max HP, at most once per 2s (was every 20th hit, 2%, no cap).
+
+- v10.8: sword Bloodlust: no cap, smaller: every 40th hit heals 0.5% max HP.
