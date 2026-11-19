@@ -175,3 +175,5 @@ Hidden coloring game (`src/components/CreditsGame.tsx` = painting card only; `cr
 - v10.0: Epic relics Devil's Bargain (half max HP, +60% dmg, +40% fire rate) and Monkey's Paw (takes 2 relic slots via RELIC_COST/relicUsed, +1 weapon slot via FX.slots). HUD slots shrunk to 26px so 4+5 fit one row.
 
 - v10.1: lightning L7 renamed Thunder God's Wrath.
+
+- v10.2: bow L7 renamed Persian Offensive, with the quote on the level-up card.
