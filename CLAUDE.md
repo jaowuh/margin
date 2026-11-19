@@ -115,3 +115,4 @@ Hidden coloring game (`src/components/CreditsGame.tsx` = painting card only; `cr
 - v5.5: weapon levels alternate counts and boosts: +1 projectile/blade/orb/strike at L2 and L4 (sword also L6), boosts at L3 (arrow crit, magic blast, potion bigger puddles, lightning +1 chain, sword spin +25%, boomerang ricochet, laser burn). Laser L5 = burning monsters take 40% more beam damage.
 - v5.6: boomerangs are thrown the way you face (like arrows); laser orbs orbit about half as fast.
 - v5.7: Viktor-style laser: each orb locks its target's direction, shows a 0.4s warning line, then fires a straight beam for 0.6s that does not turn (follows only the hero's movement). Rest 1.4s (L6 1.0, L7 0.5). Locked straight beams make a later bouncing-laser (laser + boomerang) easy.
+- v5.8: laser warning line removed; the beam fires the moment it locks (0.6s, straight).

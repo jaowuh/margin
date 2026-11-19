@@ -16,7 +16,7 @@ const LV = {
   potion: [null, 'Flasks make slowing, poisonous puddles', '+1 flask', 'Bigger puddles', '+1 flask', 'Stronger poison (+40%)', 'Puddles last 60% longer and slow harder', 'MAX Toxic Fog: flasks sweep a clockwise ring all around you'],
   axe: [null, 'A heavy swing in a wide arc where you face', 'Double swing: forward, then a backswing', 'A shockwave rolls forward after the swing', 'Wider arc', 'Half-second stun on hit', 'Bigger shockwave that travels further', 'MAX Earthsplitter: the shockwave crosses the whole map'],
   boomerang: [null, 'Thrown at the nearest monster, curves back to you, hits both ways', '+1 boomerang', 'Ricochet: bounces to 1 other monster after its first hit', '+1 boomerang', 'The return trip hits 50% harder', 'Faster, bigger arc and 2 bounces', 'MAX Rampage: boomerangs never come back, they bounce off the walls on their own'],
-  laser: [null, 'An orb circles you and fires a straight beam at the nearest monster (it warns first)', '+1 orb', 'Burn: monsters it hits keep burning, longer reach', '+1 orb', 'Burning monsters take 40% more beam damage', 'Shorter rest between beams, longer reach', 'MAX Worldbreaker: +1 orb, beams run to the wall, almost no rest'],
+  laser: [null, 'An orb circles you and fires a straight beam at the nearest monster', '+1 orb', 'Burn: monsters it hits keep burning, longer reach', '+1 orb', 'Burning monsters take 40% more beam damage', 'Shorter rest between beams, longer reach', 'MAX Worldbreaker: +1 orb, beams run to the wall, almost no rest'],
   lightning: [null, 'Lightning strikes and jumps to a nearby monster', '+1 strike', '+1 chain', '+1 strike', 'Wider strike zone', 'Chains keep full damage and +1 chain', 'MAX Thunderstorm: 4 strikes at once, chains to 6'],
 };
 const GENERIC = [
@@ -414,7 +414,7 @@ export function startGame(canvas, profile, opts, ui) {
     // laser: orbs circle you; each locks the direction of its target, shows a warning line, then fires a straight beam that does not turn
     if (up.laser > 0) {
       const L = up.laser; laserT -= dt; orbL += dt * (0.9 + 0.3 * rate());
-      if (!laserOn) { if (laserT <= 0 && enemies.some(inLaser)) { laserOn = true; laserT = 1.0; laserTick = 0; startLaser(); } }
+      if (!laserOn) { if (laserT <= 0 && enemies.some(inLaser)) { laserOn = true; laserT = 0.6; laserTick = 0; startLaser(); } }
       else {
         if (laserT <= 0.6) {
           laserTick -= dt;
