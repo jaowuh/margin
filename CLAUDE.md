@@ -151,3 +151,5 @@ Hidden coloring game (`src/components/CreditsGame.tsx` = painting card only; `cr
 - v8.6: laser L4 adds a second blaster orb (not a third beam orb). Beam orbs max 2 (+Duplicate); blasters alternate shots.
 
 - v8.7: Arrow Storm arrow damage back to 80% (was 60%); base damage +10% for all weapons (10 -> 11).
+
+- v9.0: item slots. Max 5 different items (Snack free); GENERIC list now also has Ricochet (2), Pierce (3), Chill (3, freeze chance at max), Ignite (3), Enlarge (4, en() scales axe reach, potion, lightning zone, magic blast, boomerang, sword size, laser width, Finger of God), Critical (4, in hurt()). hurt(e,d,"dot") skips crit/ignite/chill for burn and poison ticks. HUD shows item chips.

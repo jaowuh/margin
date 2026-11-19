@@ -476,6 +476,8 @@ input[type='date'] { color-scheme: dark; }
 .mg-chips{display:flex;gap:4px;flex-wrap:wrap;margin-top:4px}
 .mg-chip{font-size:10px;padding:2px 6px;border-radius:8px;background:#0007;color:#fff}
 .mg-chip.max{background:#e0a94fcc;color:#222}
+.mg-chip.item{background:#4a3a80f0}
+.mg-chip.item.max{background:#e0a94fcc;color:#222}
 .mg-chip.buff{background:#3a6fd8cc}
 
 .mg-relicgrid{display:grid;gap:8px;margin-top:8px}

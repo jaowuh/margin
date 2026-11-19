@@ -100,7 +100,7 @@ export function PlayTab({ month }: { month: string }) {
 }
 
 type Phase = 'intro' | 'play' | 'result';
-interface Hud { hp: number; maxHp: number; xp: number; need: number; level: number; t: number; D: number; kills: number; weapons?: any[]; buffs?: any }
+interface Hud { hp: number; maxHp: number; xp: number; need: number; level: number; t: number; D: number; kills: number; weapons?: any[]; items?: any[]; buffs?: any }
 
 const TIER_NAME: Record<Tier, string> = { wood: 'Wooden', bronze: 'Bronze', silver: 'Silver', gold: 'Golden', legendary: 'Epic' };
 
@@ -170,6 +170,7 @@ function MonsterGame({ month, job, onClose }: { month: string; job: Job; onClose
               <div className="mg-top"><span>Lv {hud.level}</span><strong data-testid="mg-time">{fmt(Math.max(0, hud.D - hud.t))}</strong><span>{hud.kills} slain</span></div>
               <div className="mg-chips">
                 {(hud.weapons || []).map((w: any) => <span key={w.id} className={`mg-chip ${w.level >= 7 ? 'max' : ''}`}><WIcon id={w.id} size={16} />{w.name} {w.level >= 7 ? 'MAX' : w.level}</span>)}
+                {(hud.items || []).map((w: any) => <span key={w.id} className={`mg-chip item ${w.level >= w.max ? 'max' : ''}`}>{w.name} {w.level >= w.max ? 'MAX' : `${w.level}/${w.max}`}</span>)}
                 {hud.buffs?.inv > 0 && <span className="mg-chip buff">🛡️ {Math.ceil(hud.buffs.inv)}s</span>}
                 {hud.buffs?.speed > 0 && <span className="mg-chip buff">⚡ {Math.ceil(hud.buffs.speed)}s</span>}
               </div>
@@ -184,7 +185,7 @@ function MonsterGame({ month, job, onClose }: { month: string; job: Job; onClose
               <h3>{lvTitle}</h3>
               {choices.map(c => (
                 <button key={c.id} className="mg-choice" onClick={() => { pick.current?.(c.id); setChoices(null); }}>
-                  <strong>{c.weapon && <WIcon id={c.id} size={24} />}{c.name}</strong><span>{c.desc}</span>{c.have > 0 && <em>Lv {c.have + 1}</em>}
+                  <strong>{c.weapon && <WIcon id={c.id} size={24} />}{c.name}</strong><span>{c.desc}</span>{c.have > 0 ? <em>Lv {c.have + 1}</em> : !c.weapon && c.id !== 'heal' ? <em>New item</em> : null}
                 </button>
               ))}
             </div>

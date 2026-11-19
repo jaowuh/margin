@@ -27,8 +27,15 @@ const GENERIC = [
   { id: 'speed', name: 'Swift boots', desc: '+10% move speed', max: 5 },
   { id: 'hp', name: 'Vitality', desc: '+30 max health and heal 30', max: 6 },
   { id: 'magnet', name: 'Magnet', desc: '+40% gem pickup range', max: 4 },
-  { id: 'heal', name: 'Snack', desc: 'Heal 40% of your health', max: 99 },
+  { id: 'ricochet', name: 'Ricochet', desc: 'Arrows, bolts and magic bounce to another monster after a hit (per level)', max: 2 },
+  { id: 'pierce', name: 'Pierce', desc: '+1 pierce for arrows and blaster bolts', max: 3 },
+  { id: 'chill', name: 'Chill', desc: 'Hits slow monsters; at max they sometimes freeze solid', max: 3 },
+  { id: 'ignite', name: 'Ignite', desc: 'Hits set monsters burning, hotter each level', max: 3 },
+  { id: 'enlarge', name: 'Enlarge', desc: '+15% size and area on your weapons', max: 4 },
+  { id: 'crit', name: 'Critical', desc: '+8% chance for any hit to do double damage', max: 4 },
+  { id: 'heal', name: 'Snack', desc: 'Heal 40% of your health', max: 99, free: true },
 ];
+const ISLOTS = 5; // different items a hero can carry at once (Snack is free)
 const PRIMARY = { archer: 'arrow', mage: 'magic', swordsman: 'sword' };
 const GLYPH = { heart: '❤️', magnet: '🧲', shield: '🛡️', boots: '⚡', chest: '🎁' };
 const AX = 800, AY = 280; // the play field is a long hallway running across the map: x from -AX to AX, y from -AY to AY
@@ -49,7 +56,8 @@ export function startGame(canvas, profile, opts, ui) {
   const P = { x: 0, y: 0, hp: profile.maxHp + FX.hp, maxHp: profile.maxHp + FX.hp, inv: 0, face: 1, dir: 0, level: 1, xp: 0, need: 3 };
   const main = PRIMARY[profile.job] || 'arrow';
   const R = profile.rank, isMain = k => k === main;
-  const up = { arrow: 0, magic: 0, sword: 0, potion: 0, lightning: 0, axe: 0, boomerang: 0, laser: 0, dup: 0, multi: 0, dmg: 0, rate: 0, speed: 0, hp: 0, magnet: 0, heal: 0 };
+  const up = { arrow: 0, magic: 0, sword: 0, potion: 0, lightning: 0, axe: 0, boomerang: 0, laser: 0, dup: 0, multi: 0, dmg: 0, rate: 0, speed: 0, hp: 0, magnet: 0, heal: 0, ricochet: 0, pierce: 0, chill: 0, ignite: 0, enlarge: 0, crit: 0 };
+  const en = () => 1 + 0.15 * up.enlarge, itemsOwned = () => GENERIC.filter(u => !u.free && up[u.id] > 0);
   up[main] = profile.rank; // your job's weapon starts at your saver level
   const wmul = k => (k === main ? [1.3, 1.5, 1.8][profile.rank - 1] : 1);
   const owned = () => WIDS.filter(k => up[k] > 0);
@@ -152,7 +160,8 @@ export function startGame(canvas, profile, opts, ui) {
   function choices() {
     const slotsFree = owned().length < SLOTS, list = [];
     for (const k of WIDS) if ((up[k] > 0 && up[k] < 7) || (up[k] === 0 && slotsFree)) list.push(wopt(k));
-    for (const u of GENERIC) if (up[u.id] < u.max) list.push({ ...u, have: up[u.id] });
+    const itemFree = itemsOwned().length < ISLOTS;
+    for (const u of GENERIC) if (up[u.id] < u.max && (u.free || up[u.id] > 0 || itemFree)) list.push({ ...u, have: up[u.id] });
     const out = [];
     while (out.length < 3 && list.length) {   // weighted draw: Duplicate and Multishot are rare
       const w = list.map(o => o.rare || 1), sum = w.reduce((a, b) => a + b, 0);
@@ -210,7 +219,7 @@ export function startGame(canvas, profile, opts, ui) {
   /* ----- axe: heavy cleave where you face; shockwave from L3 ----- */
   const kbNudge = (e, px, py, dist) => { if (e.boss || e.kbCd > t) return; e.kbCd = t + 1.5; const dx = e.x - px, dy = e.y - py, l = Math.hypot(dx, dy) || 1; e.x = clamp(e.x + (dx / l) * dist, -AX, AX); e.y = clamp(e.y + (dy / l) * dist, -AY, AY); };
   function axeSwing(a) {
-    const L = up.axe, half = L >= 4 ? 1.15 : 0.9, reach = 95, d0 = dmg() * 4.5 * wl(L);
+    const L = up.axe, half = L >= 4 ? 1.15 : 0.9, reach = 95 * en(), d0 = dmg() * 4.5 * wl(L);
     swings.push({ x: P.x, y: P.y, a, half, reach, life: 0.26, dur: 0.26 }); fx('slash', P.x + Math.cos(a) * reach * 0.5, P.y + Math.sin(a) * reach * 0.5, reach * 1.9, { a, dur: 0.26 });
     for (const e of enemies) {
       if (e.hp <= 0) continue;
@@ -234,7 +243,7 @@ export function startGame(canvas, profile, opts, ui) {
     for (const e of enemies) if (e.hp > 0 && inView(e)) { const d = (e.x - P.x) ** 2 + (e.y - P.y) ** 2; if (d < bd) { bd = d; ba = Math.atan2(e.y - P.y, e.x - P.x); } }
     for (let i = 0; i < n; i++) {
       const a = ba + (i % 2 ? -0.25 : 0.25) * Math.floor((i + 1) / 2);
-      booms.push({ x: P.x, y: P.y, a, sp: 340 * (L >= 6 ? 1.3 : 1), curve: 0, phase: 0, t: 0, out: (130 + 10 * (L - 1)) * (L >= 7 ? 1.6 : 1) / (340 * (L >= 6 ? 1.3 : 1)), hit: new Set(), r: L >= 7 ? 21 : L >= 6 ? 14 : 10, spin: 0, bounces: L >= 7 ? 0 : L >= 6 ? 2 : L >= 3 ? 1 : 0 });
+      booms.push({ x: P.x, y: P.y, a, sp: 340 * (L >= 6 ? 1.3 : 1), curve: 0, phase: 0, t: 0, out: (130 + 10 * (L - 1)) * (L >= 7 ? 1.6 : 1) / (340 * (L >= 6 ? 1.3 : 1)), hit: new Set(), r: (L >= 7 ? 21 : L >= 6 ? 14 : 10) * en(), spin: 0, bounces: L >= 7 ? 0 : L >= 6 ? 2 : L >= 3 ? 1 : 0 });
     }
   }
   /* ----- laser: a beam that locks on and burns the whole line ----- */
@@ -263,7 +272,7 @@ export function startGame(canvas, profile, opts, ui) {
       const off = i - (n - 1) / 2, a = storm ? P.dir + rnd(-0.03, 0.03) : P.dir + off * 0.14;
       const px = storm ? P.x - Math.sin(P.dir) * off * 8 : P.x, py = storm ? P.y + Math.cos(P.dir) * off * 8 : P.y;
       const crit = Math.random() < (isMain('arrow') && R >= 3 ? 0.25 : 0) + (L >= 5 ? 0.15 : 0);
-      shots.push({ kind: 'arrow', x: px, y: py, a, vx: Math.cos(a) * 420 * (L >= 5 ? 1.25 : 1), vy: Math.sin(a) * 420 * (L >= 5 ? 1.25 : 1), life: 1.2, dmg: dmg() * wmul('arrow') * wl(L) * (storm ? 0.8 : 1) * (crit ? 2 : 1), crit: crit || storm, pierce: 1 + (L >= 3 ? 1 : 0) + (L >= 6 ? 2 : 0) + (isMain('arrow') && R >= 2 ? 1 : 0), hit: [] });
+      shots.push({ kind: 'arrow', x: px, y: py, a, vx: Math.cos(a) * 420 * (L >= 5 ? 1.25 : 1), vy: Math.sin(a) * 420 * (L >= 5 ? 1.25 : 1), life: 1.2, dmg: dmg() * wmul('arrow') * wl(L) * (storm ? 0.8 : 1) * (crit ? 2 : 1), crit: crit || storm, pierce: 1 + up.pierce + (L >= 3 ? 1 : 0) + (L >= 6 ? 2 : 0) + (isMain('arrow') && R >= 2 ? 1 : 0), hit: [], bnc: 0 });
     }
   }
   function fireMagic() {
@@ -281,7 +290,7 @@ export function startGame(canvas, profile, opts, ui) {
     for (const o of others) shots.push({ kind: 'magic', shard: true, x: from.x, y: from.y, a: Math.atan2(o.y - from.y, o.x - from.x), sp: 230, target: o, turn: 7, life: 1.4, dmg: d, reseek: 0 });
   }
   const anyInView = () => enemies.some(e => e.hp > 0 && inView(e));
-  const potionR = L => 36 * (L >= 3 ? 1.3 : 1) * (L >= 7 ? 1.2 : 1);
+  const potionR = L => 36 * (L >= 3 ? 1.3 : 1) * (L >= 7 ? 1.2 : 1) * en();
   function throwPotions() {
     // Flasks land around you, roughly on the 8 compass directions. Low level = loose and random, high level = a tidy ring. Never on top of another puddle.
     const L = up.potion, n = (L >= 7 ? 5 : 1 + (L >= 2 ? 1 : 0) + (L >= 4 ? 1 : 0)) + up.dup, r = potionR(L), pred = clamp((L - 1) / 6);
@@ -307,7 +316,7 @@ export function startGame(canvas, profile, opts, ui) {
     }
   }
   function strikeLightning() {
-    const L = up.lightning, n = (L >= 7 ? 4 : 1 + (L >= 2 ? 1 : 0) + (L >= 4 ? 1 : 0)) + up.dup, chain = L >= 7 ? 6 : 1 + (L >= 3 ? 1 : 0) + (L >= 6 ? 1 : 0), zone = L >= 5 ? 55 : 36;
+    const L = up.lightning, n = (L >= 7 ? 4 : 1 + (L >= 2 ? 1 : 0) + (L >= 4 ? 1 : 0)) + up.dup, chain = L >= 7 ? 6 : 1 + (L >= 3 ? 1 : 0) + (L >= 6 ? 1 : 0), zone = (L >= 5 ? 55 : 36) * en();
     const near = enemies.filter(e => e.hp > 0 && onScreen(e));
     for (let i = 0; i < n; i++) {
       let x, y;
@@ -345,7 +354,7 @@ export function startGame(canvas, profile, opts, ui) {
     for (const e of enemies) {
       const dx = P.x - e.x, dy = P.y - e.y, l = Math.hypot(dx, dy) || 1, k = e.stun > t ? 0 : e.slow > t ? (e.slowK || 0.45) : 1;
       e.x = clamp(e.x + (dx / l) * e.sp * k * dt, -AX - 20, AX + 20); e.y = clamp(e.y + (dy / l) * e.sp * k * dt, -AY - 20, AY + 20); e.vx = dx; e.hit = Math.max(0, e.hit - dt); e.ph += dt * 6;
-      if (e.burn > t) { e.bt = (e.bt || 0) - dt; if (e.bt <= 0) { e.bt = 0.5; hurt(e, e.burnD); } }
+      if (e.burn > t) { e.bt = (e.bt || 0) - dt; if (e.bt <= 0) { e.bt = 0.5; hurt(e, e.burnD, 'dot'); } }
       if (l < e.r + 10 && P.inv <= 0 && buffs.inv <= 0) { P.hp -= e.dmg * (1 - FX.guard); P.inv = 0.6; ui.shake(); if (P.hp <= 0) { if (FX.revive && !revived) { revived = true; P.hp = P.maxHp * 0.5; P.inv = 2.5; ui.banner('Phoenix Ledger: back on your feet!'); } else return finish(false); } }
     }
     // soft separation so monsters don't stack into one dot
@@ -420,7 +429,7 @@ export function startGame(canvas, profile, opts, ui) {
         if (blastCd <= 0) {
           blastI = (blastI + 1) % blasters(); const [bx, by] = blastPos(blastI); let tg = null, bd = 1e18;
           for (const e of enemies) { if (!inLaser(e)) continue; const d = (e.x - bx) ** 2 + (e.y - by) ** 2; if (d < bd) { bd = d; tg = e; } }
-          if (tg) { const a = Math.atan2(tg.y - by, tg.x - bx); shots.push({ kind: 'bolt', x: bx, y: by, a, vx: Math.cos(a) * 520, vy: Math.sin(a) * 520, life: 0.8, dmg: dmg() * 0.6 * wl(L), pierce: L >= 6 ? 2 : 1, hit: [] }); blastCd = (L >= 6 ? 0.22 : 0.34) / blasters() / rate(); }
+          if (tg) { const a = Math.atan2(tg.y - by, tg.x - bx); shots.push({ kind: 'bolt', x: bx, y: by, a, vx: Math.cos(a) * 520, vy: Math.sin(a) * 520, life: 0.8, dmg: dmg() * 0.6 * wl(L), pierce: (L >= 6 ? 2 : 1) + up.pierce, hit: [], bnc: 0 }); blastCd = (L >= 6 ? 0.22 : 0.34) / blasters() / rate(); }
           else blastCd = 0.15;
         }
       }
@@ -428,7 +437,7 @@ export function startGame(canvas, profile, opts, ui) {
         fogCd -= dt;
         if (fogCd <= 0 && enemies.some(onScreen)) {
           const d = rnd(90, 190), da = rnd(0, Math.PI * 2);
-          fogs.push({ x: clamp(P.x + Math.cos(da) * d, -AX + 60, AX - 60), y: clamp(P.y + Math.sin(da) * d, -AY + 60, AY - 60), a: rnd(0, Math.PI), len: 320, w: 64, age: 0, hit: new Set() });
+          fogs.push({ x: clamp(P.x + Math.cos(da) * d, -AX + 60, AX - 60), y: clamp(P.y + Math.sin(da) * d, -AY + 60, AY - 60), a: rnd(0, Math.PI), len: 320 * en(), w: 64 * en(), age: 0, hit: new Set() });
           fogCd = 6 / rate();
         }
       }
@@ -437,7 +446,7 @@ export function startGame(canvas, profile, opts, ui) {
         for (const b of beams) {   // one instant zap along the full reach
           if (b.done) continue; b.done = true;
           const x0 = P.x + b.dx, y0 = P.y + b.dy, len = laserLen(x0, y0, b.a), ex = x0 + Math.cos(b.a) * len, ey = y0 + Math.sin(b.a) * len;
-          for (const e of enemies) if (e.hp > 0 && onScreen(e) && distSeg(e.x, e.y, x0, y0, ex, ey) < 7 + e.r * 0.75) { hurt(e, dmg() * 5 * wl(L) * (L >= 5 && e.burn > t ? 1.4 : 1)); if (L >= 3) { e.burn = t + 1.5; e.burnD = dmg() * 0.25 * wl(L); } }
+          for (const e of enemies) if (e.hp > 0 && onScreen(e) && distSeg(e.x, e.y, x0, y0, ex, ey) < 7 * en() + e.r * 0.75) { hurt(e, dmg() * 5 * wl(L) * (L >= 5 && e.burn > t ? 1.4 : 1)); if (L >= 3) { e.burn = t + 1.5; e.burnD = dmg() * 0.25 * wl(L); } }
         }
         if (laserT <= 0) { laserOn = false; beams.length = 0; laserT = (L >= 7 ? 0.4 : L >= 6 ? 0.7 : 1.0) * (1 - 0.15 * up.multi); }
       }
@@ -472,8 +481,9 @@ export function startGame(canvas, profile, opts, ui) {
           if (s.kind === 'magic') {
             if (s.target && e !== s.target) continue; // seekers only hit their own target
             hurt(e, s.dmg); s.life = 0;
-            if (!s.shard && up.magic >= 3) { const big = up.magic >= 6, max = up.magic >= 7, br = max ? 64 : big ? 44 : 30; for (const o of enemies) if (o !== e && o.hp > 0 && (o.x - s.x) ** 2 + (o.y - s.y) ** 2 < (br + o.r) ** 2) hurt(o, s.dmg * (max ? 0.7 : big ? 0.5 : 0.35)); } // blast is a magic upgrade (L4, bigger at L6)
-          } else if (!s.hit.includes(e)) { s.hit.push(e); hurt(e, s.dmg); if (--s.pierce <= 0) s.life = 0; }
+            if (!s.shard && up.magic >= 3) { const big = up.magic >= 6, max = up.magic >= 7, br = (max ? 64 : big ? 44 : 30) * en(); for (const o of enemies) if (o !== e && o.hp > 0 && (o.x - s.x) ** 2 + (o.y - s.y) ** 2 < (br + o.r) ** 2) hurt(o, s.dmg * (max ? 0.7 : big ? 0.5 : 0.35)); } // blast is a magic upgrade (L4, bigger at L6)
+            bounce(s, e);
+          } else if (!s.hit.includes(e)) { s.hit.push(e); hurt(e, s.dmg); if (--s.pierce <= 0) { s.life = 0; bounce(s, e); } }
         }
       }
     }
@@ -488,7 +498,7 @@ export function startGame(canvas, profile, opts, ui) {
     for (let i = puddles.length - 1; i >= 0; i--) {
       const p = puddles[i]; p.life -= dt; p.tick -= dt;
       const doTick = p.tick <= 0; if (doTick) p.tick = 0.5;
-      for (const e of enemies) if (e.hp > 0 && (e.x - p.x) ** 2 + (e.y - p.y) ** 2 < (p.r + e.r) ** 2) { e.slow = t + 0.3; e.slowK = p.L >= 6 ? 0.3 : 0.45; e.poison = t + 0.4; if (doTick) hurt(e, p.dmg); }
+      for (const e of enemies) if (e.hp > 0 && (e.x - p.x) ** 2 + (e.y - p.y) ** 2 < (p.r + e.r) ** 2) { e.slow = t + 0.3; e.slowK = p.L >= 6 ? 0.3 : 0.45; e.poison = t + 0.4; if (doTick) hurt(e, p.dmg, 'dot'); }
       if (p.life <= 0) puddles.splice(i, 1);
     }
     for (let i = bolts.length - 1; i >= 0; i--) { bolts[i].life -= dt; if (bolts[i].life <= 0) bolts.splice(i, 1); }
@@ -542,13 +552,32 @@ export function startGame(canvas, profile, opts, ui) {
   }
   const rings = () => {
     const L = up.sword; if (L <= 0) return [];
-    const n = Math.min(MAX_BLADES_PER_RING, 1 + (L >= 2 ? 1 : 0) + (L >= 4 ? 1 : 0) + (L >= 6 ? 1 : 0) + (isMain('sword') && R >= 2 ? 1 : 0) + up.dup), size = 34 * (L >= 3 ? 1.25 : 1);
+    const n = Math.min(MAX_BLADES_PER_RING, 1 + (L >= 2 ? 1 : 0) + (L >= 4 ? 1 : 0) + (L >= 6 ? 1 : 0) + (isMain('sword') && R >= 2 ? 1 : 0) + up.dup), size = 34 * (L >= 3 ? 1.25 : 1) * en();
     const r = [{ rad: 42 + (L >= 3 ? 14 : 0), n, dir: 1, size }];
     if (L >= 7) r.push({ rad: 90, n: Math.min(MAX_BLADES_PER_RING, n - up.dup + 2), dir: -0.8, size });
     return r;
   };
   function pop(x, y, v) { if (pops.length < 60) pops.push({ x, y, v, life: 0.5 }); }
-  function hurt(e, d, k) { e.hp -= d; e.hit = 0.1; pop(e.x, e.y - e.r, Math.round(d)); if (k && !(e.fxT > t)) { e.fxT = t + 0.22; fx(k, e.x, e.y, e.r * 2 + 34); } }
+  function bounce(s, from) {   // Ricochet item: the shot jumps to another monster nearby
+    if (!up.ricochet || (s.bnc || 0) >= up.ricochet) return false;
+    let b = null, bd = 220 * 220;
+    for (const o of enemies) { if (o === from || o.hp <= 0 || !inView(o) || (s.hit && s.hit.includes(o))) continue; const d = (o.x - s.x) ** 2 + (o.y - s.y) ** 2; if (d < bd) { bd = d; b = o; } }
+    if (!b) return false;
+    s.bnc = (s.bnc || 0) + 1; s.dmg *= 0.8;
+    if (s.kind === 'magic') { s.target = b; s.reseek = 0; s.life = 2; }
+    else { const sp = Math.hypot(s.vx, s.vy) || 420, a = Math.atan2(b.y - s.y, b.x - s.x); s.a = a; s.vx = Math.cos(a) * sp; s.vy = Math.sin(a) * sp; s.pierce = 1; s.life = 0.9; }
+    return true;
+  }
+  function hurt(e, d, k) {
+    if (k !== 'dot') {
+      if (up.crit && Math.random() < 0.08 * up.crit) d *= 2;
+      if (up.ignite) { e.burn = Math.max(e.burn || 0, t + 1.2 + 0.5 * up.ignite); e.burnD = Math.max(e.burn > t && e.burnD ? e.burnD : 0, dmg() * 0.12 * up.ignite); }
+      if (up.chill) {
+        const was = e.slow > t, kk = 0.7 - 0.12 * up.chill; e.slow = Math.max(e.slow || 0, t + 0.8 + 0.3 * up.chill); e.slowK = was ? Math.min(e.slowK || 0.45, kk) : kk;
+        if (up.chill >= 3 && !e.boss && Math.random() < 0.1 && !(e.stun > t)) e.stun = t + 0.8;
+      }
+    }
+    e.hp -= d; e.hit = 0.1; pop(e.x, e.y - e.r, Math.round(d)); if (k && k !== 'dot' && !(e.fxT > t)) { e.fxT = t + 0.22; fx(k, e.x, e.y, e.r * 2 + 34); } }
   function fx(k, x, y, size, o = {}) { if (SP && SP.fx && SP.fx.rows[k] && fxs.length < 60) fxs.push({ k, x, y, s: size, a: o.a || 0, dur: o.dur || SP.fx.rows[k].n / 22, life: o.dur || SP.fx.rows[k].n / 22, follow: !!o.follow }); }
   function finish(won, timeout) { if (over) return; over = true; ui.end({ won, timeout: !!timeout, seconds: Math.min(t, D), kills, level: P.level }); stop(); }
 
@@ -712,7 +741,7 @@ export function startGame(canvas, profile, opts, ui) {
     if (!paused && !over) update(dt);
     draw();
     hudT -= dt;
-    if (hudT <= 0) { hudT = 0.1; ui.hud({ hp: P.hp, maxHp: P.maxHp, xp: P.xp, need: P.need, level: P.level, t, D, kills, weapons: owned().map(k => ({ id: k, name: WNAMES[k], level: up[k] })), slots: SLOTS, buffs: { inv: buffs.inv, speed: buffs.speed } }); }
+    if (hudT <= 0) { hudT = 0.1; ui.hud({ hp: P.hp, maxHp: P.maxHp, xp: P.xp, need: P.need, level: P.level, t, D, kills, weapons: owned().map(k => ({ id: k, name: WNAMES[k], level: up[k] })), slots: SLOTS, items: itemsOwned().map(u => ({ id: u.id, name: u.name, level: up[u.id], max: u.max })), islots: ISLOTS, buffs: { inv: buffs.inv, speed: buffs.speed } }); }
     raf = requestAnimationFrame(frame);
   }
   raf = requestAnimationFrame(frame);
