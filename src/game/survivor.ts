@@ -229,10 +229,8 @@ export function startGame(canvas, profile, opts, ui) {
   /* ----- boomerang: curves out, returns; hits both ways. L7 = loops around you ----- */
   function throwBooms() {
     const L = up.boomerang, n = 1 + (L >= 2 ? 1 : 0) + (L >= 4 ? 1 : 0) + up.dup;
-    const near = enemies.filter(e => e.hp > 0 && inView(e)).sort((a, b) => (a.x - P.x) ** 2 + (a.y - P.y) ** 2 - (b.x - P.x) ** 2 - (b.y - P.y) ** 2);
-    if (!near.length) return;
     for (let i = 0; i < n; i++) {
-      const e = near[i % near.length], a = Math.atan2(e.y - P.y, e.x - P.x) + (i % 2 ? -0.25 : 0.25) * Math.floor(i / 2 + 0.5);
+      const a = P.dir + (i % 2 ? -0.25 : 0.25) * Math.floor((i + 1) / 2);
       booms.push({ x: P.x, y: P.y, a, sp: 340 * (L >= 6 ? 1.3 : 1), curve: (i % 2 ? -1 : 1) * 2.2, phase: 0, t: 0, out: 0.6 * (L >= 6 ? 1.3 : 1), hit: new Set(), r: L >= 6 ? 14 : 10, spin: 0, bounces: L >= 6 ? 2 : L >= 3 ? 1 : 0 });
     }
   }
@@ -412,7 +410,7 @@ export function startGame(canvas, profile, opts, ui) {
     }
     // laser: orbs circle you; each fires a beam at its own target
     if (up.laser > 0) {
-      const L = up.laser; laserT -= dt; orbL += dt * (1.8 + 0.8 * rate());
+      const L = up.laser; laserT -= dt; orbL += dt * (0.9 + 0.3 * rate());
       if (!laserOn) { if (laserT <= 0 && enemies.some(inLaser)) { laserOn = true; laserT = 2; laserTick = 0; startLaser(); } }
       else {
         const taken = new Set(beams.map(b => b.target));

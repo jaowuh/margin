@@ -113,3 +113,4 @@ Hidden coloring game (`src/components/CreditsGame.tsx` = painting card only; `cr
 - v5.3: Rampage boomerangs turn a random +-0.4 rad on every wall bounce.
 - v5.4: every weapon now gets its extra projectiles/blades/orbs EARLY (L2, L3) with boosts in between (see `LV`). Laser rebuilt as orbiting orbs (1/2/3 orbs at L1/L2/L3, 4 at L7), each firing a fixed-width beam at its own target; burn from L4, reach grows to the wall at L7.
 - v5.5: weapon levels alternate counts and boosts: +1 projectile/blade/orb/strike at L2 and L4 (sword also L6), boosts at L3 (arrow crit, magic blast, potion bigger puddles, lightning +1 chain, sword spin +25%, boomerang ricochet, laser burn). Laser L5 = burning monsters take 40% more beam damage.
+- v5.6: boomerangs are thrown the way you face (like arrows); laser orbs orbit about half as fast.
