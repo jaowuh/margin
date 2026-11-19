@@ -496,3 +496,7 @@ input[type='date'] { color-scheme: dark; }
 .mg-lucky{margin:0 0 10px;font-weight:700;color:#F2B48C;text-align:center;animation:mgpop .5s}
 @keyframes mgpop{from{transform:scale(.7);opacity:0}to{transform:scale(1);opacity:1}}
 @media (prefers-reduced-motion:reduce){.mg-chestbox.shake b,.mg-lucky{animation:none}}
+
+.mg-wico{display:inline-block;vertical-align:middle;margin-right:5px;image-rendering:pixelated;background-repeat:no-repeat;flex:none}
+.mg-choice strong{display:flex;align-items:center}
+.mg-chip{display:inline-flex;align-items:center}

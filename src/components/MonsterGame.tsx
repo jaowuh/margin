@@ -7,6 +7,9 @@ import { TIERS, chestFor, loadSave, profileFor, RELICS, RELIC_FX, RELIC_SLOTS, r
 import type { GameSave, Tier } from '../game/profile';
 import { startGame } from '../game/survivor';
 import { loadSprites } from '../game/sprites';
+import weaponIcons from '../assets/weapon-icons.png';
+const WICON = ['arrow', 'magic', 'sword', 'potion', 'lightning', 'axe', 'boomerang', 'laser'];
+const WIcon = ({ id, size = 22 }: { id: string; size?: number }) => WICON.includes(id) ? <i className="mg-wico" style={{ width: size, height: size, backgroundImage: `url(${weaponIcons})`, backgroundSize: `${size * 8}px ${size}px`, backgroundPositionX: -WICON.indexOf(id) * size }} /> : null;
 import type { Sprites } from '../game/sprites';
 
 const fmt = (s: number) => `${Math.floor(s / 60)}:${String(Math.floor(s % 60)).padStart(2, '0')}`;
@@ -90,7 +93,7 @@ export function PlayTab({ month }: { month: string }) {
           </>
         ) : <p className="muted">No relics yet. Win or survive a run to find one.</p>}
       </section>
-      <p className="muted mg-credit">Game art: chierit (Elementals), Luiz Melo (Monsters Creatures Fantasy), Seth Boyles (32rogues), aamatniekss (Free Knight), BDragon1727 (effects)</p>
+      <p className="muted mg-credit">Game art: chierit (Elementals), Luiz Melo (Monsters Creatures Fantasy), Seth Boyles (32rogues), aamatniekss (Free Knight), BDragon1727 (effects), Willibab (weapon icons)</p>
       {running && <MonsterGame month={month} job={save.job} onClose={() => { setRunning(false); setSave(loadSave()); }} />}
     </div>
   );
@@ -166,7 +169,7 @@ function MonsterGame({ month, job, onClose }: { month: string; job: Job; onClose
               </div>
               <div className="mg-top"><span>Lv {hud.level}</span><strong data-testid="mg-time">{fmt(Math.max(0, hud.D - hud.t))}</strong><span>{hud.kills} slain</span></div>
               <div className="mg-chips">
-                {(hud.weapons || []).map((w: any) => <span key={w.id} className={`mg-chip ${w.level >= 7 ? 'max' : ''}`}>{w.name} {w.level >= 7 ? 'MAX' : w.level}</span>)}
+                {(hud.weapons || []).map((w: any) => <span key={w.id} className={`mg-chip ${w.level >= 7 ? 'max' : ''}`}><WIcon id={w.id} size={16} />{w.name} {w.level >= 7 ? 'MAX' : w.level}</span>)}
                 {hud.buffs?.inv > 0 && <span className="mg-chip buff">🛡️ {Math.ceil(hud.buffs.inv)}s</span>}
                 {hud.buffs?.speed > 0 && <span className="mg-chip buff">⚡ {Math.ceil(hud.buffs.speed)}s</span>}
               </div>
@@ -181,7 +184,7 @@ function MonsterGame({ month, job, onClose }: { month: string; job: Job; onClose
               <h3>{lvTitle}</h3>
               {choices.map(c => (
                 <button key={c.id} className="mg-choice" onClick={() => { pick.current?.(c.id); setChoices(null); }}>
-                  <strong>{c.name}</strong><span>{c.desc}</span>{c.have > 0 && <em>Lv {c.have + 1}</em>}
+                  <strong>{c.weapon && <WIcon id={c.id} size={24} />}{c.name}</strong><span>{c.desc}</span>{c.have > 0 && <em>Lv {c.have + 1}</em>}
                 </button>
               ))}
             </div>
