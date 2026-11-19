@@ -11,7 +11,7 @@ const SLOTS = 3; // weapons a hero can carry at once
 // What reaching each weapon level gives (index = level)
 const LV = {
   arrow: [null, 'Arrows fly the way you face', '+1 arrow per shot', 'Arrows pierce 1 more monster', '+1 arrow per shot', 'Faster arrows and a 15% chance for a double-damage crit', 'Pierce 2 more monsters', 'MAX Arrow Storm: a rapid wall of 7 arrows'],
-  magic: [null, 'Homing bolts that each hit one monster', '+1 bolt per cast', 'Small blast: monsters next to the target take 35% damage', '+1 bolt per cast', 'Faster, sharper homing', 'Bigger blast, 50% damage', 'MAX Seeker Swarm: every hit splits into 2 homing shards, +1 bolt'],
+  magic: [null, 'Homing bolts that each hit one monster', '+1 bolt per cast', 'Small blast: monsters next to the target take 35% damage', '+1 bolt per cast', 'Faster, sharper homing', 'Bigger blast, 50% damage', 'MAX Arcane Detonation: huge blast, 70% damage to everything around the target, +1 bolt'],
   sword: [null, 'Blades circle you', '+1 blade', 'Blades spin 25% faster, are longer and orbit wider', '+1 blade', 'Bloodlust: blades turn crimson and every 20th hit heals you 2% HP', '+1 blade', 'MAX Blade Tempest: a second ring spinning the other way'],
   potion: [null, 'Flasks make slowing, poisonous puddles', '+1 flask', 'Bigger puddles', '+1 flask', 'Stronger poison (+40%); monsters that die in poison leave a small puddle', 'Puddles last 60% longer and slow harder', 'MAX Toxic Fog: flasks sweep a clockwise ring all around you'],
   axe: [null, 'A heavy swing in a wide arc where you face', 'Double swing: forward, then a backswing', 'A shockwave rolls forward after the swing', 'Wider arc', 'Half-second stun on hit', 'Bigger shockwave that travels further', 'MAX Earthsplitter: the shockwave crosses the whole map'],
@@ -443,8 +443,7 @@ export function startGame(canvas, profile, opts, ui) {
           if (s.kind === 'magic') {
             if (s.target && e !== s.target) continue; // seekers only hit their own target
             hurt(e, s.dmg); s.life = 0;
-            if (!s.shard && up.magic >= 3) { const big = up.magic >= 6; for (const o of enemies) if (o !== e && o.hp > 0 && (o.x - s.x) ** 2 + (o.y - s.y) ** 2 < ((big ? 44 : 30) + o.r) ** 2) hurt(o, s.dmg * (big ? 0.5 : 0.35)); } // blast is a magic upgrade (L4, bigger at L6)
-            if (up.magic >= 7 && !s.shard) shards(e, s.dmg * 0.6);
+            if (!s.shard && up.magic >= 3) { const big = up.magic >= 6, max = up.magic >= 7, br = max ? 64 : big ? 44 : 30; for (const o of enemies) if (o !== e && o.hp > 0 && (o.x - s.x) ** 2 + (o.y - s.y) ** 2 < (br + o.r) ** 2) hurt(o, s.dmg * (max ? 0.7 : big ? 0.5 : 0.35)); } // blast is a magic upgrade (L4, bigger at L6)
           } else if (!s.hit.includes(e)) { s.hit.push(e); hurt(e, s.dmg); if (--s.pierce <= 0) s.life = 0; }
         }
       }

@@ -141,3 +141,5 @@ Hidden coloring game (`src/components/CreditsGame.tsx` = painting card only; `cr
 - v8.1: no lotus effect on the invincible pickup (banner, gold ring and timer chip remain).
 
 - v8.2: laser weapon icon is now a hand-drawn laser beam and orb (slot 7 of weapon-icons.png).
+
+- v8.3: magic L7 is Arcane Detonation (blast radius 64, 70% damage, +1 bolt); homing shards removed.
