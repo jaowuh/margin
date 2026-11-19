@@ -16,7 +16,7 @@ const LV = {
   potion: [null, 'Flasks make slowing, poisonous puddles', '+1 flask', 'Bigger puddles', '+1 flask', 'Stronger poison (+40%)', 'Puddles last 60% longer and slow harder', 'MAX Toxic Fog: flasks sweep a clockwise ring all around you'],
   axe: [null, 'A heavy swing in a wide arc where you face', 'Double swing: forward, then a backswing', 'A shockwave rolls forward after the swing', 'Wider arc', 'Half-second stun on hit', 'Bigger shockwave that travels further', 'MAX Earthsplitter: the shockwave crosses the whole map'],
   boomerang: [null, 'Thrown at the nearest monster, curves back to you, hits both ways', '+1 boomerang', 'Ricochet: bounces to 1 other monster after its first hit', '+1 boomerang', 'The return trip hits 50% harder', 'Faster, bigger arc and 2 bounces', 'MAX Rampage: boomerangs never come back, they bounce off the walls on their own'],
-  laser: [null, 'An orb circles you and fires a straight beam at the nearest monster', '+1 orb', 'Burn: monsters it hits keep burning, longer reach', '+1 orb', 'Burning monsters take 40% more beam damage', 'Shorter rest between beams, longer reach', 'MAX Worldbreaker: +1 orb, beams run to the wall, almost no rest'],
+  laser: [null, 'An orb circles you and zaps a straight beam toward the nearest monster, full reach', '+1 orb', 'Burn: monsters it hits keep burning, longer reach', '+1 orb', 'Burning monsters take 40% more beam damage', 'Shorter rest between beams, longer reach', 'MAX Worldbreaker: +1 orb, beams run to the wall, almost no rest'],
   lightning: [null, 'Lightning strikes and jumps to a nearby monster', '+1 strike', '+1 chain', '+1 strike', 'Wider strike zone', 'Chains keep full damage and +1 chain', 'MAX Thunderstorm: 4 strikes at once, chains to 6'],
 };
 const GENERIC = [
@@ -231,7 +231,7 @@ export function startGame(canvas, profile, opts, ui) {
     const L = up.boomerang, n = 1 + (L >= 2 ? 1 : 0) + (L >= 4 ? 1 : 0) + up.dup;
     for (let i = 0; i < n; i++) {
       const a = P.dir + (i % 2 ? -0.25 : 0.25) * Math.floor((i + 1) / 2);
-      booms.push({ x: P.x, y: P.y, a, sp: 340 * (L >= 6 ? 1.3 : 1), curve: (i % 2 ? -1 : 1) * 2.2, phase: 0, t: 0, out: 0.6 * (L >= 6 ? 1.3 : 1), hit: new Set(), r: L >= 6 ? 14 : 10, spin: 0, bounces: L >= 6 ? 2 : L >= 3 ? 1 : 0 });
+      booms.push({ x: P.x, y: P.y, a, sp: 340 * (L >= 6 ? 1.3 : 1), curve: 0, phase: 0, t: 0, out: 0.75 * (L >= 6 ? 1.3 : 1), hit: new Set(), r: L >= 6 ? 14 : 10, spin: 0, bounces: L >= 6 ? 2 : L >= 3 ? 1 : 0 });
     }
   }
   /* ----- laser: a beam that locks on and burns the whole line ----- */
@@ -397,7 +397,7 @@ export function startGame(canvas, profile, opts, ui) {
         if (b.phase === 0 && b.bounces > 0) {   // ricochet to the nearest monster it hasn't hit yet
           let nx = null, nd = 160 * 160; for (const o of enemies) { if (o.hp <= 0 || b.hit.has(o)) continue; const d = (o.x - b.x) ** 2 + (o.y - b.y) ** 2; if (d < nd) { nd = d; nx = o; } }
           if (nx) { b.bounces--; b.a = Math.atan2(nx.y - b.y, nx.x - b.x); b.curve = 0; b.out = b.t + 0.5; } else { b.bounces = 0; b.out = b.t; }
-        } }
+        } else if (b.phase === 0) b.out = b.t; }
       if ((b.phase === 1 && Math.hypot(P.x - b.x, P.y - b.y) < 18) || b.t > 4 || up.boomerang >= 7) booms.splice(i, 1);
     }
     if (up.boomerang >= 7) {   // max: boomerangs never come back; they bounce off the arena walls on their own
@@ -414,19 +414,14 @@ export function startGame(canvas, profile, opts, ui) {
     // laser: orbs circle you; each locks the direction of its target, shows a warning line, then fires a straight beam that does not turn
     if (up.laser > 0) {
       const L = up.laser; laserT -= dt; orbL += dt * (0.9 + 0.3 * rate());
-      if (!laserOn) { if (laserT <= 0 && enemies.some(inLaser)) { laserOn = true; laserT = 0.6; laserTick = 0; startLaser(); } }
+      if (!laserOn) { if (laserT <= 0 && enemies.some(inLaser)) { laserOn = true; laserT = 0.15; startLaser(); } }
       else {
-        if (laserT <= 0.6) {
-          laserTick -= dt;
-          if (laserTick <= 0) {
-            laserTick = 0.1;
-            for (const b of beams) {
-              const x0 = P.x + b.dx, y0 = P.y + b.dy, len = laserLen(x0, y0, b.a), ex = x0 + Math.cos(b.a) * len, ey = y0 + Math.sin(b.a) * len;
-              for (const e of enemies) if (e.hp > 0 && distSeg(e.x, e.y, x0, y0, ex, ey) < 7 + e.r * 0.75) { hurt(e, dmg() * 1.6 * wl(L) * (L >= 5 && e.burn > t ? 1.4 : 1)); if (L >= 3) { e.burn = t + 1.5; e.burnD = dmg() * 0.25 * wl(L); } }
-            }
-          }
+        for (const b of beams) {   // one instant zap along the full reach
+          if (b.done) continue; b.done = true;
+          const x0 = P.x + b.dx, y0 = P.y + b.dy, len = laserLen(x0, y0, b.a), ex = x0 + Math.cos(b.a) * len, ey = y0 + Math.sin(b.a) * len;
+          for (const e of enemies) if (e.hp > 0 && distSeg(e.x, e.y, x0, y0, ex, ey) < 7 + e.r * 0.75) { hurt(e, dmg() * 5 * wl(L) * (L >= 5 && e.burn > t ? 1.4 : 1)); if (L >= 3) { e.burn = t + 1.5; e.burnD = dmg() * 0.25 * wl(L); } }
         }
-        if (laserT <= 0) { laserOn = false; beams.length = 0; laserT = (L >= 7 ? 0.5 : L >= 6 ? 1.0 : 1.4) * (1 - 0.15 * up.multi); }
+        if (laserT <= 0) { laserOn = false; beams.length = 0; laserT = (L >= 7 ? 0.4 : L >= 6 ? 0.7 : 1.0) * (1 - 0.15 * up.multi); }
       }
     }
     for (const s of shots) {
@@ -597,9 +592,8 @@ export function startGame(canvas, profile, opts, ui) {
       if (laserOn) for (const b of beams) {
         const x0 = P.x + b.dx, y0 = P.y + b.dy, len = laserLen(x0, y0, b.a), sx = x0 + ox, sy = y0 + oy, ex = sx + Math.cos(b.a) * len, ey = sy + Math.sin(b.a) * len;
         c.lineCap = 'round';
-        if (laserT > 0.6) { c.globalAlpha = 0.35 + 0.35 * Math.sin(t * 40); c.strokeStyle = '#ff5a3d'; c.lineWidth = 2; c.beginPath(); c.moveTo(sx, sy); c.lineTo(ex, ey); c.stroke(); c.globalAlpha = 1; continue; }
-        c.shadowColor = '#ff5a3d'; c.shadowBlur = 14; c.strokeStyle = '#ff5a3d'; c.globalAlpha = 0.85; c.lineWidth = 12; c.beginPath(); c.moveTo(sx, sy); c.lineTo(ex, ey); c.stroke();
-        c.shadowBlur = 0; c.globalAlpha = 1; c.strokeStyle = '#fff'; c.lineWidth = 4; c.beginPath(); c.moveTo(sx, sy); c.lineTo(ex, ey); c.stroke();
+                c.shadowColor = '#ff5a3d'; c.shadowBlur = 14; c.strokeStyle = '#ff5a3d'; c.globalAlpha = 0.85 * clamp(laserT / 0.15); c.lineWidth = 12; c.beginPath(); c.moveTo(sx, sy); c.lineTo(ex, ey); c.stroke();
+        c.shadowBlur = 0; c.globalAlpha = clamp(laserT / 0.15); c.strokeStyle = '#fff'; c.lineWidth = 4; c.beginPath(); c.moveTo(sx, sy); c.lineTo(ex, ey); c.stroke();
       }
     }
     // hero
