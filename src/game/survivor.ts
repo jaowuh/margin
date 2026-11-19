@@ -58,7 +58,7 @@ export function startGame(canvas, profile, opts, ui) {
   let nextMini = D / 5, nextSwarm = D * 0.3, miniN = 0;
   const buffs = { inv: 0, speed: 0 };
   const enemies = [], shots = [], gems = [], pops = [], items = [], puddles = [], flasks = [], bolts = [], novas = [], delayed = [];
-  const waves = [], swings = [], scars = [], booms = [], loopers = [], beams = [];
+  const fxs = [], waves = [], swings = [], scars = [], booms = [], loopers = [], beams = [];
   let orbL = 0, axeCd = 1.5, boomCd = 1, laserOn = false, laserT = 1, laserTick = 0, loopA = 0;
   const keys = {};
   let joy = null; // {id, ox, oy, x, y}
@@ -176,7 +176,7 @@ export function startGame(canvas, profile, opts, ui) {
   }
   function addXp(v) {
     P.xp += v * (1 + FX.xp);
-    if (P.xp >= P.need) { P.xp -= P.need; P.level++; P.need = Math.round(8 + P.level * 5 + Math.pow(P.level, 1.7) * 0.9); showChoices('Level up!'); }
+    if (P.xp >= P.need) { P.xp -= P.need; P.level++; P.need = Math.round(8 + P.level * 5 + Math.pow(P.level, 1.7) * 0.9); fx('level', P.x, P.y, 150, { follow: true }); showChoices('Level up!'); }
   }
   function openChest() {
     const r = Math.random();
@@ -210,14 +210,14 @@ export function startGame(canvas, profile, opts, ui) {
   const kbNudge = (e, px, py, dist) => { if (e.boss || e.kbCd > t) return; e.kbCd = t + 1.5; const dx = e.x - px, dy = e.y - py, l = Math.hypot(dx, dy) || 1; e.x = clamp(e.x + (dx / l) * dist, -AX, AX); e.y = clamp(e.y + (dy / l) * dist, -AY, AY); };
   function axeSwing(a) {
     const L = up.axe, half = L >= 4 ? 1.15 : 0.9, reach = 95, d0 = dmg() * 4.5 * wl(L);
-    swings.push({ x: P.x, y: P.y, a, half, reach, life: 0.22 });
+    swings.push({ x: P.x, y: P.y, a, half, reach, life: 0.22 }); fx('slash', P.x + Math.cos(a) * 55, P.y + Math.sin(a) * 55, 150, { a, dur: 0.32 });
     for (const e of enemies) {
       if (e.hp <= 0) continue;
       const dx = e.x - P.x, dy = e.y - P.y, l = Math.hypot(dx, dy);
       if (l > reach + e.r) continue;
       let da = Math.atan2(dy, dx) - a; da = Math.atan2(Math.sin(da), Math.cos(da));
       if (Math.abs(da) > half && l > e.r + 20) continue;
-      hurt(e, d0); kbNudge(e, P.x, P.y, 26);
+      hurt(e, d0, 'fire'); kbNudge(e, P.x, P.y, 26);
       if (L >= 5 && !e.boss && !(e.stunCd > t)) { e.stun = t + 0.5; e.stunCd = t + 1.6; }
     }
     if (L >= 3) waves.push({ x0: P.x, y0: P.y, a, s: 20, max: L >= 7 ? 1e9 : L >= 6 ? 360 : 200, w: L >= 7 ? 95 : L >= 6 ? 62 : 46, d: d0 * (L >= 7 ? 0.9 : 0.6), full: L >= 7, hit: new Set() });
@@ -320,7 +320,7 @@ export function startGame(canvas, profile, opts, ui) {
         if (!best) break;
         hurt(best, d0 * (L >= 6 ? 1 : 0.7)); hit.add(best); cx = best.x; cy = best.y; pts.push([cx, cy]);
       }
-      bolts.push({ x, y, pts, life: 0.28, seed: Math.random() * 99 });
+      bolts.push({ x, y, pts, life: 0.28, seed: Math.random() * 99 }); fx('bolt', x, y - 20, zone * 3.2);
     }
   }
 
@@ -393,7 +393,7 @@ export function startGame(canvas, profile, opts, ui) {
       if (b.phase === 0) { b.a += b.curve * dt; if (b.t > b.out) { b.phase = 1; b.hit = new Set(); } }
       else { let df = Math.atan2(P.y - b.y, P.x - b.x) - b.a; df = Math.atan2(Math.sin(df), Math.cos(df)); b.a += clamp(df, -26 * dt, 26 * dt); b.sp = Math.min(b.sp + 400 * dt, 520); }
       b.x += Math.cos(b.a) * b.sp * dt; b.y += Math.sin(b.a) * b.sp * dt;
-      for (const e of enemies) if (e.hp > 0 && !b.hit.has(e) && (e.x - b.x) ** 2 + (e.y - b.y) ** 2 < (e.r + b.r) ** 2) { b.hit.add(e); hurt(e, dmg() * 3 * wl(up.boomerang) * (b.phase && up.boomerang >= 5 ? 1.5 : 1));
+      for (const e of enemies) if (e.hp > 0 && !b.hit.has(e) && (e.x - b.x) ** 2 + (e.y - b.y) ** 2 < (e.r + b.r) ** 2) { b.hit.add(e); hurt(e, dmg() * 3 * wl(up.boomerang) * (b.phase && up.boomerang >= 5 ? 1.5 : 1), 'fire');
         if (b.phase === 0 && b.bounces > 0) {   // ricochet to the nearest monster it hasn't hit yet
           let nx = null, nd = 160 * 160; for (const o of enemies) { if (o.hp <= 0 || b.hit.has(o)) continue; const d = (o.x - b.x) ** 2 + (o.y - b.y) ** 2; if (d < nd) { nd = d; nx = o; } }
           if (nx) { b.bounces--; b.a = Math.atan2(nx.y - b.y, nx.x - b.x); b.curve = 0; b.out = b.t + 0.5; } else { b.bounces = 0; b.out = b.t; }
@@ -408,7 +408,7 @@ export function startGame(canvas, profile, opts, ui) {
         const wob = () => { const a = Math.atan2(b.vy, b.vx) + rnd(-0.4, 0.4), v = Math.hypot(b.vx, b.vy); b.vx = Math.cos(a) * v; b.vy = Math.sin(a) * v; };   // random turn on each wall bounce so the paths don't repeat
         if (b.x < -AX) { b.x = -AX; b.vx = Math.abs(b.vx); wob(); b.vx = Math.max(b.vx, 40); } if (b.x > AX) { b.x = AX; b.vx = -Math.abs(b.vx); wob(); b.vx = Math.min(b.vx, -40); }
         if (b.y < -AY) { b.y = -AY; b.vy = Math.abs(b.vy); wob(); b.vy = Math.max(b.vy, 40); } if (b.y > AY) { b.y = AY; b.vy = -Math.abs(b.vy); wob(); b.vy = Math.min(b.vy, -40); }
-        for (const e of enemies) if (e.hp > 0 && (!e.bmCd || e.bmCd < t) && (e.x - b.x) ** 2 + (e.y - b.y) ** 2 < (e.r + 14) ** 2) { e.bmCd = t + 0.4; hurt(e, dmg() * 2.6 * wl(7)); }
+        for (const e of enemies) if (e.hp > 0 && (!e.bmCd || e.bmCd < t) && (e.x - b.x) ** 2 + (e.y - b.y) ** 2 < (e.r + 14) ** 2) { e.bmCd = t + 0.4; hurt(e, dmg() * 2.6 * wl(7), 'fire'); }
       }
     }
     // laser: orbs circle you; each locks the direction of its target, shows a warning line, then fires a straight beam that does not turn
@@ -419,7 +419,7 @@ export function startGame(canvas, profile, opts, ui) {
         for (const b of beams) {   // one instant zap along the full reach
           if (b.done) continue; b.done = true;
           const x0 = P.x + b.dx, y0 = P.y + b.dy, len = laserLen(x0, y0, b.a), ex = x0 + Math.cos(b.a) * len, ey = y0 + Math.sin(b.a) * len;
-          for (const e of enemies) if (e.hp > 0 && distSeg(e.x, e.y, x0, y0, ex, ey) < 7 + e.r * 0.75) { hurt(e, dmg() * 5 * wl(L) * (L >= 5 && e.burn > t ? 1.4 : 1)); if (L >= 3) { e.burn = t + 1.5; e.burnD = dmg() * 0.25 * wl(L); } }
+          for (const e of enemies) if (e.hp > 0 && distSeg(e.x, e.y, x0, y0, ex, ey) < 7 + e.r * 0.75) { hurt(e, dmg() * 5 * wl(L) * (L >= 5 && e.burn > t ? 1.4 : 1), 'zap'); if (L >= 3) { e.burn = t + 1.5; e.burnD = dmg() * 0.25 * wl(L); } }
         }
         if (laserT <= 0) { laserOn = false; beams.length = 0; laserT = (L >= 7 ? 0.4 : L >= 6 ? 0.7 : 1.0) * (1 - 0.15 * up.multi); }
       }
@@ -439,10 +439,10 @@ export function startGame(canvas, profile, opts, ui) {
         if ((e.x - s.x) ** 2 + (e.y - s.y) ** 2 < (e.r + (s.kind === 'magic' ? 6 : 4)) ** 2) {
           if (s.kind === 'magic') {
             if (s.target && e !== s.target) continue; // seekers only hit their own target
-            hurt(e, s.dmg); s.life = 0;
+            hurt(e, s.dmg, 'magic'); s.life = 0;
             if (!s.shard && up.magic >= 3) { const big = up.magic >= 6; for (const o of enemies) if (o !== e && o.hp > 0 && (o.x - s.x) ** 2 + (o.y - s.y) ** 2 < ((big ? 44 : 30) + o.r) ** 2) hurt(o, s.dmg * (big ? 0.5 : 0.35)); } // blast is a magic upgrade (L4, bigger at L6)
             if (up.magic >= 7 && !s.shard) shards(e, s.dmg * 0.6);
-          } else if (!s.hit.includes(e)) { s.hit.push(e); hurt(e, s.dmg); if (--s.pierce <= 0) s.life = 0; }
+          } else if (!s.hit.includes(e)) { s.hit.push(e); hurt(e, s.dmg, 'leaf'); if (--s.pierce <= 0) s.life = 0; }
         }
       }
     }
@@ -451,7 +451,7 @@ export function startGame(canvas, profile, opts, ui) {
       const f = flasks[i];
       if (t >= f.at) {
         puddles.push({ x: f.x, y: f.y, r: f.r, life: 3.5 * (f.L >= 6 ? 1.6 : 1), tick: 0, L: f.L, dmg: dmg() * 0.45 * wl(f.L) * (f.L >= 5 ? 1.4 : 1) });
-        flasks.splice(i, 1);
+        fx('splash', f.x, f.y - 6, f.r * 3.4); flasks.splice(i, 1);
       }
     }
     for (let i = puddles.length - 1; i >= 0; i--) {
@@ -473,7 +473,7 @@ export function startGame(canvas, profile, opts, ui) {
         for (let k = 0; k < ring.n; k++) {
           const a = orbAng * ring.dir + (k * Math.PI * 2) / ring.n, ux = Math.cos(a), uy = Math.sin(a);
           const cx = P.x + ux * ring.rad, cy = P.y + uy * ring.rad;
-          for (const e of enemies) if (e.hp > 0 && (!e.swCd || e.swCd < t) && distSeg(e.x, e.y, cx - ux * half, cy - uy * half, cx + ux * half, cy + uy * half) < e.r + 3) { e.swCd = t + 0.4; hurt(e, dmg() * 2.4 * wmul('sword') * wl(L)); }
+          for (const e of enemies) if (e.hp > 0 && (!e.swCd || e.swCd < t) && distSeg(e.x, e.y, cx - ux * half, cy - uy * half, cx + ux * half, cy + uy * half) < e.r + 3) { e.swCd = t + 0.4; hurt(e, dmg() * 2.4 * wmul('sword') * wl(L), 'hit'); }
         }
       }
     }
@@ -497,6 +497,7 @@ export function startGame(canvas, profile, opts, ui) {
       const it = items[i]; it.life -= dt;
       if (Math.hypot(P.x - it.x, P.y - it.y) < 24) { items.splice(i, 1); collect(it); } else if (it.life <= 0) items.splice(i, 1);
     }
+    for (let i = fxs.length - 1; i >= 0; i--) { const f = fxs[i]; f.life -= dt; if (f.follow) { f.x = P.x; f.y = P.y; } if (f.life <= 0) fxs.splice(i, 1); }
     for (let i = pops.length - 1; i >= 0; i--) { pops[i].life -= dt; if (pops[i].life <= 0) pops.splice(i, 1); }
     if (t >= D && !bossB) { bossB = true; spawn('dragon'); ui.banner('The Dragon awakens!'); }
     if (t >= D - 30 && !warned) { warned = true; ui.banner('30 seconds left to slay the Dragon!'); }
@@ -510,7 +511,8 @@ export function startGame(canvas, profile, opts, ui) {
     return r;
   };
   function pop(x, y, v) { if (pops.length < 60) pops.push({ x, y, v, life: 0.5 }); }
-  function hurt(e, d) { e.hp -= d; e.hit = 0.1; pop(e.x, e.y - e.r, Math.round(d)); }
+  function hurt(e, d, k) { e.hp -= d; e.hit = 0.1; pop(e.x, e.y - e.r, Math.round(d)); if (k && !(e.fxT > t)) { e.fxT = t + 0.22; fx(k, e.x, e.y, e.r * 2 + 34); } }
+  function fx(k, x, y, size, o = {}) { if (SP && SP.fx && SP.fx.rows[k] && fxs.length < 60) fxs.push({ k, x, y, s: size, a: o.a || 0, dur: o.dur || SP.fx.rows[k].n / 22, life: o.dur || SP.fx.rows[k].n / 22, follow: !!o.follow }); }
   function finish(won, timeout) { if (over) return; over = true; ui.end({ won, timeout: !!timeout, seconds: Math.min(t, D), kills, level: P.level }); stop(); }
 
   /* ---------- drawing ---------- */
@@ -595,6 +597,10 @@ export function startGame(canvas, profile, opts, ui) {
                 c.shadowColor = '#ff5a3d'; c.shadowBlur = 14; c.strokeStyle = '#ff5a3d'; c.globalAlpha = 0.85 * clamp(laserT / 0.15); c.lineWidth = 12; c.beginPath(); c.moveTo(sx, sy); c.lineTo(ex, ey); c.stroke();
         c.shadowBlur = 0; c.globalAlpha = clamp(laserT / 0.15); c.strokeStyle = '#fff'; c.lineWidth = 4; c.beginPath(); c.moveTo(sx, sy); c.lineTo(ex, ey); c.stroke();
       }
+    }
+    if (SP && SP.fx) for (const f of fxs) {
+      const row = SP.fx.rows[f.k], k = Math.min(row.n - 1, Math.floor((1 - f.life / f.dur) * row.n));
+      c.save(); c.translate(f.x + ox, f.y + oy); if (f.a) c.rotate(f.a); c.imageSmoothingEnabled = false; c.drawImage(SP.fx.img, k * 64, row.y, 64, 64, -f.s / 2, -f.s / 2, f.s, f.s); c.restore();
     }
     // hero
     c.save(); c.translate(W / 2, H / 2); if (P.inv > 0 && Math.floor(t * 20) % 2) c.globalAlpha = 0.45;

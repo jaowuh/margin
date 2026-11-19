@@ -1,6 +1,8 @@
 import sheetUrl from '../assets/game-sprites.png';
 import animUrl from '../assets/anim-sprites.png';
 import knightUrl from '../assets/knight-sprites.png';
+import fxUrl from '../assets/fx-sprites.png';
+//  - Effects: "750 Effect and FX Pixel All" by BDragon1727 (itch.io, free pack, credit not required); only the used rows are packed into fx-sprites.png (64px frames).
 // Art credits (only the frames used are packed into game-sprites.png and anim-sprites.png):
 //  - "32rogues" by Seth Boyles: slime, troll, ettin, dragon, sword.
 //  - "Elementals" Leaf Ranger, Water Priestess, Fire Knight by chierit (CC BY 4.0, https://chierit.itch.io): heroes.
@@ -15,7 +17,9 @@ export interface Sprites {
   flash: Record<string, HTMLCanvasElement>;
   sword: HTMLCanvasElement;
   anim: Record<string, Anim>;
+  fx: { img: HTMLImageElement; rows: Record<string, { y: number; n: number }> };
 }
+const FX_ROWS = {"magic": {"y": 0, "n": 10}, "hit": {"y": 64, "n": 7}, "fire": {"y": 128, "n": 7}, "leaf": {"y": 192, "n": 7}, "bolt": {"y": 256, "n": 11}, "splash": {"y": 320, "n": 11}, "slash": {"y": 384, "n": 13}, "zap": {"y": 448, "n": 8}, "level": {"y": 512, "n": 16}};
 
 const IDX = { archer: [0, 1, 2], mage: [3, 4, 5], swordsman: [6, 7, 8] };
 const MON: Record<string, number> = { slime: 9, bat: 10, goblin: 11, ogre: 12, king: 13, dragon: 14 };
@@ -63,7 +67,7 @@ export function loadSprites(): Promise<Sprites> {
           };
           anim.swordsman = strip(0);
           anim.swordsman_idle = strip(1);
-          resolve({ hero, mon, flash, sword: tile(15), anim });
+          loadImg(fxUrl).then(fxi => resolve({ hero, mon, flash, sword: tile(15), anim, fx: { img: fxi, rows: FX_ROWS } })).catch(reject);
         }).catch(reject);
       }).catch(reject);
     };
