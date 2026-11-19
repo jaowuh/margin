@@ -714,8 +714,8 @@ export function startGame(canvas, profile, opts, ui) {
       if (laserOn) for (const b of beams) {
         const x0 = P.x + b.dx, y0 = P.y + b.dy, len = laserLen(x0, y0, b.a), sx = x0 + ox, sy = y0 + oy, ex = sx + Math.cos(b.a) * len, ey = sy + Math.sin(b.a) * len;
         c.lineCap = 'round';
-                c.shadowColor = '#ff5a3d'; c.shadowBlur = 14; c.strokeStyle = '#ff5a3d'; c.globalAlpha = 0.85 * clamp(laserT / 0.15); c.lineWidth = 12; c.beginPath(); c.moveTo(sx, sy); c.lineTo(ex, ey); c.stroke();
-        c.shadowBlur = 0; c.globalAlpha = clamp(laserT / 0.15); c.strokeStyle = '#fff'; c.lineWidth = 4; c.beginPath(); c.moveTo(sx, sy); c.lineTo(ex, ey); c.stroke();
+                c.shadowColor = '#ff5a3d'; c.shadowBlur = 14; c.strokeStyle = '#ff5a3d'; c.globalAlpha = 0.85 * clamp(laserT / 0.15); c.lineWidth = 12 * en(); c.beginPath(); c.moveTo(sx, sy); c.lineTo(ex, ey); c.stroke();
+        c.shadowBlur = 0; c.globalAlpha = clamp(laserT / 0.15); c.strokeStyle = '#fff'; c.lineWidth = 4 * en(); c.beginPath(); c.moveTo(sx, sy); c.lineTo(ex, ey); c.stroke();
       }
     }
     if (SP && SP.fx) for (const f of fxs) {

@@ -197,3 +197,5 @@ Hidden coloring game (`src/components/CreditsGame.tsx` = painting card only; `cr
 - v11.1: Blot Out the Sun: damage back to 80%, fire rate x3.4 (was x2.5; originally x4).
 
 - v11.2: first level up always offers 2 weapons + 1 item (choices(first)); stat cards (and Snack) have weight 0.45 before player level 8.
+
+- v11.3: laser beam drawing width scales with Enlarge (hit width already did).
