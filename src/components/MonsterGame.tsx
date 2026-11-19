@@ -93,7 +93,7 @@ export function PlayTab({ month }: { month: string }) {
           </>
         ) : <p className="muted">No relics yet. Win or survive a run to find one.</p>}
       </section>
-      <p className="muted mg-credit">Game art: chierit (Elementals), Luiz Melo (Monsters Creatures Fantasy), Seth Boyles (32rogues), aamatniekss (Free Knight), BDragon1727 (effects), Willibab (weapon icons)</p>
+      <p className="muted mg-credit">Game art: chierit (Elementals), Luiz Melo (Monsters Creatures Fantasy), Seth Boyles (32rogues), aamatniekss (Free Knight), BDragon1727 (effects), Willibab and Majorhn (weapon icons)</p>
       {running && <MonsterGame month={month} job={save.job} onClose={() => { setRunning(false); setSave(loadSave()); }} />}
     </div>
   );

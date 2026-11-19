@@ -2,6 +2,7 @@ import sheetUrl from '../assets/game-sprites.png';
 import animUrl from '../assets/anim-sprites.png';
 import knightUrl from '../assets/knight-sprites.png';
 import fxUrl from '../assets/fx-sprites.png';
+import iconUrl from '../assets/weapon-icons.png';
 //  - Effects: "750 Effect and FX Pixel All" by BDragon1727 (itch.io, free pack, credit not required); only the used rows are packed into fx-sprites.png (64px frames).
 // Art credits (only the frames used are packed into game-sprites.png and anim-sprites.png):
 //  - "32rogues" by Seth Boyles: slime, troll, ettin, dragon, sword.
@@ -18,6 +19,7 @@ export interface Sprites {
   sword: HTMLCanvasElement;
   anim: Record<string, Anim>;
   fx: { img: HTMLImageElement; rows: Record<string, { y: number; n: number }> };
+  icons: HTMLImageElement;
 }
 const FX_ROWS = {"magic": {"y": 0, "n": 10}, "hit": {"y": 64, "n": 7}, "fire": {"y": 128, "n": 7}, "leaf": {"y": 192, "n": 7}, "bolt": {"y": 256, "n": 11}, "splash": {"y": 320, "n": 11}, "slash": {"y": 384, "n": 13}, "zap": {"y": 448, "n": 8}, "level": {"y": 512, "n": 16}};
 
@@ -67,7 +69,7 @@ export function loadSprites(): Promise<Sprites> {
           };
           anim.swordsman = strip(0);
           anim.swordsman_idle = strip(1);
-          loadImg(fxUrl).then(fxi => resolve({ hero, mon, flash, sword: tile(15), anim, fx: { img: fxi, rows: FX_ROWS } })).catch(reject);
+          Promise.all([loadImg(fxUrl), loadImg(iconUrl)]).then(([fxi, ico]) => resolve({ hero, mon, flash, sword: tile(15), anim, fx: { img: fxi, rows: FX_ROWS }, icons: ico })).catch(reject);
         }).catch(reject);
       }).catch(reject);
     };
