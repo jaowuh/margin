@@ -179,3 +179,5 @@ Hidden coloring game (`src/components/CreditsGame.tsx` = painting card only; `cr
 - v10.2: bow L7 renamed Persian Offensive, with the quote on the level-up card.
 
 - v10.3: bow L7 renamed Blot Out the Sun.
+
+- v10.4: L7 names are movie lines: Blot Out the Sun (bow), Now You See Me (magic), Are You Not Entertained? (sword), Say My Name (potion), And My Axe! (axe), Return of the King (boomerang), Thunder God's Wrath (lightning), Finger of God (laser).
