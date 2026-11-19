@@ -11,7 +11,7 @@ const WIDS = Object.keys(WNAMES);
 const LV = {
   arrow: [null, 'Arrows fly the way you face', '+1 arrow per shot', 'Arrows pierce 1 more monster', '+1 arrow per shot', 'Faster arrows and a 15% chance for a double-damage crit', 'Pierce 2 more monsters', 'MAX Blot Out the Sun: a rapid wall of 7 arrows'],
   magic: [null, 'Homing bolts that each hit one monster', '+1 bolt per cast', 'Small blast: monsters next to the target take 35% damage', '+1 bolt per cast', 'Faster, sharper homing', 'Bigger blast, 50% damage', 'MAX Now You See Me: huge blast, 70% damage to everything around the target, +1 bolt'],
-  sword: [null, 'Blades circle you', '+1 blade', 'Blades spin 25% faster, are longer and orbit wider', '+1 blade', 'Bloodlust: blades turn crimson and every 20th hit heals you 2% HP', '+1 blade', 'MAX Are You Not Entertained?: a second ring spinning the other way'],
+  sword: [null, 'Blades circle you', '+1 blade', 'Blades spin 25% faster, are longer and orbit wider', '+1 blade', 'Bloodlust: blades turn crimson and every 25th hit heals you 1% HP (at most once every 2s)', '+1 blade', 'MAX Are You Not Entertained?: a second ring spinning the other way'],
   potion: [null, 'Flasks make slowing, poisonous puddles', '+1 flask', 'Bigger puddles', '+1 flask', 'Stronger poison (+40%); monsters that die in poison leave a small puddle', 'Puddles last 60% longer and slow harder', 'MAX Heisenberg Recipe: flasks sweep a clockwise ring all around you'],
   axe: [null, 'A heavy swing in a wide arc, left or right of you', 'Double swing: forward, then a backswing', 'A shockwave rolls forward after the swing', 'Wider arc', 'Half-second stun on hit', 'Bigger shockwave that travels further', 'MAX And My Axe!: the shockwave crosses the whole map'],
   boomerang: [null, 'Thrown at the nearest monster, flies its full range, then returns, hitting both ways (range grows a little each level); the next throw waits for it', '+1 boomerang', 'Ricochet: bounces to 1 other monster after its first hit', '+1 boomerang', 'The return trip hits 50% harder', 'Faster, bigger arc and 2 bounces', 'MAX Sokka’s Boomerang: your throws fly 60% farther, bigger, through every monster; extra boomerangs roam the arena on their own, bouncing toward the crowd'],
@@ -62,7 +62,7 @@ export function startGame(canvas, profile, opts, ui) {
   const wmul = k => (k === main ? [1.3, 1.5, 1.8][profile.rank - 1] : 1);
   const owned = () => WIDS.filter(k => up[k] > 0);
 
-  let swHits = 0, redSword = null;
+  let swHits = 0, swHealAt = 0, redSword = null;
   let warned = false, firstDone = false, sweep = 0, t = 0, kills = 0, arrowCd = 0, magicCd = 0, potionCd = 1, lightCd = 1, orbAng = 0, spawnCd = 0, novaCd = 5, bossA = false, bossB = false, over = false;
   let nextMini = D / 5, nextSwarm = D * 0.3, miniN = 0;
   const buffs = { inv: 0, speed: 0 };
@@ -516,7 +516,7 @@ export function startGame(canvas, profile, opts, ui) {
         for (let k = 0; k < ring.n; k++) {
           const a = orbAng * ring.dir + (k * Math.PI * 2) / ring.n, ux = Math.cos(a), uy = Math.sin(a);
           const cx = P.x + ux * ring.rad, cy = P.y + uy * ring.rad;
-          for (const e of enemies) if (e.hp > 0 && (!e.swCd || e.swCd < t) && distSeg(e.x, e.y, cx - ux * half, cy - uy * half, cx + ux * half, cy + uy * half) < e.r + 3) { e.swCd = t + 0.4; hurt(e, dmg() * 2.4 * wmul('sword') * wl(L)); if (L >= 5 && ++swHits % 20 === 0) { P.hp = Math.min(P.maxHp, P.hp + P.maxHp * 0.02); pop(P.x, P.y - 20, '+HP'); } }
+          for (const e of enemies) if (e.hp > 0 && (!e.swCd || e.swCd < t) && distSeg(e.x, e.y, cx - ux * half, cy - uy * half, cx + ux * half, cy + uy * half) < e.r + 3) { e.swCd = t + 0.4; hurt(e, dmg() * 2.4 * wmul('sword') * wl(L)); if (L >= 5 && ++swHits % 25 === 0 && t >= swHealAt) { swHealAt = t + 2; P.hp = Math.min(P.maxHp, P.hp + P.maxHp * 0.01); pop(P.x, P.y - 20, '+HP'); } }
         }
       }
     }
