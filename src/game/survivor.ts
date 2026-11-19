@@ -188,9 +188,9 @@ export function startGame(canvas, profile, opts, ui) {
     showChoices('Treasure!');
   }
   function collect(it) {
-    if (it.type === 'heart') { P.hp = Math.min(P.maxHp, P.hp + P.maxHp * 0.2); pop(P.x, P.y - 20, '+HP'); }
+    if (it.type === 'heart') { P.hp = Math.min(P.maxHp, P.hp + P.maxHp * 0.2); pop(P.x, P.y - 20, '+HP'); fx('holy', P.x, P.y, 96, { follow: true }); }
     else if (it.type === 'magnet') { for (const g of gems) g.vac = true; ui.banner('Magnet!'); }
-    else if (it.type === 'shield') { buffs.inv = 6; ui.banner('Invincible!'); }
+    else if (it.type === 'shield') { buffs.inv = 6; ui.banner('Invincible!'); fx('lotus', P.x, P.y - 4, 120, { follow: true }); }
     else if (it.type === 'boots') { buffs.speed = 8; ui.banner('Speed boost!'); }
     else if (it.type === 'chest') openChest();
   }

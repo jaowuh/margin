@@ -21,7 +21,7 @@ export interface Sprites {
   fx: { img: HTMLImageElement; rows: Record<string, { y: number; n: number }> };
   icons: HTMLImageElement;
 }
-const FX_ROWS = {"magic": {"y": 0, "n": 10}, "hit": {"y": 64, "n": 8}, "fire": {"y": 128, "n": 8}, "leaf": {"y": 192, "n": 8}, "bolt": {"y": 256, "n": 10}, "splash": {"y": 320, "n": 8}, "slash": {"y": 384, "n": 8}, "zap": {"y": 448, "n": 8}, "level": {"y": 512, "n": 12}};
+const FX_ROWS = {"magic": {"y": 0, "n": 10}, "hit": {"y": 64, "n": 8}, "fire": {"y": 128, "n": 8}, "leaf": {"y": 192, "n": 8}, "bolt": {"y": 256, "n": 10}, "splash": {"y": 320, "n": 8}, "slash": {"y": 384, "n": 8}, "zap": {"y": 448, "n": 8}, "level": {"y": 512, "n": 12}, "holy": {"y": 576, "n": 16}, "lotus": {"y": 640, "n": 15}};
 
 const IDX = { archer: [0, 1, 2], mage: [3, 4, 5], swordsman: [6, 7, 8] };
 const MON: Record<string, number> = { slime: 9, bat: 10, goblin: 11, ogre: 12, king: 13, dragon: 14 };
