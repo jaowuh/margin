@@ -243,7 +243,7 @@ export function startGame(canvas, profile, opts, ui) {
     const ux = Math.cos(a), uy = Math.sin(a), tx = ux > 1e-6 ? (AX - x0) / ux : ux < -1e-6 ? (-AX - x0) / ux : 1e9, ty = uy > 1e-6 ? (AY - y0) / uy : uy < -1e-6 ? (-AY - y0) / uy : 1e9;
     return Math.max(40, Math.min(tx, ty));
   };
-  const inLaser = e => e.hp > 0 && (e.x - P.x) ** 2 + (e.y - P.y) ** 2 < laserRange() ** 2;
+  const inLaser = e => e.hp > 0 && onScreen(e) && (e.x - P.x) ** 2 + (e.y - P.y) ** 2 < laserRange() ** 2;   // only monsters you can see, and inside its reach
   function pickLaserTarget(i, taken) {   // nearest monster in range that no other beam is using
     let best = null, bd = 1e18; const [ox0, oy0] = orbPos(i);
     for (const e of enemies) { if (!inLaser(e) || taken.has(e)) continue; const d = (e.x - ox0) ** 2 + (e.y - oy0) ** 2; if (d < bd) { bd = d; best = e; } }
@@ -419,7 +419,7 @@ export function startGame(canvas, profile, opts, ui) {
         for (const b of beams) {   // one instant zap along the full reach
           if (b.done) continue; b.done = true;
           const x0 = P.x + b.dx, y0 = P.y + b.dy, len = laserLen(x0, y0, b.a), ex = x0 + Math.cos(b.a) * len, ey = y0 + Math.sin(b.a) * len;
-          for (const e of enemies) if (e.hp > 0 && distSeg(e.x, e.y, x0, y0, ex, ey) < 7 + e.r * 0.75) { hurt(e, dmg() * 5 * wl(L) * (L >= 5 && e.burn > t ? 1.4 : 1)); if (L >= 3) { e.burn = t + 1.5; e.burnD = dmg() * 0.25 * wl(L); } }
+          for (const e of enemies) if (e.hp > 0 && onScreen(e) && distSeg(e.x, e.y, x0, y0, ex, ey) < 7 + e.r * 0.75) { hurt(e, dmg() * 5 * wl(L) * (L >= 5 && e.burn > t ? 1.4 : 1)); if (L >= 3) { e.burn = t + 1.5; e.burnD = dmg() * 0.25 * wl(L); } }
         }
         if (laserT <= 0) { laserOn = false; beams.length = 0; laserT = (L >= 7 ? 0.4 : L >= 6 ? 0.7 : 1.0) * (1 - 0.15 * up.multi); }
       }
