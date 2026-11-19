@@ -210,7 +210,7 @@ export function startGame(canvas, profile, opts, ui) {
   const kbNudge = (e, px, py, dist) => { if (e.boss || e.kbCd > t) return; e.kbCd = t + 1.5; const dx = e.x - px, dy = e.y - py, l = Math.hypot(dx, dy) || 1; e.x = clamp(e.x + (dx / l) * dist, -AX, AX); e.y = clamp(e.y + (dy / l) * dist, -AY, AY); };
   function axeSwing(a) {
     const L = up.axe, half = L >= 4 ? 1.15 : 0.9, reach = 95, d0 = dmg() * 4.5 * wl(L);
-    swings.push({ x: P.x, y: P.y, a, half, reach, life: 0.22 }); fx('slash', P.x + Math.cos(a) * 55, P.y + Math.sin(a) * 55, 150, { a, dur: 0.32 });
+    swings.push({ x: P.x, y: P.y, a, half, reach, life: 0.26, dur: 0.26 });
     for (const e of enemies) {
       if (e.hp <= 0) continue;
       const dx = e.x - P.x, dy = e.y - P.y, l = Math.hypot(dx, dy);
@@ -587,7 +587,14 @@ export function startGame(canvas, profile, opts, ui) {
       c.beginPath(); c.moveTo(fx - uy * w.w, fy + ux * w.w); c.lineTo(fx + ux * 10, fy + uy * 10); c.lineTo(fx + uy * w.w, fy - ux * w.w); c.stroke();
       c.globalAlpha = 0.3; c.lineWidth = 3; c.beginPath(); c.moveTo(fx - ux * 30 - uy * w.w * 0.8, fy - uy * 30 + ux * w.w * 0.8); c.lineTo(fx - ux * 30 + uy * w.w * 0.8, fy - uy * 30 - ux * w.w * 0.8); c.stroke(); c.globalAlpha = 1; c.shadowBlur = 0;
     }
-    for (const sw of swings) { c.globalAlpha = clamp(sw.life * 4); c.strokeStyle = '#ffe2b8'; c.lineWidth = 12; c.lineCap = 'round'; c.beginPath(); c.arc(sw.x + ox, sw.y + oy, sw.reach * 0.8, sw.a - sw.half, sw.a + sw.half); c.stroke(); c.globalAlpha = 1; }
+    for (const sw of swings) {   // the axe sprite sweeps through the arc, leaving a fading crescent trail
+      const u = clamp(1 - sw.life / sw.dur), e = 1 - (1 - u) * (1 - u), ang = sw.a - sw.half + 2 * sw.half * e, cx = P.x + ox, cy = P.y + oy, rr = sw.reach * 0.62;
+      c.lineCap = 'round';
+      for (let k = 0; k < 6; k++) { const a1 = ang - (k + 1) * 0.22 * sw.half, a0 = Math.max(sw.a - sw.half, ang - k * 0.22 * sw.half); if (a1 > ang) continue; c.globalAlpha = clamp((1 - k / 6) * 0.75 * clamp(sw.life * 8)); c.strokeStyle = k < 2 ? '#fff' : '#ffd9a0'; c.lineWidth = 16 - k * 2.2; c.beginPath(); c.arc(cx, cy, sw.reach * 0.78, Math.max(a1, sw.a - sw.half), a0); c.stroke(); }
+      c.globalAlpha = clamp(sw.life * 10);
+      if (SP && SP.icons) { c.save(); c.translate(cx + Math.cos(ang) * rr, cy + Math.sin(ang) * rr); c.rotate(ang + Math.PI * 0.75); c.imageSmoothingEnabled = false; c.drawImage(SP.icons, 5 * 32, 0, 32, 32, -38, -38, 76, 76); c.restore(); }
+      c.globalAlpha = 1;
+    }
     for (const b of booms.concat(loopers)) { if (SP && SP.icons) { c.save(); c.translate(b.x + ox, b.y + oy); c.rotate(b.spin); c.imageSmoothingEnabled = false; if (up.boomerang >= 7) { c.shadowColor = '#ffd36b'; c.shadowBlur = 10; } const z = b.r * 3.2; c.drawImage(SP.icons, 6 * 32, 0, 32, 32, -z / 2, -z / 2, z, z); c.restore(); continue; } c.save(); c.translate(b.x + ox, b.y + oy); c.rotate(b.spin); c.strokeStyle = '#d49a5a'; c.lineWidth = 5; c.lineCap = 'round'; c.lineJoin = 'round'; if (up.boomerang >= 7) { c.shadowColor = '#ffd36b'; c.shadowBlur = 10; } c.beginPath(); c.moveTo(-10, -6); c.lineTo(0, 4); c.lineTo(10, -6); c.stroke(); c.restore(); }
     if (up.laser > 0) {
       for (let i = 0; i < laserOrbs(); i++) { const [x0, y0] = orbPos(i); c.fillStyle = '#ff7a5a'; c.shadowColor = '#ff5a3d'; c.shadowBlur = 12; c.beginPath(); c.arc(x0 + ox, y0 + oy, 6, 0, 7); c.fill(); c.shadowBlur = 0; c.fillStyle = '#fff'; c.beginPath(); c.arc(x0 + ox, y0 + oy, 2.5, 0, 7); c.fill(); }
