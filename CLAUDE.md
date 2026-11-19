@@ -127,3 +127,4 @@ Hidden coloring game (`src/components/CreditsGame.tsx` = painting card only; `cr
 - v6.7: laser only targets and damages monsters that are on screen and inside its reach (like lightning).
 - v6.8: holy effects (BDragon1727 pack, recolored in the atlas): gold sunburst ('holy') around the hero on heart pickups, white lotus bloom ('lotus') on shield pickup. fx-sprites.png now also holds those two rows.
 - v6.9: heart pickup has no effect (the gold sunburst row 'holy' is kept in the atlas, unused).
+- v7.0: axe swing = smaller axe sprite (44px) plus Mira Forge Steel Slash crescent (fx 'slash', rotated to the swing direction). The Frostwindz Warrior VFX pack was NOT used: its license forbids making the assets downloadable from websites/public places.
