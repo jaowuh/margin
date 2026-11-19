@@ -28,7 +28,7 @@ const GENERIC = [
   { id: 'hp', name: 'Vitality', desc: '+30 max health and heal 30', max: 6, free: true },
   { id: 'magnet', name: 'Magnet', desc: '+40% gem pickup range', max: 4, free: true },
   { id: 'ricochet', name: 'Ricochet', desc: 'Arrows, bolts and magic bounce to another monster after a hit (per level)', max: 2 },
-  { id: 'aegis', name: 'Aegis', desc: 'A shield makes you invincible for 2s (2.5s, 3s), then recharges for 12s (10s, 8s)', max: 3 },
+  { id: 'aegis', name: 'Aegis', desc: 'A shield makes you invincible for 1.5s (2s, 2.5s), then recharges for 14s (12s, 10s)', max: 3 },
   { id: 'chill', name: 'Chill', desc: 'Hits slow monsters; at max they sometimes freeze solid', max: 3 },
   { id: 'ignite', name: 'Ignite', desc: 'Hits set monsters burning, hotter each level', max: 3 },
   { id: 'enlarge', name: 'Enlarge', desc: '+15% size and area on your weapons', max: 4 },
@@ -347,7 +347,7 @@ export function startGame(canvas, profile, opts, ui) {
     P.x = clamp(P.x + mx * spd() * dt, -AX, AX); P.y = clamp(P.y + my * spd() * dt, -AY, AY);
     if (ml > 0.05) { P.dir = Math.atan2(my, mx); if (Math.abs(mx) > 0.05) P.face = mx > 0 ? 1 : -1; }
     P.inv = Math.max(0, P.inv - dt);
-    if (up.aegis) { if (aegisT > 0) aegisT -= dt; else { aegisCd -= dt; if (aegisCd <= 0) { aegisT = [0, 2, 2.5, 3][up.aegis]; aegisCd = [0, 12, 10, 8][up.aegis]; } } }
+    if (up.aegis) { if (aegisT > 0) aegisT -= dt; else { aegisCd -= dt; if (aegisCd <= 0) { aegisT = [0, 1.5, 2, 2.5][up.aegis]; aegisCd = [0, 14, 12, 10][up.aegis]; } } }
     spawnWave(dt);
     for (let i = delayed.length - 1; i >= 0; i--) if (t >= delayed[i].at) { const f = delayed[i].fn; delayed.splice(i, 1); f(); }
 

@@ -163,3 +163,5 @@ Hidden coloring game (`src/components/CreditsGame.tsx` = painting card only; `cr
 - v9.4: Knockback item replaced by Aegis (max 3): a shield bubble blocks the next hit, returns after 14/11/8s (first one appears ~2s after pickup). Icon slot 3 is a shield.
 
 - v9.5: Aegis is now timed invincibility: 2/2.5/3s, then recharge 12/10/8s (first after ~2s). Bubble flickers in its last 0.6s.
+
+- v9.6: Aegis tuned down: 1.5/2/2.5s on, 14/12/10s recharge.
