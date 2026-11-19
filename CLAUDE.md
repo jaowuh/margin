@@ -126,3 +126,4 @@ Hidden coloring game (`src/components/CreditsGame.tsx` = painting card only; `cr
 - v6.6: no more per-hit weapon effects. Effects now mark status ailments only: burn (ember spark on each burn tick), poison (venom spark on each puddle tick), stun (shock spark when the axe stuns). Kept: lightning strike graphic, potion splash. Level-up ring removed. Slow and freeze have no effect yet (Ice Shatter / Frost Nova from the Mira Forge pack are available for a future frost weapon).
 - v6.7: laser only targets and damages monsters that are on screen and inside its reach (like lightning).
 - v6.8: holy effects (BDragon1727 pack, recolored in the atlas): gold sunburst ('holy') around the hero on heart pickups, white lotus bloom ('lotus') on shield pickup. fx-sprites.png now also holds those two rows.
+- v6.9: heart pickup has no effect (the gold sunburst row 'holy' is kept in the atlas, unused).
