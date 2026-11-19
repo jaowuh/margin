@@ -3,7 +3,7 @@ import animUrl from '../assets/anim-sprites.png';
 import knightUrl from '../assets/knight-sprites.png';
 import fxUrl from '../assets/fx-sprites.png';
 import iconUrl from '../assets/weapon-icons.png';
-//  - Effects: "750 Effect and FX Pixel All" by BDragon1727 (itch.io, free pack, credit not required); only the used rows are packed into fx-sprites.png (64px frames).
+//  - Effects: "Free Pixel Hit & Impact Sparks" and "Free Pixel Spell Effects" by Mira Forge (itch.io, free, credit appreciated); only the used effects are packed into fx-sprites.png (64px frames).
 // Art credits (only the frames used are packed into game-sprites.png and anim-sprites.png):
 //  - "32rogues" by Seth Boyles: slime, troll, ettin, dragon, sword.
 //  - "Elementals" Leaf Ranger, Water Priestess, Fire Knight by chierit (CC BY 4.0, https://chierit.itch.io): heroes.
@@ -21,7 +21,7 @@ export interface Sprites {
   fx: { img: HTMLImageElement; rows: Record<string, { y: number; n: number }> };
   icons: HTMLImageElement;
 }
-const FX_ROWS = {"magic": {"y": 0, "n": 10}, "hit": {"y": 64, "n": 7}, "fire": {"y": 128, "n": 7}, "leaf": {"y": 192, "n": 7}, "bolt": {"y": 256, "n": 11}, "splash": {"y": 320, "n": 11}, "slash": {"y": 384, "n": 13}, "zap": {"y": 448, "n": 8}, "level": {"y": 512, "n": 16}};
+const FX_ROWS = {"magic": {"y": 0, "n": 10}, "hit": {"y": 64, "n": 8}, "fire": {"y": 128, "n": 8}, "leaf": {"y": 192, "n": 8}, "bolt": {"y": 256, "n": 10}, "splash": {"y": 320, "n": 8}, "slash": {"y": 384, "n": 8}, "zap": {"y": 448, "n": 8}, "level": {"y": 512, "n": 12}};
 
 const IDX = { archer: [0, 1, 2], mage: [3, 4, 5], swordsman: [6, 7, 8] };
 const MON: Record<string, number> = { slime: 9, bat: 10, goblin: 11, ogre: 12, king: 13, dragon: 14 };
