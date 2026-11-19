@@ -385,7 +385,7 @@ export function startGame(canvas, profile, opts, ui) {
         const rx = e.x - w.x0, ry = e.y - w.y0, u = rx * ux + ry * uy, v = -rx * uy + ry * ux;
         if (Math.abs(v) < w.w + e.r && Math.abs(u - w.s) < 28 + e.r) { w.hit.add(e); hurt(e, w.full ? w.d : w.d * (1 - 0.6 * (w.s / w.max))); }
       }
-      if (w.s > w.max || Math.abs(fx) > AX + 60 || Math.abs(fy) > AY + 60) { if (w.full) scars.push({ x1: w.x0, y1: w.y0, x2: fx, y2: fy, life: 1.6, w: w.w }); waves.splice(i, 1); }
+      if (w.s > w.max || Math.abs(fx) > AX + 60 || Math.abs(fy) > AY + 60) { if (w.full) { const L2 = Math.hypot(fx - w.x0, fy - w.y0), nx = -(fy - w.y0) / (L2 || 1), ny = (fx - w.x0) / (L2 || 1), pts = []; for (let d = 0; d <= L2; d += 36) { const j = d === 0 || d + 36 > L2 ? 0 : rnd(-9, 9); pts.push([w.x0 + (fx - w.x0) * d / (L2 || 1) + nx * j, w.y0 + (fy - w.y0) * d / (L2 || 1) + ny * j]); } scars.push({ pts, life: 1.3 }); } waves.splice(i, 1); }
     }
     // boomerang
     if (!booms.length) boomCd -= dt;   // the next throw waits until the last one is back
@@ -593,7 +593,11 @@ export function startGame(canvas, profile, opts, ui) {
       }
     }
     // axe, boomerang, laser
-    for (const sc of scars) { c.globalAlpha = clamp(sc.life) * 0.7; c.strokeStyle = '#ff9a4d'; c.lineCap = 'round'; c.lineWidth = Math.max(3, sc.w * 0.12); c.beginPath(); c.moveTo(sc.x1 + ox, sc.y1 + oy); c.lineTo(sc.x2 + ox, sc.y2 + oy); c.stroke(); c.globalAlpha = 1; }
+    for (const sc of scars) {   // the ground cracks along the wave's path and the crack fades
+      c.lineCap = 'round'; c.lineJoin = 'round'; const a = clamp(sc.life / 1.3);
+      for (const [col, wd, al] of [['#2a1c12', 5, 0.75], ['#8a5a30', 2, 0.5]]) { c.globalAlpha = a * al; c.strokeStyle = col; c.lineWidth = wd; c.beginPath(); sc.pts.forEach((q, k) => k ? c.lineTo(q[0] + ox, q[1] + oy) : c.moveTo(q[0] + ox, q[1] + oy)); c.stroke(); }
+      c.globalAlpha = 1;
+    }
     for (const w of waves) {   // the shockwave is a crescent slash flying forward, with fading copies behind it
       const ux = Math.cos(w.a), uy = Math.sin(w.a), row = SP && SP.fx && SP.fx.rows.wave; if (!row) continue;
       const fade = w.full ? 1 : 1 - 0.65 * clamp(w.s / w.max), sz = w.w * 2.8;
