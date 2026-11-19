@@ -19,11 +19,11 @@ export interface Sprites {
   flash: Record<string, HTMLCanvasElement>;
   sword: HTMLCanvasElement;
   anim: Record<string, Anim>;
-  fx: { img: HTMLImageElement; rows: Record<string, { y: number; n: number; w?: number; h?: number; ax?: number; ay?: number }> };
+  fx: { img: HTMLImageElement; rows: Record<string, { y: number; n: number; x0?: number; w?: number; h?: number; ax?: number; ay?: number }> };
   icons: HTMLImageElement;
   status: HTMLImageElement;
 }
-const FX_ROWS: Record<string, { y: number; n: number; w?: number; h?: number; ax?: number; ay?: number }> = {"magic": {"y": 0, "n": 10}, "hit": {"y": 64, "n": 8}, "fire": {"y": 128, "n": 8}, "leaf": {"y": 192, "n": 8}, "splash": {"y": 320, "n": 8}, "slash": {"y": 384, "n": 8}, "zap": {"y": 448, "n": 8}, "level": {"y": 512, "n": 12}, "holy": {"y": 576, "n": 16}, "lotus": {"y": 640, "n": 15}, "strike": {"y": 704, "n": 11, "w": 96, "h": 128, "ax": 0.396, "ay": 0.922}, "burn": {"y": 832, "n": 12, "w": 48, "h": 64, "ax": 0.5, "ay": 0.844}, "poison": {"y": 896, "n": 18, "w": 64, "h": 80, "ax": 0.5, "ay": 0.9}, "slow": {"y": 976, "n": 16, "w": 48, "h": 56, "ax": 0.5, "ay": 0.893}, "stun": {"y": 1032, "n": 16, "w": 48, "h": 32, "ax": 0.5, "ay": 0.5}, "chill": {"y": 1064, "n": 14, "w": 40, "h": 48, "ax": 0.5, "ay": 0.875}, "shock": {"y": 1112, "n": 14, "w": 48, "h": 56, "ax": 0.5, "ay": 0.839}, "wave": {"y": 1168, "n": 8}};
+const FX_ROWS: Record<string, { y: number; n: number; x0?: number; w?: number; h?: number; ax?: number; ay?: number }> = {"magic": {"y": 0, "n": 10}, "hit": {"y": 64, "n": 8}, "fire": {"y": 128, "n": 8}, "leaf": {"y": 192, "n": 8}, "splash": {"y": 320, "n": 8}, "slash": {"y": 384, "n": 8}, "zap": {"y": 448, "n": 8}, "level": {"y": 512, "n": 12}, "holy": {"y": 576, "n": 16}, "lotus": {"y": 640, "n": 15}, "strike": {"y": 704, "n": 11, "w": 96, "h": 128, "ax": 0.396, "ay": 0.922}, "burn": {"y": 832, "n": 12, "w": 48, "h": 64, "ax": 0.5, "ay": 0.844}, "poison": {"y": 896, "n": 18, "w": 64, "h": 80, "ax": 0.5, "ay": 0.9}, "slow": {"y": 976, "n": 16, "w": 48, "h": 56, "ax": 0.5, "ay": 0.893}, "stun": {"y": 1032, "n": 16, "w": 48, "h": 32, "ax": 0.5, "ay": 0.5}, "chill": {"y": 1064, "n": 14, "w": 40, "h": 48, "ax": 0.5, "ay": 0.875}, "shock": {"y": 1112, "n": 14, "w": 48, "h": 56, "ax": 0.5, "ay": 0.839}, "wave": {"y": 1168, "n": 8}, "slashf": {"y": 384, "n": 5, "x0": 192, "ax": 0.66, "ay": 0.47}, "lvl": {"y": 1232, "n": 20, "w": 64, "h": 96, "ax": 0.5, "ay": 0.917}, "gflame": {"y": 1328, "n": 16, "w": 64, "h": 40, "ax": 0.5, "ay": 0.8}};
 
 const IDX = { archer: [0, 1, 2], mage: [3, 4, 5], swordsman: [6, 7, 8] };
 const MON: Record<string, number> = { slime: 9, bat: 10, goblin: 11, ogre: 12, king: 13, dragon: 14 };

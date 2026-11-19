@@ -199,3 +199,5 @@ Hidden coloring game (`src/components/CreditsGame.tsx` = painting card only; `cr
 - v11.2: first level up always offers 2 weapons + 1 item (choices(first)); stat cards (and Snack) have weight 0.45 before player level 8.
 
 - v11.3: laser beam drawing width scales with Enlarge (hit width already did).
+
+- v11.4: axe shockwave shorter (L3-5 130, L6 230, L7 unchanged). Axe slash fx uses new row slashf (Steel Slash frames 3-7, forward-facing crescent, x0 offset support in FX_ROWS). PVFX level-up halo (row lvl) plays on the player when a level-up card is picked. PVFX ground-flames (row gflame) burn along the Finger of God strip over a dark scorch; the old red strip is only the warning. debug.fx exposed.

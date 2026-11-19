@@ -13,7 +13,7 @@ const LV = {
   magic: [null, 'Homing bolts that each hit one monster', '+1 bolt per cast', 'Small blast: monsters next to the target take 35% damage', '+1 bolt per cast', 'Faster, sharper homing', 'Bigger blast, 50% damage', 'MAX Now You See Me: huge blast, 70% damage to everything around the target, +1 bolt'],
   sword: [null, 'Blades circle you', '+1 blade', 'Blades spin 25% faster, are longer and orbit wider', '+1 blade', 'Bloodlust: blades turn crimson and every 40th hit heals you 0.5% HP', '+1 blade', 'MAX Are You Not Entertained?: a second ring spinning the other way'],
   potion: [null, 'Flasks make slowing, poisonous puddles', '+1 flask', 'Bigger puddles', '+1 flask', 'Stronger poison (+40%); monsters that die in poison leave a small puddle', 'Puddles last 60% longer and slow harder', 'MAX Heisenberg Recipe: flasks sweep a clockwise ring all around you'],
-  axe: [null, 'A heavy swing in a wide arc, left or right of you', 'Double swing: forward, then a backswing', 'A shockwave rolls forward after the swing', 'Wider arc', 'Half-second stun on hit', 'Bigger shockwave that travels further', 'MAX And My Axe!: the shockwave crosses the whole map'],
+  axe: [null, 'A heavy swing in a wide arc, left or right of you', 'Double swing: forward, then a backswing', 'A short shockwave rolls forward after the swing', 'Wider arc', 'Half-second stun on hit', 'Bigger shockwave that travels further', 'MAX And My Axe!: the shockwave crosses the whole map'],
   boomerang: [null, 'Thrown at the nearest monster, flies its full range, then returns, hitting both ways (range grows a little each level); the next throw waits for it', '+1 boomerang', 'Ricochet: bounces to 1 other monster after its first hit', '+1 boomerang', 'The return trip hits 50% harder', 'Faster, bigger arc and 2 bounces', 'MAX Sokka’s Boomerang: your throws fly 60% farther, bigger, through every monster; extra boomerangs roam the arena on their own, bouncing toward the crowd'],
   laser: [null, 'An orb circles you and zaps a straight beam toward the nearest monster, full reach', '+1 orb', 'Burn: monsters it hits keep burning. A blaster orb joins and fires fast bolts at the nearest monster', '+1 blaster orb, which doubles the bolts', 'Burning monsters take 40% more beam damage', 'Blaster fires faster and its bolts pierce; shorter rest between beams, longer reach', 'MAX Finger of God: every few seconds a strip glows red, then a beam sweeps it, burning and slowing everything inside'],
   lightning: [null, 'Lightning strikes and jumps to a nearby monster', '+1 strike', '+1 chain', '+1 strike', 'Wider strike zone', 'Chains keep full damage and +1 chain', 'MAX Thunder God’s Wrath: 4 strikes at once, chains to 6'],
@@ -188,7 +188,7 @@ export function startGame(canvas, profile, opts, ui) {
       const before = P.hp; applyChoice('heal'); ui.banner(`${title} Healed ${Math.round(P.hp - before)} HP`); return;
     }
     paused = true;
-    ui.levelUp(opts2, id => { applyChoice(id); paused = false; last = performance.now(); }, title);
+    ui.levelUp(opts2, id => { applyChoice(id); if (title === 'Level up!') fx('lvl', P.x, P.y + 14, 84, { follow: true, dur: 1.2 }); paused = false; last = performance.now(); }, title);
   }
   function addXp(v) {
     P.xp += v * (1 + FX.xp);
@@ -226,7 +226,7 @@ export function startGame(canvas, profile, opts, ui) {
   const kbNudge = (e, px, py, dist) => { if (e.boss || e.kbCd > t) return; e.kbCd = t + 1.5; const dx = e.x - px, dy = e.y - py, l = Math.hypot(dx, dy) || 1; e.x = clamp(e.x + (dx / l) * dist, -AX, AX); e.y = clamp(e.y + (dy / l) * dist, -AY, AY); };
   function axeSwing(a) {
     const L = up.axe, half = L >= 4 ? 1.15 : 0.9, reach = 95 * en(), d0 = dmg() * 4.5 * wl(L);
-    swings.push({ x: P.x, y: P.y, a, half, reach, life: 0.26, dur: 0.26 }); fx('slash', P.x + Math.cos(a) * reach * 0.5, P.y + Math.sin(a) * reach * 0.5, reach * 1.9, { a, dur: 0.26 });
+    swings.push({ x: P.x, y: P.y, a, half, reach, life: 0.26, dur: 0.26 }); fx('slashf', P.x + Math.cos(a) * reach * 0.5, P.y + Math.sin(a) * reach * 0.5, reach * 1.9, { a, dur: 0.26 });
     for (const e of enemies) {
       if (e.hp <= 0) continue;
       const dx = e.x - P.x, dy = e.y - P.y, l = Math.hypot(dx, dy);
@@ -236,7 +236,7 @@ export function startGame(canvas, profile, opts, ui) {
       hurt(e, d0); kbNudge(e, P.x, P.y, 26);
       if (L >= 5 && !e.boss && !(e.stunCd > t)) { e.stun = t + 0.5; e.stunCd = t + 1.6; }
     }
-    if (L >= 3) waves.push({ x0: P.x, y0: P.y, a, s: 20, max: L >= 7 ? 1e9 : L >= 6 ? 360 : 200, w: L >= 7 ? 95 : L >= 6 ? 62 : 46, d: d0 * (L >= 7 ? 0.9 : 0.6), full: L >= 7, hit: new Set() });
+    if (L >= 3) waves.push({ x0: P.x, y0: P.y, a, s: 20, max: L >= 7 ? 1e9 : L >= 6 ? 230 : 130, w: L >= 7 ? 95 : L >= 6 ? 62 : 46, d: d0 * (L >= 7 ? 0.9 : 0.6), full: L >= 7, hit: new Set() });
   }
   function axeAttack() {
     const L = up.axe, f = P.face < 0 ? Math.PI : 0, dirs = [f, -Math.PI / 2, Math.PI / 2].slice(0, 1 + up.dup);   // main swing left or right; Duplicate adds up, then down
@@ -698,10 +698,18 @@ export function startGame(canvas, profile, opts, ui) {
         if (f.age < 1.2) { const pu = 0.5 + 0.5 * Math.sin(f.age * 14); c.globalAlpha = 0.16 + 0.14 * pu; c.fillStyle = '#ff3a2a'; c.fillRect(s0, -f.w / 2, f.len, f.w); c.globalAlpha = 0.5; c.strokeStyle = '#ff6a4a'; c.lineWidth = 2; c.strokeRect(s0, -f.w / 2, f.len, f.w); }
         else {
           const fade = f.age < 2.2 ? 1 : clamp((4.7 - f.age) / 2.5);
-          c.globalAlpha = 0.28 * fade; c.fillStyle = '#ff3a2a'; c.fillRect(s0, -f.w / 2, f.len, f.w);
-          if (f.age < 2.4) { const hx = s0 + sw * f.len, a2 = f.age < 2.2 ? 1 : clamp((2.4 - f.age) / 0.2); c.globalAlpha = 0.9 * a2; c.shadowColor = '#ff5a3d'; c.shadowBlur = 16; c.fillStyle = '#ff6a4a'; c.fillRect(s0, -f.w * 0.35, hx - s0, f.w * 0.7); c.shadowBlur = 0; c.fillStyle = '#fff'; c.fillRect(s0, -f.w * 0.12, hx - s0, f.w * 0.24); }
+          const gf = SP && SP.fx && SP.fx.rows.gflame;
+          if (gf) { c.globalAlpha = 0.45 * fade; c.fillStyle = '#160a06'; c.fillRect(s0, -f.w * 0.45, sw * f.len, f.w * 0.9); }   // scorched ground behind the sweep
+          else { c.globalAlpha = 0.28 * fade; c.fillStyle = '#ff3a2a'; c.fillRect(s0, -f.w / 2, f.len, f.w); }
+          if (!gf && f.age < 2.4) { const hx = s0 + sw * f.len, a2 = f.age < 2.2 ? 1 : clamp((2.4 - f.age) / 0.2); c.globalAlpha = 0.9 * a2; c.shadowColor = '#ff5a3d'; c.shadowBlur = 16; c.fillStyle = '#ff6a4a'; c.fillRect(s0, -f.w * 0.35, hx - s0, f.w * 0.7); c.shadowBlur = 0; c.fillStyle = '#fff'; c.fillRect(s0, -f.w * 0.12, hx - s0, f.w * 0.24); }
         }
         c.restore(); c.globalAlpha = 1;
+        if (f.age >= 1.2 && SP && SP.fx && SP.fx.rows.gflame) {   // flames burn along the swept ground
+          const row = SP.fx.rows.gflame, ca = Math.cos(f.a), sa = Math.sin(f.a), n = Math.ceil(f.len / (f.w * 0.7)), head = clamp((f.age - 1.2) / 1.0) * f.len - f.len / 2, fade = f.age < 2.2 ? 1 : clamp((4.7 - f.age) / 2.5), dw = f.w * 1.25, dh = dw * 40 / 64;
+          c.imageSmoothingEnabled = false; c.globalAlpha = fade;
+          for (let k = 0; k < n; k++) { const sp = -f.len / 2 + (k + 0.5) * f.len / n; if (sp > head) continue; const wx = f.x + ca * sp + ox, wy = f.y + sa * sp + oy, fr = Math.floor(f.age * 13 + k * 3) % row.n; c.drawImage(SP.fx.img, fr * 64, row.y, 64, 40, wx - dw / 2, wy - dh * 0.8, dw, dh); }
+          c.globalAlpha = 1;
+        }
         if (f.age >= 1.2 && f.age < 2.4) {   // a beam of light falls from the sky onto the sweeping point
           const hp = -f.len / 2 + clamp((f.age - 1.2) / 1.0) * f.len, hx = f.x + Math.cos(f.a) * hp + ox, hy = f.y + Math.sin(f.a) * hp + oy, a2 = f.age < 2.2 ? 1 : clamp((2.4 - f.age) / 0.2), bw = f.w * 0.5, top = hy - 900;
           const g = c.createLinearGradient(0, top, 0, hy); g.addColorStop(0, 'rgba(255,90,60,0)'); g.addColorStop(0.55, 'rgba(255,90,60,0.55)'); g.addColorStop(1, 'rgba(255,120,80,0.95)');
@@ -720,7 +728,7 @@ export function startGame(canvas, profile, opts, ui) {
     }
     if (SP && SP.fx) for (const f of fxs) {
       const row = SP.fx.rows[f.k], k = Math.min(row.n - 1, Math.floor((1 - f.life / f.dur) * row.n));
-      c.save(); c.translate(f.x + ox, f.y + oy); if (f.a) c.rotate(f.a); c.imageSmoothingEnabled = false; const fw = row.w || 64, fh = row.h || 64, dh = f.s * fh / fw; c.drawImage(SP.fx.img, k * fw, row.y, fw, fh, -f.s * (row.ax ?? 0.5), -dh * (row.ay ?? 0.5), f.s, dh); c.restore();
+      c.save(); c.translate(f.x + ox, f.y + oy); if (f.a) c.rotate(f.a); c.imageSmoothingEnabled = false; const fw = row.w || 64, fh = row.h || 64, dh = f.s * fh / fw; c.drawImage(SP.fx.img, k * fw + (row.x0 || 0), row.y, fw, fh, -f.s * (row.ax ?? 0.5), -dh * (row.ay ?? 0.5), f.s, dh); c.restore();
     }
     // hero
     c.save(); c.translate(W / 2, H / 2); if (P.inv > 0 && Math.floor(t * 20) % 2) c.globalAlpha = 0.45;
@@ -768,6 +776,6 @@ export function startGame(canvas, profile, opts, ui) {
   }
   return {
     stop, pause: v => { paused = v; last = performance.now(); }, isPaused: () => paused,
-    debug: { loopers, fogs, laser: () => ({ on: laserOn, beams: beams.length }), P, enemies, items, gems, buffs, up, kill: () => { t = D * 0.95; }, setT: v => { t = v; }, lvl: (k, L) => { up[k] = L; }, drop: type => items.push({ x: P.x + 30, y: P.y, type, life: 25 }), swarm, mini: () => spawn('ogre', { mini: true, hp: 40, sp: 0.9 }) },
+    debug: { loopers, fogs, fx, laser: () => ({ on: laserOn, beams: beams.length }), P, enemies, items, gems, buffs, up, kill: () => { t = D * 0.95; }, setT: v => { t = v; }, lvl: (k, L) => { up[k] = L; }, drop: type => items.push({ x: P.x + 30, y: P.y, type, life: 25 }), swarm, mini: () => spawn('ogre', { mini: true, hp: 40, sp: 0.9 }) },
   };
 }
