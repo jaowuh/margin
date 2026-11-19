@@ -347,6 +347,7 @@ export function startGame(canvas, profile, opts, ui) {
     P.x = clamp(P.x + mx * spd() * dt, -AX, AX); P.y = clamp(P.y + my * spd() * dt, -AY, AY);
     if (ml > 0.05) { P.dir = Math.atan2(my, mx); if (Math.abs(mx) > 0.05) P.face = mx > 0 ? 1 : -1; }
     P.inv = Math.max(0, P.inv - dt);
+    if (FX.regen && P.hp > 0) P.hp = Math.min(P.maxHp, P.hp + P.maxHp * FX.regen * dt);   // Heart of the Tarasque
     if (up.aegis) { if (aegisT > 0) aegisT -= dt; else { aegisCd -= dt; if (aegisCd <= 0) { aegisT = [0, 1.5, 2, 2.5][up.aegis]; aegisCd = [0, 14, 12, 10][up.aegis]; } } }
     spawnWave(dt);
     for (let i = delayed.length - 1; i >= 0; i--) if (t >= delayed[i].at) { const f = delayed[i].fn; delayed.splice(i, 1); f(); }
