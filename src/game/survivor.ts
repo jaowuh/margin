@@ -28,12 +28,16 @@ const GENERIC = [
   { id: 'magnet', name: 'Magnet', desc: '+40% gem pickup range', max: 4, free: true },
   { id: 'ricochet', name: 'Ricochet', desc: 'Arrows, bolts and magic bounce to another monster after a hit (per level)', max: 2 },
   { id: 'aegis', name: 'Aegis', desc: 'A shield makes you invincible for 1.5s (2s, 2.5s), then recharges for 14s (12s, 10s)', max: 3 },
-  { id: 'chill', name: 'Chill', desc: 'Hits slow monsters; at max they sometimes freeze solid', max: 3 },
-  { id: 'ignite', name: 'Ignite', desc: 'Hits set monsters burning, hotter each level', max: 3 },
+  { id: 'chill', name: 'Chill', desc: 'Hits build up cold: slow, then a harder slow, then a freeze (your level sets the top degree)', max: 3 },
+  { id: 'ignite', name: 'Ignite', desc: 'Hits build up burning: hotter at each degree, and the top degree spreads fire to a neighbor', max: 3 },
   { id: 'enlarge', name: 'Enlarge', desc: '+15% size and area on your weapons', max: 4 },
   { id: 'crit', name: 'Critical', desc: '+8% chance for any hit to do double damage', max: 4 },
   { id: 'heal', name: 'Snack', desc: 'Heal 40% of your health', max: 99, free: true },
 ];
+// status buildup: every hit adds to a meter on the monster; the meter's degree (I-III) sets how strong the ailment is.
+// Higher degrees drain faster, low degrees linger. Poison is harder to build because the Potion's area hits so much.
+const BU_TH = { chill: [0, 1, 3, 6], burn: [0, 1, 3, 6], poison: [0, 0.5, 4, 9] };
+const BU_DEC = { chill: [0, 0.5, 1.1, 2], burn: [0, 0.5, 1.1, 2], poison: [0, 0.3, 0.7, 1.2] };
 const ISLOTS = 5; // different items a hero can carry at once; stats (damage, speed, rate, health, magnet) and Snack take no slot
 const PRIMARY = { archer: 'arrow', mage: 'magic', swordsman: 'sword' };
 const GLYPH = { heart: '❤️', magnet: '🧲', shield: '🛡️', boots: '⚡', chest: '🎁' };
@@ -361,9 +365,15 @@ export function startGame(canvas, profile, opts, ui) {
 
     // enemies
     for (const e of enemies) {
+      if (e.bu) {   // status buildup drains (faster at higher degrees) and applies its effect
+        for (const k in e.bu) { const m = e.bu[k]; m.v -= BU_DEC[k][buDeg(e, k) || 1] * dt; if (m.v <= 0) delete e.bu[k]; }
+        const dc = buDeg(e, 'chill'); if (dc) { const kk = [0, 0.7, 0.5, 0.35][dc]; e.slowK = e.slow > t ? Math.min(e.slowK || 1, kk) : kk; e.slow = Math.max(e.slow || 0, t + 0.25); }
+        const db = buDeg(e, 'burn'); if (db) { e.burn = Math.max(e.burn || 0, t + 0.3); e.bdDeg = dmg() * [0, 0.12, 0.24, 0.4][db]; }
+      }
       const dx = P.x - e.x, dy = P.y - e.y, l = Math.hypot(dx, dy) || 1, k = e.stun > t ? 0 : e.slow > t ? (e.slowK || 0.45) : 1;
       e.x = clamp(e.x + (dx / l) * e.sp * k * dt, -AX - 20, AX + 20); e.y = clamp(e.y + (dy / l) * e.sp * k * dt, -AY - 20, AY + 20); e.vx = dx; e.hit = Math.max(0, e.hit - dt); e.ph += dt * 6;
-      if (e.burn > t) { e.bt = (e.bt || 0) - dt; if (e.bt <= 0) { e.bt = 0.5; hurt(e, e.burnD, 'dot'); } }
+      if (!(e.burn > t)) e.bdDeg = 0;
+      if (e.burn > t) { e.bt = (e.bt || 0) - dt; if (e.bt <= 0) { e.bt = 0.5; hurt(e, Math.max(e.burnD || 0, e.bdDeg || 0), 'dot'); } }
       if (l < e.r + 10 && P.inv <= 0 && buffs.inv <= 0 && !(aegisT > 0)) { P.hp -= e.dmg * (1 - FX.guard); P.inv = 0.6; ui.shake(); if (P.hp <= 0) { if (FX.revive && !revived) { revived = true; P.hp = P.maxHp * 0.5; P.inv = 2.5; ui.banner('Phoenix Ledger: back on your feet!'); } else return finish(false); } }
     }
     // soft separation so monsters don't stack into one dot
@@ -507,7 +517,7 @@ export function startGame(canvas, profile, opts, ui) {
     for (let i = puddles.length - 1; i >= 0; i--) {
       const p = puddles[i]; p.life -= dt; p.tick -= dt;
       const doTick = p.tick <= 0; if (doTick) p.tick = 0.5;
-      for (const e of enemies) if (e.hp > 0 && (e.x - p.x) ** 2 + (e.y - p.y) ** 2 < (p.r + e.r) ** 2) { e.slow = t + 0.3; e.slowK = p.L >= 6 ? 0.3 : 0.45; e.poison = t + 0.4; if (doTick) hurt(e, p.dmg, 'dot'); }
+      for (const e of enemies) if (e.hp > 0 && (e.x - p.x) ** 2 + (e.y - p.y) ** 2 < (p.r + e.r) ** 2) { e.slow = t + 0.3; e.slowK = p.L >= 6 ? 0.3 : 0.45; e.poison = t + 0.4; if (doTick) { addBuild(e, 'poison', 0.5, Math.min(3, 1 + Math.floor((up.potion - 1) / 2))); hurt(e, p.dmg * [1, 1, 1.35, 1.8][buDeg(e, 'poison')], 'dot'); } }
       if (p.life <= 0) puddles.splice(i, 1);
     }
     for (let i = bolts.length - 1; i >= 0; i--) { bolts[i].life -= dt; if (bolts[i].life <= 0) bolts.splice(i, 1); }
@@ -567,7 +577,17 @@ export function startGame(canvas, profile, opts, ui) {
     return r;
   };
   function pop(x, y, v) { if (pops.length < 60) pops.push({ x, y, v, life: 0.5 }); }
-  let lsAcc = 0, aegisT = 0, aegisCd = 2;   // Aegis item: invincible while aegisT > 0, then recharges
+  let lsAcc = 0, aegisT = 0, aegisCd = 2;
+  function buDeg(e, k) { const m = e.bu && e.bu[k]; if (!m || m.v <= 0) return 0; const th = BU_TH[k]; return m.v >= th[3] ? 3 : m.v >= th[2] ? 2 : m.v >= th[1] ? 1 : 0; }
+  function addBuild(e, k, amt, cap) {
+    if (!cap) return;
+    e.bu = e.bu || {}; const m = e.bu[k] || (e.bu[k] = { v: 0 }), before = buDeg(e, k);
+    m.v = Math.min(BU_TH[k][cap] + 0.4, m.v + amt);
+    if (before < 3 && buDeg(e, k) === 3) {
+      if (k === 'chill' && !e.boss && !(e.frzCd > t)) { e.stun = t + 0.9; e.frzCd = t + 4; m.v = BU_TH.chill[2] + 0.5; fx('frost', e.x, e.y + e.r * 0.5, 96); }   // frozen solid, the frost bursts
+      if (k === 'burn') { let n = null, bd = 90 * 90; for (const o of enemies) { if (o === e || o.hp <= 0) continue; const d = (o.x - e.x) ** 2 + (o.y - e.y) ** 2; if (d < bd && buDeg(o, 'burn') < 1) { bd = d; n = o; } } if (n) addBuild(n, 'burn', 1.2, cap); }   // top degree: the fire spreads
+    }
+  }   // Aegis item: invincible while aegisT > 0, then recharges
   function bounce(s, from) {   // Ricochet item: the shot jumps to another monster nearby
     if (!up.ricochet || (s.bnc || 0) >= up.ricochet) return false;
     let b = null, bd = 220 * 220;
@@ -581,11 +601,8 @@ export function startGame(canvas, profile, opts, ui) {
   function hurt(e, d, k) {
     if (k !== 'dot') {
       if (up.crit && Math.random() < 0.08 * up.crit) d *= 2;
-      if (up.ignite) { e.burn = Math.max(e.burn || 0, t + 1.2 + 0.5 * up.ignite); e.burnD = Math.max(e.burn > t && e.burnD ? e.burnD : 0, dmg() * 0.12 * up.ignite); }
-      if (up.chill) {
-        const was = e.slow > t, kk = 0.7 - 0.12 * up.chill; e.slow = Math.max(e.slow || 0, t + 0.8 + 0.3 * up.chill); e.slowK = was ? Math.min(e.slowK || 0.45, kk) : kk;
-        if (up.chill >= 3 && !e.boss && Math.random() < 0.1 && !(e.stun > t)) e.stun = t + 0.8;
-      }
+      if (up.ignite) addBuild(e, 'burn', 1, up.ignite);
+      if (up.chill) addBuild(e, 'chill', 1, up.chill);
     }
     if (FX.steal) lsAcc = Math.min(P.maxHp * 0.1, lsAcc + Math.min(d, Math.max(0, e.hp)) * FX.steal);   // Alucard's Thirst
     e.hp -= d; e.hit = 0.1; pop(e.x, e.y - e.r, Math.round(d)); if (k && k !== 'dot' && !(e.fxT > t)) { e.fxT = t + 0.22; fx(k, e.x, e.y, e.r * 2 + 34); } }
@@ -599,7 +616,11 @@ export function startGame(canvas, profile, opts, ui) {
     const list = [];
     if (e.burn > t) list.push(0); if (e.poison > t) list.push(1); else if (e.slow > t && !(e.stun > t)) list.push(2); if (e.shock > t) list.push(3);
     const sz = 18, top = sy - e.r - sz - 4 + Math.sin(t * 6 + e.ph) * 2;
-    list.forEach((k, i) => { const x = sx + (i - (list.length - 1) / 2) * (sz + 2) - sz / 2; ctx.globalAlpha = k === 0 ? 0.8 + 0.2 * Math.sin(t * 20 + e.ph) : 1; ctx.drawImage(SP.status, k * 16, 0, 16, 16, x, top, sz, sz); });
+    list.forEach((k, i) => {
+      const x = sx + (i - (list.length - 1) / 2) * (sz + 2) - sz / 2; ctx.globalAlpha = k === 0 ? 0.8 + 0.2 * Math.sin(t * 20 + e.ph) : 1; ctx.drawImage(SP.status, k * 16, 0, 16, 16, x, top, sz, sz);
+      const dg = k === 0 ? buDeg(e, 'burn') : k === 1 ? buDeg(e, 'poison') : k === 2 ? buDeg(e, 'chill') : 0;   // degree pips under the icon
+      if (dg) { const col = k === 0 ? '#ffb04a' : k === 1 ? '#8be05a' : '#9fdcff'; ctx.globalAlpha = 1; ctx.fillStyle = col; if (dg === 3) { ctx.shadowColor = col; ctx.shadowBlur = 6; } for (let q = 0; q < dg; q++) ctx.fillRect(x + sz / 2 - (dg * 4 - 1) / 2 + q * 4, top + sz + 1, 3, 3); ctx.shadowBlur = 0; }
+    });
     ctx.globalAlpha = 1;
     if (e.stun > t) {
       const row = SP.fx.rows.stun, fw = row.w, fh = row.h, k0 = Math.floor(t * 14 + e.ph * 3) % row.n, dw = Math.max(34, e.r * 2.4), dh = dw * fh / fw;

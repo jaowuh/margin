@@ -201,3 +201,5 @@ Hidden coloring game (`src/components/CreditsGame.tsx` = painting card only; `cr
 - v11.3: laser beam drawing width scales with Enlarge (hit width already did).
 
 - v11.4: axe shockwave shorter (L3-5 130, L6 230, L7 unchanged). Axe slash fx uses new row slashf (Steel Slash frames 3-7, forward-facing crescent, x0 offset support in FX_ROWS). PVFX level-up halo (row lvl) plays on the player when a level-up card is picked. PVFX ground-flames (row gflame) burn along the Finger of God strip over a dark scorch; the old red strip is only the warning. debug.fx exposed.
+
+- v11.5: status buildup. Hits add to per-monster meters (e.bu: chill, burn, poison); degree I-III from BU_TH, item/potion level caps the top degree, higher degrees drain faster (BU_DEC). Chill: slow 0.7/0.5/0.35 and a freeze (0.9s, 4s cooldown, PVFX frost burst, row frost) on reaching III. Ignite: burn damage 0.12/0.24/0.4 x dmg, III spreads fire to a neighbor. Poison (potion puddle ticks +0.5): needs 0.5/4/9, damage x1/1.35/1.8, cap from potion level (1 + floor((L-1)/2)). Pips under the status icons, glow at III. Atlas widened to 3400.
