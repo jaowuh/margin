@@ -8,8 +8,13 @@ import type { GameSave, Tier } from '../game/profile';
 import { startGame } from '../game/survivor';
 import { loadSprites } from '../game/sprites';
 import weaponIcons from '../assets/weapon-icons.png';
+import itemIcons from '../assets/item-icons.png';
 const WICON = ['arrow', 'magic', 'sword', 'potion', 'lightning', 'axe', 'boomerang', 'laser'];
-const WIcon = ({ id, size = 22 }: { id: string; size?: number }) => WICON.includes(id) ? <i className="mg-wico" style={{ width: size, height: size, backgroundImage: `url(${weaponIcons})`, backgroundSize: `${size * 8}px ${size}px`, backgroundPositionX: -WICON.indexOf(id) * size }} /> : null;
+const IICON = ['dup', 'multi', 'ricochet', 'pierce', 'chill', 'ignite', 'enlarge', 'crit'];
+const WIcon = ({ id, size = 22 }: { id: string; size?: number }) => {
+  const w = WICON.indexOf(id), it = IICON.indexOf(id), n = w >= 0 ? w : it;
+  return n < 0 ? null : <i className="mg-wico" style={{ width: size, height: size, backgroundImage: `url(${w >= 0 ? weaponIcons : itemIcons})`, backgroundSize: `${size * 8}px ${size}px`, backgroundPositionX: -n * size }} />;
+};
 import type { Sprites } from '../game/sprites';
 
 const fmt = (s: number) => `${Math.floor(s / 60)}:${String(Math.floor(s % 60)).padStart(2, '0')}`;
@@ -100,7 +105,7 @@ export function PlayTab({ month }: { month: string }) {
 }
 
 type Phase = 'intro' | 'play' | 'result';
-interface Hud { hp: number; maxHp: number; xp: number; need: number; level: number; t: number; D: number; kills: number; weapons?: any[]; items?: any[]; buffs?: any }
+interface Hud { hp: number; maxHp: number; xp: number; need: number; level: number; t: number; D: number; kills: number; weapons?: any[]; items?: any[]; slots?: number; islots?: number; buffs?: any }
 
 const TIER_NAME: Record<Tier, string> = { wood: 'Wooden', bronze: 'Bronze', silver: 'Silver', gold: 'Golden', legendary: 'Epic' };
 
@@ -169,8 +174,11 @@ function MonsterGame({ month, job, onClose }: { month: string; job: Job; onClose
               </div>
               <div className="mg-top"><span>Lv {hud.level}</span><strong data-testid="mg-time">{fmt(Math.max(0, hud.D - hud.t))}</strong><span>{hud.kills} slain</span></div>
               <div className="mg-chips">
-                {(hud.weapons || []).map((w: any) => <span key={w.id} className={`mg-chip ${w.level >= 7 ? 'max' : ''}`}><WIcon id={w.id} size={16} />{w.name} {w.level >= 7 ? 'MAX' : w.level}</span>)}
-                {(hud.items || []).map((w: any) => <span key={w.id} className={`mg-chip item ${w.level >= w.max ? 'max' : ''}`}>{w.name} {w.level >= w.max ? 'MAX' : `${w.level}/${w.max}`}</span>)}
+                <div className="mg-slots">
+                  {Array.from({ length: hud.slots || 3 }).map((_, i) => { const w = (hud.weapons || [])[i]; return <span key={i} className={`mg-slot ${w ? '' : 'empty'} ${w && w.level >= 7 ? 'max' : ''}`}>{w && <><WIcon id={w.id} size={22} /><b>{w.level >= 7 ? '★' : w.level}</b></>}</span>; })}
+                  <i className="mg-sep" />
+                  {Array.from({ length: hud.islots || 5 }).map((_, i) => { const w = (hud.items || [])[i]; return <span key={i} className={`mg-slot item ${w ? '' : 'empty'} ${w && w.level >= w.max ? 'max' : ''}`}>{w && <><WIcon id={w.id} size={22} /><b>{w.level >= w.max ? '★' : w.level}</b></>}</span>; })}
+                </div>
                 {hud.buffs?.inv > 0 && <span className="mg-chip buff">🛡️ {Math.ceil(hud.buffs.inv)}s</span>}
                 {hud.buffs?.speed > 0 && <span className="mg-chip buff">⚡ {Math.ceil(hud.buffs.speed)}s</span>}
               </div>
@@ -184,8 +192,8 @@ function MonsterGame({ month, job, onClose }: { month: string; job: Job; onClose
             <div className="mg-levelup">
               <h3>{lvTitle}</h3>
               {choices.map(c => (
-                <button key={c.id} className="mg-choice" onClick={() => { pick.current?.(c.id); setChoices(null); }}>
-                  <strong>{c.weapon && <WIcon id={c.id} size={24} />}{c.name}</strong><span>{c.desc}</span>{c.have > 0 ? <em>Lv {c.have + 1}</em> : !c.weapon && c.id !== 'heal' ? <em>New item</em> : null}
+                <button key={c.id} className={`mg-choice ${c.have > 0 ? "" : "new"}`} onClick={() => { pick.current?.(c.id); setChoices(null); }}>
+                  <strong>{IICON.includes(c.id) || c.weapon ? <WIcon id={c.id} size={c.have > 0 ? 28 : 52} /> : null}{c.name}</strong><span>{c.desc}</span>{c.have > 0 ? <em>Lv {c.have + 1}</em> : IICON.includes(c.id) ? <em>New item</em> : null}
                 </button>
               ))}
             </div>

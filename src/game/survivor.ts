@@ -22,11 +22,11 @@ const LV = {
 const GENERIC = [
   { id: 'dup', name: 'Duplicate', desc: '+1 projectile, blade or strike for all weapons', max: 2, rare: 0.22 },
   { id: 'multi', name: 'Multishot', desc: 'Every attack repeats once more right after', max: 2, rare: 0.22 },
-  { id: 'dmg', name: 'Sharper edge', desc: '+7% damage to everything', max: 8 },
-  { id: 'rate', name: 'Quick hands', desc: '+20% fire rate (blades spin faster too)', max: 8 },
-  { id: 'speed', name: 'Swift boots', desc: '+10% move speed', max: 5 },
-  { id: 'hp', name: 'Vitality', desc: '+30 max health and heal 30', max: 6 },
-  { id: 'magnet', name: 'Magnet', desc: '+40% gem pickup range', max: 4 },
+  { id: 'dmg', name: 'Sharper edge', desc: '+7% damage to everything', max: 8, free: true },
+  { id: 'rate', name: 'Quick hands', desc: '+20% fire rate (blades spin faster too)', max: 8, free: true },
+  { id: 'speed', name: 'Swift boots', desc: '+10% move speed', max: 5, free: true },
+  { id: 'hp', name: 'Vitality', desc: '+30 max health and heal 30', max: 6, free: true },
+  { id: 'magnet', name: 'Magnet', desc: '+40% gem pickup range', max: 4, free: true },
   { id: 'ricochet', name: 'Ricochet', desc: 'Arrows, bolts and magic bounce to another monster after a hit (per level)', max: 2 },
   { id: 'pierce', name: 'Pierce', desc: '+1 pierce for arrows and blaster bolts', max: 3 },
   { id: 'chill', name: 'Chill', desc: 'Hits slow monsters; at max they sometimes freeze solid', max: 3 },
@@ -35,7 +35,7 @@ const GENERIC = [
   { id: 'crit', name: 'Critical', desc: '+8% chance for any hit to do double damage', max: 4 },
   { id: 'heal', name: 'Snack', desc: 'Heal 40% of your health', max: 99, free: true },
 ];
-const ISLOTS = 5; // different items a hero can carry at once (Snack is free)
+const ISLOTS = 5; // different items a hero can carry at once; stats (damage, speed, rate, health, magnet) and Snack take no slot
 const PRIMARY = { archer: 'arrow', mage: 'magic', swordsman: 'sword' };
 const GLYPH = { heart: '❤️', magnet: '🧲', shield: '🛡️', boots: '⚡', chest: '🎁' };
 const AX = 800, AY = 280; // the play field is a long hallway running across the map: x from -AX to AX, y from -AY to AY
