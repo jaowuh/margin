@@ -157,3 +157,5 @@ Hidden coloring game (`src/components/CreditsGame.tsx` = painting card only; `cr
 - v9.1: HUD shows icon slots (3 weapon + 5 item, level badge, gold star at max). New src/assets/item-icons.png (8 icons: dup, multi, ricochet, pierce, chill, ignite, enlarge, crit), used by WIcon. New weapons/items show a 52px icon on the level-up card. Stats (dmg, rate, speed, hp, magnet) and Snack are free:true and take no item slot.
 
 - v9.2: Pierce item replaced by Knockback (max 3): hits push monsters 18/26/34px away via kbNudge (1.5s per-monster cooldown, bosses immune). Icon slot 3 of item-icons.png is now a push arrow.
+
+- v9.3: removed Earthsplitter ground cracks (scars). Finger of God now draws a vertical beam of light from the sky onto the sweeping point (no asset, canvas gradients). debug.fogs exposed.

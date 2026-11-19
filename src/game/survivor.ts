@@ -67,7 +67,7 @@ export function startGame(canvas, profile, opts, ui) {
   let nextMini = D / 5, nextSwarm = D * 0.3, miniN = 0;
   const buffs = { inv: 0, speed: 0 };
   const enemies = [], shots = [], gems = [], pops = [], items = [], puddles = [], flasks = [], bolts = [], novas = [], delayed = [];
-  const fxs = [], waves = [], swings = [], scars = [], booms = [], loopers = [], beams = [];
+  const fxs = [], waves = [], swings = [], booms = [], loopers = [], beams = [];
   const fogs = []; let blastI = 0, blastCd = 0.5, fogCd = 2.5; let orbL = 0, axeCd = 1.5, boomCd = 1, laserOn = false, laserT = 1, laserTick = 0, loopA = 0;
   const keys = {};
   let joy = null; // {id, ox, oy, x, y}
@@ -384,7 +384,6 @@ export function startGame(canvas, profile, opts, ui) {
     axeCd -= dt;
     if (up.axe > 0 && axeCd <= 0 && anyInView()) { axeCd = Math.max(1.5, 3.5 / rate()); volley(axeAttack); }
     for (let i = swings.length - 1; i >= 0; i--) { swings[i].life -= dt; if (swings[i].life <= 0) swings.splice(i, 1); }
-    for (let i = scars.length - 1; i >= 0; i--) { scars[i].life -= dt; if (scars[i].life <= 0) scars.splice(i, 1); }
     for (let i = waves.length - 1; i >= 0; i--) {
       const w = waves[i]; w.s += 480 * dt;
       const ux = Math.cos(w.a), uy = Math.sin(w.a), fx = w.x0 + ux * w.s, fy = w.y0 + uy * w.s;
@@ -393,7 +392,7 @@ export function startGame(canvas, profile, opts, ui) {
         const rx = e.x - w.x0, ry = e.y - w.y0, u = rx * ux + ry * uy, v = -rx * uy + ry * ux;
         if (Math.abs(v) < w.w + e.r && Math.abs(u - w.s) < 28 + e.r) { w.hit.add(e); hurt(e, w.full ? w.d : w.d * (1 - 0.6 * (w.s / w.max))); }
       }
-      if (w.s > w.max || Math.abs(fx) > AX + 60 || Math.abs(fy) > AY + 60) { if (w.full) { const L2 = Math.hypot(fx - w.x0, fy - w.y0), nx = -(fy - w.y0) / (L2 || 1), ny = (fx - w.x0) / (L2 || 1), pts = []; for (let d = 0; d <= L2; d += 36) { const j = d === 0 || d + 36 > L2 ? 0 : rnd(-9, 9); pts.push([w.x0 + (fx - w.x0) * d / (L2 || 1) + nx * j, w.y0 + (fy - w.y0) * d / (L2 || 1) + ny * j]); } scars.push({ pts, life: 1.3 }); } waves.splice(i, 1); }
+      if (w.s > w.max || Math.abs(fx) > AX + 60 || Math.abs(fy) > AY + 60) { waves.splice(i, 1); }
     }
     // boomerang
     if (!booms.length) boomCd -= dt;   // the next throw waits until the last one is back
@@ -662,11 +661,6 @@ export function startGame(canvas, profile, opts, ui) {
       }
     }
     // axe, boomerang, laser
-    for (const sc of scars) {   // the ground cracks along the wave's path and the crack fades
-      c.lineCap = 'round'; c.lineJoin = 'round'; const a = clamp(sc.life / 1.3);
-      for (const [col, wd, al] of [['#2a1c12', 5, 0.75], ['#8a5a30', 2, 0.5]]) { c.globalAlpha = a * al; c.strokeStyle = col; c.lineWidth = wd; c.beginPath(); sc.pts.forEach((q, k) => k ? c.lineTo(q[0] + ox, q[1] + oy) : c.moveTo(q[0] + ox, q[1] + oy)); c.stroke(); }
-      c.globalAlpha = 1;
-    }
     for (const w of waves) {   // the shockwave is a crescent slash flying forward, with fading copies behind it
       const ux = Math.cos(w.a), uy = Math.sin(w.a), row = SP && SP.fx && SP.fx.rows.wave; if (!row) continue;
       const fade = w.full ? 1 : 1 - 0.65 * clamp(w.s / w.max), sz = w.w * 2.8;
@@ -697,6 +691,14 @@ export function startGame(canvas, profile, opts, ui) {
           if (f.age < 2.4) { const hx = s0 + sw * f.len, a2 = f.age < 2.2 ? 1 : clamp((2.4 - f.age) / 0.2); c.globalAlpha = 0.9 * a2; c.shadowColor = '#ff5a3d'; c.shadowBlur = 16; c.fillStyle = '#ff6a4a'; c.fillRect(s0, -f.w * 0.35, hx - s0, f.w * 0.7); c.shadowBlur = 0; c.fillStyle = '#fff'; c.fillRect(s0, -f.w * 0.12, hx - s0, f.w * 0.24); }
         }
         c.restore(); c.globalAlpha = 1;
+        if (f.age >= 1.2 && f.age < 2.4) {   // a beam of light falls from the sky onto the sweeping point
+          const hp = -f.len / 2 + clamp((f.age - 1.2) / 1.0) * f.len, hx = f.x + Math.cos(f.a) * hp + ox, hy = f.y + Math.sin(f.a) * hp + oy, a2 = f.age < 2.2 ? 1 : clamp((2.4 - f.age) / 0.2), bw = f.w * 0.5, top = hy - 900;
+          const g = c.createLinearGradient(0, top, 0, hy); g.addColorStop(0, 'rgba(255,90,60,0)'); g.addColorStop(0.55, 'rgba(255,90,60,0.55)'); g.addColorStop(1, 'rgba(255,120,80,0.95)');
+          c.globalAlpha = a2; c.shadowColor = '#ff5a3d'; c.shadowBlur = 18; c.fillStyle = g; c.fillRect(hx - bw / 2, top, bw, hy - top); c.shadowBlur = 0;
+          const g2 = c.createLinearGradient(0, top, 0, hy); g2.addColorStop(0, 'rgba(255,255,255,0)'); g2.addColorStop(0.6, 'rgba(255,255,255,0.7)'); g2.addColorStop(1, 'rgba(255,255,255,1)');
+          c.fillStyle = g2; c.fillRect(hx - bw * 0.22, top, bw * 0.44, hy - top);
+          c.fillStyle = 'rgba(255,200,150,0.85)'; c.beginPath(); c.ellipse(hx, hy, bw * 0.8, bw * 0.3, 0, 0, 7); c.fill(); c.fillStyle = '#fff'; c.beginPath(); c.ellipse(hx, hy, bw * 0.4, bw * 0.15, 0, 0, 7); c.fill(); c.globalAlpha = 1;
+        }
       }
       if (laserOn) for (const b of beams) {
         const x0 = P.x + b.dx, y0 = P.y + b.dy, len = laserLen(x0, y0, b.a), sx = x0 + ox, sy = y0 + oy, ex = sx + Math.cos(b.a) * len, ey = sy + Math.sin(b.a) * len;
@@ -754,6 +756,6 @@ export function startGame(canvas, profile, opts, ui) {
   }
   return {
     stop, pause: v => { paused = v; last = performance.now(); }, isPaused: () => paused,
-    debug: { loopers, laser: () => ({ on: laserOn, beams: beams.length }), P, enemies, items, gems, buffs, up, kill: () => { t = D * 0.95; }, setT: v => { t = v; }, lvl: (k, L) => { up[k] = L; }, drop: type => items.push({ x: P.x + 30, y: P.y, type, life: 25 }), swarm, mini: () => spawn('ogre', { mini: true, hp: 40, sp: 0.9 }) },
+    debug: { loopers, fogs, laser: () => ({ on: laserOn, beams: beams.length }), P, enemies, items, gems, buffs, up, kill: () => { t = D * 0.95; }, setT: v => { t = v; }, lvl: (k, L) => { up[k] = L; }, drop: type => items.push({ x: P.x + 30, y: P.y, type, life: 25 }), swarm, mini: () => spawn('ogre', { mini: true, hp: 40, sp: 0.9 }) },
   };
 }
