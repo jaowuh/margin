@@ -149,3 +149,5 @@ Hidden coloring game (`src/components/CreditsGame.tsx` = painting card only; `cr
 - v8.5: laser. L3 blaster orb (fast red bolts, 0.34s; L6 0.22s + pierce 2). L7 Finger of God replaces the 4th orb and unlimited reach: red strip warns 1.2s, beam sweeps 1s, strip lingers burning and slowing ~2.5s, every ~6s, spawns 90-190px from the player. Beam orbs max 3.
 
 - v8.6: laser L4 adds a second blaster orb (not a third beam orb). Beam orbs max 2 (+Duplicate); blasters alternate shots.
+
+- v8.7: Arrow Storm arrow damage back to 80% (was 60%); base damage +10% for all weapons (10 -> 11).
