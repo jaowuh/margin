@@ -1,28 +1,28 @@
 /* Margin service worker — makes the app work offline.
    The version and file list below are filled in at build time (see vite.config.ts). */
-const VERSION = '021a869560';
+const VERSION = 'ce3c0c46bb';
 const CACHE = `margin-${VERSION}`;
 const PRECACHE = [
   "./",
   "./index.html",
   "./assets/nunito-sans-latin-400-normal-AkRraKH2.woff2",
-  "./assets/nunito-sans-latin-600-normal-BtVRvDNj.woff2",
   "./assets/nunito-sans-latin-700-normal-CICRJDmU.woff2",
+  "./assets/nunito-sans-latin-600-normal-BtVRvDNj.woff2",
   "./assets/nunito-sans-latin-800-normal-MgCk9Q3Y.woff2",
   "./assets/nunito-sans-latin-900-normal-BhewUpNa.woff2",
   "./assets/nunito-sans-latin-400-normal-DY9yCUyQ.woff",
-  "./assets/nunito-sans-latin-600-normal-DLks-Kj1.woff",
   "./assets/nunito-sans-latin-700-normal-CLVG92B9.woff",
+  "./assets/nunito-sans-latin-600-normal-DLks-Kj1.woff",
   "./assets/nunito-sans-latin-800-normal-DOf_K5Iw.woff",
   "./assets/nunito-sans-latin-900-normal-CVRJ8ULY.woff",
-  "./assets/margin-letters-eNt1NMLb.png",
   "./assets/credits-by-dr-jao-C_6CoZ6i.png",
-  "./assets/anim-sprites-C6EKiT_q.png",
-  "./assets/knight-sprites-Ca-ACY72.png",
-  "./assets/fx-sprites-Dcf2PPZX.png",
+  "./assets/margin-letters-eNt1NMLb.png",
   "./assets/game-sprites-oyfzJUTc.png",
+  "./assets/knight-sprites-Ca-ACY72.png",
+  "./assets/anim-sprites-C6EKiT_q.png",
+  "./assets/fx-sprites-Dcf2PPZX.png",
   "./assets/index-CnGNNGyX.css",
-  "./assets/index-DG97gsCi.js",
+  "./assets/index-Bj5DXorE.js",
   "./manifest.webmanifest",
   "./icons/icon-192.png",
   "./icons/icon-512.png",

@@ -28,7 +28,7 @@ const GENERIC = [
   { id: 'hp', name: 'Vitality', desc: '+30 max health and heal 30', max: 6, free: true },
   { id: 'magnet', name: 'Magnet', desc: '+40% gem pickup range', max: 4, free: true },
   { id: 'ricochet', name: 'Ricochet', desc: 'Arrows, bolts and magic bounce to another monster after a hit (per level)', max: 2 },
-  { id: 'aegis', name: 'Aegis', desc: 'A shield forms around you and blocks the next hit, then returns after 14s (11s, 8s)', max: 3 },
+  { id: 'aegis', name: 'Aegis', desc: 'A shield makes you invincible for 2s (2.5s, 3s), then recharges for 12s (10s, 8s)', max: 3 },
   { id: 'chill', name: 'Chill', desc: 'Hits slow monsters; at max they sometimes freeze solid', max: 3 },
   { id: 'ignite', name: 'Ignite', desc: 'Hits set monsters burning, hotter each level', max: 3 },
   { id: 'enlarge', name: 'Enlarge', desc: '+15% size and area on your weapons', max: 4 },
@@ -347,7 +347,7 @@ export function startGame(canvas, profile, opts, ui) {
     P.x = clamp(P.x + mx * spd() * dt, -AX, AX); P.y = clamp(P.y + my * spd() * dt, -AY, AY);
     if (ml > 0.05) { P.dir = Math.atan2(my, mx); if (Math.abs(mx) > 0.05) P.face = mx > 0 ? 1 : -1; }
     P.inv = Math.max(0, P.inv - dt);
-    if (up.aegis && !aegisOn) { aegisCd -= dt; if (aegisCd <= 0) aegisOn = true; }
+    if (up.aegis) { if (aegisT > 0) aegisT -= dt; else { aegisCd -= dt; if (aegisCd <= 0) { aegisT = [0, 2, 2.5, 3][up.aegis]; aegisCd = [0, 12, 10, 8][up.aegis]; } } }
     spawnWave(dt);
     for (let i = delayed.length - 1; i >= 0; i--) if (t >= delayed[i].at) { const f = delayed[i].fn; delayed.splice(i, 1); f(); }
 
@@ -356,7 +356,7 @@ export function startGame(canvas, profile, opts, ui) {
       const dx = P.x - e.x, dy = P.y - e.y, l = Math.hypot(dx, dy) || 1, k = e.stun > t ? 0 : e.slow > t ? (e.slowK || 0.45) : 1;
       e.x = clamp(e.x + (dx / l) * e.sp * k * dt, -AX - 20, AX + 20); e.y = clamp(e.y + (dy / l) * e.sp * k * dt, -AY - 20, AY + 20); e.vx = dx; e.hit = Math.max(0, e.hit - dt); e.ph += dt * 6;
       if (e.burn > t) { e.bt = (e.bt || 0) - dt; if (e.bt <= 0) { e.bt = 0.5; hurt(e, e.burnD, 'dot'); } }
-      if (l < e.r + 10 && P.inv <= 0 && buffs.inv <= 0) { if (!aegisBlock()) P.hp -= e.dmg * (1 - FX.guard); P.inv = 0.6; ui.shake(); if (P.hp <= 0) { if (FX.revive && !revived) { revived = true; P.hp = P.maxHp * 0.5; P.inv = 2.5; ui.banner('Phoenix Ledger: back on your feet!'); } else return finish(false); } }
+      if (l < e.r + 10 && P.inv <= 0 && buffs.inv <= 0 && !(aegisT > 0)) { P.hp -= e.dmg * (1 - FX.guard); P.inv = 0.6; ui.shake(); if (P.hp <= 0) { if (FX.revive && !revived) { revived = true; P.hp = P.maxHp * 0.5; P.inv = 2.5; ui.banner('Phoenix Ledger: back on your feet!'); } else return finish(false); } }
     }
     // soft separation so monsters don't stack into one dot
     for (let i = 0; i < enemies.length; i += 2) {
@@ -558,8 +558,7 @@ export function startGame(canvas, profile, opts, ui) {
     return r;
   };
   function pop(x, y, v) { if (pops.length < 60) pops.push({ x, y, v, life: 0.5 }); }
-  let aegisOn = false, aegisCd = 2;
-  function aegisBlock() { if (!up.aegis || !aegisOn) return false; aegisOn = false; aegisCd = [0, 14, 11, 8][up.aegis]; pop(P.x, P.y - 24, 'Blocked'); return true; }
+  let aegisT = 0, aegisCd = 2;   // Aegis item: invincible while aegisT > 0, then recharges
   function bounce(s, from) {   // Ricochet item: the shot jumps to another monster nearby
     if (!up.ricochet || (s.bnc || 0) >= up.ricochet) return false;
     let b = null, bd = 220 * 220;
@@ -730,7 +729,7 @@ export function startGame(canvas, profile, opts, ui) {
     } else {
       c.fillStyle = profile.color; c.beginPath(); c.arc(0, 0, 12, 0, 7); c.fill();
     }
-    if (aegisOn && up.aegis) { c.globalAlpha = 0.9; c.fillStyle = 'rgba(120,200,255,0.16)'; c.strokeStyle = '#9fdcff'; c.lineWidth = 2; c.shadowColor = '#9fdcff'; c.shadowBlur = 10; c.beginPath(); c.arc(0, 0, 27 + Math.sin(t * 4), 0, 7); c.fill(); c.stroke(); c.shadowBlur = 0; c.globalAlpha = 1; }
+    if (aegisT > 0 && up.aegis && (aegisT > 0.6 || Math.floor(t * 14) % 2)) { c.globalAlpha = 0.9; c.fillStyle = 'rgba(120,200,255,0.16)'; c.strokeStyle = '#9fdcff'; c.lineWidth = 2; c.shadowColor = '#9fdcff'; c.shadowBlur = 10; c.beginPath(); c.arc(0, 0, 27 + Math.sin(t * 4), 0, 7); c.fill(); c.stroke(); c.shadowBlur = 0; c.globalAlpha = 1; }
     if (buffs.inv > 0) { c.globalAlpha = 0.5 + 0.2 * Math.sin(t * 8); c.strokeStyle = '#ffd36b'; c.lineWidth = 3; c.shadowColor = '#ffd36b'; c.shadowBlur = 12; c.beginPath(); c.arc(0, 0, 30, 0, 7); c.stroke(); c.shadowBlur = 0; }
     c.restore(); c.globalAlpha = 1;
     for (const b of bolts) bolt(c, b, ox, oy);

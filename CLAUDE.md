@@ -161,3 +161,5 @@ Hidden coloring game (`src/components/CreditsGame.tsx` = painting card only; `cr
 - v9.3: removed Earthsplitter ground cracks (scars). Finger of God now draws a vertical beam of light from the sky onto the sweeping point (no asset, canvas gradients). debug.fogs exposed.
 
 - v9.4: Knockback item replaced by Aegis (max 3): a shield bubble blocks the next hit, returns after 14/11/8s (first one appears ~2s after pickup). Icon slot 3 is a shield.
+
+- v9.5: Aegis is now timed invincibility: 2/2.5/3s, then recharge 12/10/8s (first after ~2s). Bubble flickers in its last 0.6s.
