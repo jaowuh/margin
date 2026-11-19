@@ -389,7 +389,7 @@ export function startGame(canvas, profile, opts, ui) {
     }
     // boomerang
     if (!booms.length) boomCd -= dt;   // the next throw waits until the last one is back
-    if (up.boomerang > 0 && up.boomerang < 7 && !booms.length && boomCd <= 0 && anyInView()) { boomCd = 0.45 / rate(); volley(throwBooms); }
+    if (up.boomerang > 0 && !booms.length && boomCd <= 0 && anyInView()) { boomCd = 0.45 / rate(); volley(throwBooms); }
     for (let i = booms.length - 1; i >= 0; i--) {
       const b = booms[i]; b.t += dt; b.spin += dt * 16;
       if (b.phase === 0) { b.a += b.curve * dt; if (b.t > b.out) { b.phase = 1; b.hit = new Set(); } }
