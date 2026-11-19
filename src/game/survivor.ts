@@ -347,6 +347,7 @@ export function startGame(canvas, profile, opts, ui) {
     P.x = clamp(P.x + mx * spd() * dt, -AX, AX); P.y = clamp(P.y + my * spd() * dt, -AY, AY);
     if (ml > 0.05) { P.dir = Math.atan2(my, mx); if (Math.abs(mx) > 0.05) P.face = mx > 0 ? 1 : -1; }
     P.inv = Math.max(0, P.inv - dt);
+    if (lsAcc > 0 && P.hp > 0) { const h = Math.min(lsAcc, P.maxHp * 0.025 * dt); lsAcc -= h; P.hp = Math.min(P.maxHp, P.hp + h); }
     if (FX.regen && P.hp > 0) P.hp = Math.min(P.maxHp, P.hp + P.maxHp * FX.regen * dt);   // Heart of the Tarasque
     if (up.aegis) { if (aegisT > 0) aegisT -= dt; else { aegisCd -= dt; if (aegisCd <= 0) { aegisT = [0, 1.5, 2, 2.5][up.aegis]; aegisCd = [0, 14, 12, 10][up.aegis]; } } }
     spawnWave(dt);
@@ -559,7 +560,7 @@ export function startGame(canvas, profile, opts, ui) {
     return r;
   };
   function pop(x, y, v) { if (pops.length < 60) pops.push({ x, y, v, life: 0.5 }); }
-  let aegisT = 0, aegisCd = 2;   // Aegis item: invincible while aegisT > 0, then recharges
+  let lsAcc = 0, aegisT = 0, aegisCd = 2;   // Aegis item: invincible while aegisT > 0, then recharges
   function bounce(s, from) {   // Ricochet item: the shot jumps to another monster nearby
     if (!up.ricochet || (s.bnc || 0) >= up.ricochet) return false;
     let b = null, bd = 220 * 220;
@@ -579,6 +580,7 @@ export function startGame(canvas, profile, opts, ui) {
         if (up.chill >= 3 && !e.boss && Math.random() < 0.1 && !(e.stun > t)) e.stun = t + 0.8;
       }
     }
+    if (FX.steal) lsAcc = Math.min(P.maxHp * 0.1, lsAcc + Math.min(d, Math.max(0, e.hp)) * FX.steal);   // Alucard's Thirst
     e.hp -= d; e.hit = 0.1; pop(e.x, e.y - e.r, Math.round(d)); if (k && k !== 'dot' && !(e.fxT > t)) { e.fxT = t + 0.22; fx(k, e.x, e.y, e.r * 2 + 34); } }
   function fx(k, x, y, size, o = {}) { if (SP && SP.fx && SP.fx.rows[k] && fxs.length < 60) fxs.push({ k, x, y, s: size, a: o.a || 0, dur: o.dur || SP.fx.rows[k].n / 22, life: o.dur || SP.fx.rows[k].n / 22, follow: !!o.follow }); }
   function finish(won, timeout) { if (over) return; over = true; ui.end({ won, timeout: !!timeout, seconds: Math.min(t, D), kills, level: P.level }); stop(); }

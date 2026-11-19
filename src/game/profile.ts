@@ -68,11 +68,11 @@ export const RELICS: Record<Tier, string[]> = {
   wood: ['Rusty Coin', 'Cracked Piggy', 'Wooden Charm'],
   bronze: ['Bronze Badge', 'Copper Ring', 'Lucky Penny'],
   silver: ['Silver Crown', 'Moonlit Purse', 'Steady Shield'],
-  gold: ['Golden Goblet', 'Sunstone Vault', 'Hoarder’s Crest'],
+  gold: ['Golden Goblet', 'Sunstone Vault', 'Hoarder’s Crest', 'Alucard’s Thirst'],
   legendary: ['Dragon’s Hoard', 'Crown of Compound Interest', 'Phoenix Ledger', 'Heart of the Tarasque'],
 };
 
-export interface RelicFx { dmg?: number; rate?: number; hp?: number; speed?: number; magnet?: number; xp?: number; drop?: number; revive?: number; guard?: number; regen?: number }
+export interface RelicFx { dmg?: number; rate?: number; hp?: number; speed?: number; magnet?: number; xp?: number; drop?: number; revive?: number; guard?: number; regen?: number; steal?: number }
 export const RELIC_FX: Record<string, { desc: string; fx: RelicFx }> = {
   'Rusty Coin': { desc: '+20% XP from gems', fx: { xp: 0.2 } },
   'Cracked Piggy': { desc: '+40% gem pickup range', fx: { magnet: 0.4 } },
@@ -86,6 +86,7 @@ export const RELIC_FX: Record<string, { desc: string; fx: RelicFx }> = {
   'Golden Goblet': { desc: '+20% damage', fx: { dmg: 0.2 } },
   'Sunstone Vault': { desc: '+20% fire rate', fx: { rate: 0.2 } },
   'Hoarder’s Crest': { desc: '+15% move speed, take 10% less damage', fx: { speed: 0.15, guard: 0.1 } },
+  'Alucard’s Thirst': { desc: 'Heal for 2% of the damage you deal (at most 2.5% of max health per second)', fx: { steal: 0.02 } },
   'Dragon’s Hoard': { desc: '+30% damage and +40 max health', fx: { dmg: 0.3, hp: 40 } },
   'Crown of Compound Interest': { desc: '+50% XP from gems and +10% damage', fx: { xp: 0.5, dmg: 0.1 } },
   'Heart of the Tarasque': { desc: 'Regenerate 0.7% of your max health every second, and +30 max health', fx: { regen: 0.007, hp: 30 } },
@@ -93,7 +94,7 @@ export const RELIC_FX: Record<string, { desc: string; fx: RelicFx }> = {
 };
 export const RELIC_SLOTS = 3;
 export function relicFx(names: string[]): Required<RelicFx> {
-  const t = { dmg: 0, rate: 0, hp: 0, speed: 0, magnet: 0, xp: 0, drop: 0, revive: 0, guard: 0, regen: 0 };
+  const t = { dmg: 0, rate: 0, hp: 0, speed: 0, magnet: 0, xp: 0, drop: 0, revive: 0, guard: 0, regen: 0, steal: 0 };
   for (const n of names.slice(0, RELIC_SLOTS)) { const f = RELIC_FX[n]?.fx; if (f) for (const k in f) (t as any)[k] += (f as any)[k]; }
   return t;
 }

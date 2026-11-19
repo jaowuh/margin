@@ -167,3 +167,5 @@ Hidden coloring game (`src/components/CreditsGame.tsx` = painting card only; `cr
 - v9.6: Aegis tuned down: 1.5/2/2.5s on, 14/12/10s recharge.
 
 - v9.7: new Epic (legendary tier) relic Heart of the Tarasque: regenerate 0.7% max HP/s and +30 max health (RelicFx.regen, applied in the main loop).
+
+- v9.8: new Golden-tier relic Alucard's Thirst: lifesteal 2% of damage dealt, healing capped at 2.5% max HP/s (lsAcc bucket in hurt()).
