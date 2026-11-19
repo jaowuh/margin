@@ -231,7 +231,7 @@ export function startGame(canvas, profile, opts, ui) {
     const L = up.boomerang, n = 1 + (L >= 2 ? 1 : 0) + (L >= 4 ? 1 : 0) + up.dup;
     for (let i = 0; i < n; i++) {
       const a = P.dir + (i % 2 ? -0.25 : 0.25) * Math.floor((i + 1) / 2);
-      booms.push({ x: P.x, y: P.y, a, sp: 340 * (L >= 6 ? 1.3 : 1), curve: 0, phase: 0, t: 0, out: 0.75 * (L >= 6 ? 1.3 : 1), hit: new Set(), r: L >= 6 ? 14 : 10, spin: 0, bounces: L >= 6 ? 2 : L >= 3 ? 1 : 0 });
+      booms.push({ x: P.x, y: P.y, a, sp: 340 * (L >= 6 ? 1.3 : 1), curve: 0, phase: 0, t: 0, out: 0.95 * (L >= 6 ? 1.3 : 1), hit: new Set(), r: L >= 6 ? 14 : 10, spin: 0, bounces: L >= 6 ? 2 : L >= 3 ? 1 : 0 });
     }
   }
   /* ----- laser: a beam that locks on and burns the whole line ----- */
@@ -391,7 +391,7 @@ export function startGame(canvas, profile, opts, ui) {
     for (let i = booms.length - 1; i >= 0; i--) {
       const b = booms[i]; b.t += dt; b.spin += dt * 16;
       if (b.phase === 0) { b.a += b.curve * dt; if (b.t > b.out) { b.phase = 1; b.hit = new Set(); } }
-      else { let df = Math.atan2(P.y - b.y, P.x - b.x) - b.a; df = Math.atan2(Math.sin(df), Math.cos(df)); b.a += clamp(df, -9 * dt, 9 * dt); b.sp = Math.min(b.sp + 400 * dt, 520); }
+      else { let df = Math.atan2(P.y - b.y, P.x - b.x) - b.a; df = Math.atan2(Math.sin(df), Math.cos(df)); b.a += clamp(df, -26 * dt, 26 * dt); b.sp = Math.min(b.sp + 400 * dt, 520); }
       b.x += Math.cos(b.a) * b.sp * dt; b.y += Math.sin(b.a) * b.sp * dt;
       for (const e of enemies) if (e.hp > 0 && !b.hit.has(e) && (e.x - b.x) ** 2 + (e.y - b.y) ** 2 < (e.r + b.r) ** 2) { b.hit.add(e); hurt(e, dmg() * 3 * wl(up.boomerang) * (b.phase && up.boomerang >= 5 ? 1.5 : 1));
         if (b.phase === 0 && b.bounces > 0) {   // ricochet to the nearest monster it hasn't hit yet

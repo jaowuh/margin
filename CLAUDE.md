@@ -117,3 +117,4 @@ Hidden coloring game (`src/components/CreditsGame.tsx` = painting card only; `cr
 - v5.7: Viktor-style laser: each orb locks its target's direction, shows a 0.4s warning line, then fires a straight beam for 0.6s that does not turn (follows only the hero's movement). Rest 1.4s (L6 1.0, L7 0.5). Locked straight beams make a later bouncing-laser (laser + boomerang) easy.
 - v5.8: laser warning line removed; the beam fires the moment it locks (0.6s, straight).
 - v5.9: boomerang flies straight the way you face, turns back at max distance or on its first hit (or after its last ricochet). Laser is an instant zap (0.15s flash) toward the nearest monster along its full reach: hits everything on the line inside reach, nothing beyond. Rest 1.0s (L6 0.7, L7 0.4).
+- v6.0: boomerang range +25% (0.95s out), much sharper return turn (26 rad/s).
