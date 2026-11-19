@@ -594,11 +594,15 @@ export function startGame(canvas, profile, opts, ui) {
     }
     // axe, boomerang, laser
     for (const sc of scars) { c.globalAlpha = clamp(sc.life) * 0.7; c.strokeStyle = '#ff9a4d'; c.lineCap = 'round'; c.lineWidth = Math.max(3, sc.w * 0.12); c.beginPath(); c.moveTo(sc.x1 + ox, sc.y1 + oy); c.lineTo(sc.x2 + ox, sc.y2 + oy); c.stroke(); c.globalAlpha = 1; }
-    for (const w of waves) {
-      const ux = Math.cos(w.a), uy = Math.sin(w.a), fx = w.x0 + ux * w.s + ox, fy = w.y0 + uy * w.s + oy;
-      c.strokeStyle = '#ffd9a0'; c.shadowColor = '#ff9a4d'; c.shadowBlur = 10; c.lineCap = 'round'; c.lineWidth = 5;
-      c.beginPath(); c.moveTo(fx - uy * w.w, fy + ux * w.w); c.lineTo(fx + ux * 10, fy + uy * 10); c.lineTo(fx + uy * w.w, fy - ux * w.w); c.stroke();
-      c.globalAlpha = 0.3; c.lineWidth = 3; c.beginPath(); c.moveTo(fx - ux * 30 - uy * w.w * 0.8, fy - uy * 30 + ux * w.w * 0.8); c.lineTo(fx - ux * 30 + uy * w.w * 0.8, fy - uy * 30 - ux * w.w * 0.8); c.stroke(); c.globalAlpha = 1; c.shadowBlur = 0;
+    for (const w of waves) {   // the shockwave is a crescent slash flying forward, with fading copies behind it
+      const ux = Math.cos(w.a), uy = Math.sin(w.a), row = SP && SP.fx && SP.fx.rows.wave; if (!row) continue;
+      const fade = w.full ? 1 : 1 - 0.65 * clamp(w.s / w.max), sz = w.w * 2.8;
+      c.imageSmoothingEnabled = false;
+      for (let k = 2; k >= 0; k--) {
+        const s0 = w.s - k * 22; if (s0 < 0) continue;
+        c.save(); c.translate(w.x0 + ux * s0 + ox, w.y0 + uy * s0 + oy); c.rotate(w.a); c.globalAlpha = fade * (k === 0 ? 1 : k === 1 ? 0.45 : 0.2);
+        c.drawImage(SP.fx.img, 3 * 64, row.y, 64, 64, -sz * 0.35, -sz / 2, sz, sz); c.restore();
+      }
     }
     for (const sw of swings) {   // the axe sprite sweeps through the arc, leaving a fading crescent trail
       const u = clamp(1 - sw.life / sw.dur), e = 1 - (1 - u) * (1 - u), ang = sw.a - sw.half + 2 * sw.half * e, cx = P.x + ox, cy = P.y + oy, rr = sw.reach * 0.62;
@@ -606,7 +610,7 @@ export function startGame(canvas, profile, opts, ui) {
       if (SP && SP.icons) { c.save(); c.translate(cx + Math.cos(ang) * rr, cy + Math.sin(ang) * rr); c.rotate(ang + Math.PI * 0.75); c.imageSmoothingEnabled = false; c.drawImage(SP.icons, 5 * 32, 0, 32, 32, -22, -22, 44, 44); c.restore(); }
       c.globalAlpha = 1;
     }
-    for (const b of booms.concat(loopers)) { if (SP && SP.icons) { c.save(); c.translate(b.x + ox, b.y + oy); c.rotate(b.spin); c.imageSmoothingEnabled = false; if (up.boomerang >= 7) { c.shadowColor = '#ffd36b'; c.shadowBlur = 10; } const z = b.r * 3.2; c.drawImage(SP.icons, 6 * 32, 0, 32, 32, -z / 2, -z / 2, z, z); c.restore(); continue; } c.save(); c.translate(b.x + ox, b.y + oy); c.rotate(b.spin); c.strokeStyle = '#d49a5a'; c.lineWidth = 5; c.lineCap = 'round'; c.lineJoin = 'round'; if (up.boomerang >= 7) { c.shadowColor = '#ffd36b'; c.shadowBlur = 10; } c.beginPath(); c.moveTo(-10, -6); c.lineTo(0, 4); c.lineTo(10, -6); c.stroke(); c.restore(); }
+    for (const b of booms.concat(loopers)) { if (SP && SP.icons) { c.save(); c.translate(b.x + ox, b.y + oy); c.rotate(b.spin); c.imageSmoothingEnabled = false; if (up.boomerang >= 7) { c.shadowColor = '#ffd36b'; c.shadowBlur = 10; } const z = (b.r || 14) * 3.2; c.drawImage(SP.icons, 6 * 32, 0, 32, 32, -z / 2, -z / 2, z, z); c.restore(); continue; } c.save(); c.translate(b.x + ox, b.y + oy); c.rotate(b.spin); c.strokeStyle = '#d49a5a'; c.lineWidth = 5; c.lineCap = 'round'; c.lineJoin = 'round'; if (up.boomerang >= 7) { c.shadowColor = '#ffd36b'; c.shadowBlur = 10; } c.beginPath(); c.moveTo(-10, -6); c.lineTo(0, 4); c.lineTo(10, -6); c.stroke(); c.restore(); }
     if (up.laser > 0) {
       for (let i = 0; i < laserOrbs(); i++) { const [x0, y0] = orbPos(i); c.fillStyle = '#ff7a5a'; c.shadowColor = '#ff5a3d'; c.shadowBlur = 12; c.beginPath(); c.arc(x0 + ox, y0 + oy, 6, 0, 7); c.fill(); c.shadowBlur = 0; c.fillStyle = '#fff'; c.beginPath(); c.arc(x0 + ox, y0 + oy, 2.5, 0, 7); c.fill(); }
       if (laserOn) for (const b of beams) {
