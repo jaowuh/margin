@@ -1,18 +1,18 @@
 /* Margin service worker — makes the app work offline.
    The version and file list below are filled in at build time (see vite.config.ts). */
-const VERSION = 'a2d2c634ed';
+const VERSION = '5f3d69196a';
 const CACHE = `margin-${VERSION}`;
 const PRECACHE = [
   "./",
   "./index.html",
-  "./assets/nunito-sans-latin-400-normal-AkRraKH2.woff2",
-  "./assets/nunito-sans-latin-600-normal-BtVRvDNj.woff2",
   "./assets/nunito-sans-latin-700-normal-CICRJDmU.woff2",
+  "./assets/nunito-sans-latin-600-normal-BtVRvDNj.woff2",
+  "./assets/nunito-sans-latin-400-normal-AkRraKH2.woff2",
   "./assets/nunito-sans-latin-800-normal-MgCk9Q3Y.woff2",
   "./assets/nunito-sans-latin-900-normal-BhewUpNa.woff2",
-  "./assets/nunito-sans-latin-400-normal-DY9yCUyQ.woff",
-  "./assets/nunito-sans-latin-600-normal-DLks-Kj1.woff",
   "./assets/nunito-sans-latin-700-normal-CLVG92B9.woff",
+  "./assets/nunito-sans-latin-600-normal-DLks-Kj1.woff",
+  "./assets/nunito-sans-latin-400-normal-DY9yCUyQ.woff",
   "./assets/nunito-sans-latin-800-normal-DOf_K5Iw.woff",
   "./assets/nunito-sans-latin-900-normal-CVRJ8ULY.woff",
   "./assets/margin-letters-eNt1NMLb.png",
@@ -22,7 +22,7 @@ const PRECACHE = [
   "./assets/fx-sprites-Dcf2PPZX.png",
   "./assets/game-sprites-oyfzJUTc.png",
   "./assets/index-CnGNNGyX.css",
-  "./assets/index-HjSp1Soh.js",
+  "./assets/index-CAfdp_qq.js",
   "./manifest.webmanifest",
   "./icons/icon-192.png",
   "./icons/icon-512.png",

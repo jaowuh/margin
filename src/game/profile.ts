@@ -68,8 +68,8 @@ export const RELICS: Record<Tier, string[]> = {
   wood: ['Rusty Coin', 'Cracked Piggy', 'Wooden Charm'],
   bronze: ['Bronze Badge', 'Copper Ring', 'Lucky Penny'],
   silver: ['Silver Crown', 'Moonlit Purse', 'Steady Shield'],
-  gold: ['Golden Goblet', 'Sunstone Vault', 'Hoarder’s Crest', 'Alucard’s Thirst'],
-  legendary: ['Dragon’s Hoard', 'Crown of Compound Interest', 'Phoenix Ledger', 'Heart of the Tarasque'],
+  gold: ['Golden Goblet', 'Sunstone Vault', 'Hoarder’s Crest'],
+  legendary: ['Dragon’s Hoard', 'Crown of Compound Interest', 'Phoenix Ledger', 'Heart of the Tarasque', 'Alucard’s Thirst'],
 };
 
 export interface RelicFx { dmg?: number; rate?: number; hp?: number; speed?: number; magnet?: number; xp?: number; drop?: number; revive?: number; guard?: number; regen?: number; steal?: number }
