@@ -145,3 +145,5 @@ Hidden coloring game (`src/components/CreditsGame.tsx` = painting card only; `cr
 - v8.3: magic L7 is Arcane Detonation (blast radius 64, 70% damage, +1 bolt); homing shards removed.
 
 - v8.4: axe swings only left/right (P.face); Duplicate adds top then bottom swings; L2 backswing is the opposite side.
+
+- v8.5: laser. L3 blaster orb (fast red bolts, 0.34s; L6 0.22s + pierce 2). L7 Finger of God replaces the 4th orb and unlimited reach: red strip warns 1.2s, beam sweeps 1s, strip lingers burning and slowing ~2.5s, every ~6s, spawns 90-190px from the player. Beam orbs max 3.
