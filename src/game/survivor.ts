@@ -157,14 +157,19 @@ export function startGame(canvas, profile, opts, ui) {
   /* ---------- level up and rewards ---------- */
   const wl = L => (1 + 0.12 * (L - 1)) * (L >= 7 ? 1.15 : 1); // weapon damage grows with level, with a bonus at max
   const wopt = k => ({ id: k, weapon: true, name: up[k] ? `${WNAMES[k]} Lv ${up[k] + 1}` : `New: ${WNAMES[k]}`, desc: LV[k][up[k] + 1] + (up[k] >= 1 && up[k] < 6 ? ' · +12% damage' : up[k] === 6 ? ' · +32% damage' : ''), have: up[k] });
-  function choices() {
+  let firstLvDone = false;
+  function choices(first) {
     const slotsFree = owned().length < SLOTS, list = [];
     for (const k of WIDS) if ((up[k] > 0 && up[k] < 7) || (up[k] === 0 && slotsFree)) list.push(wopt(k));
     const itemFree = itemsOwned().length < ISLOTS;
     for (const u of GENERIC) if (up[u.id] < u.max && (u.free || up[u.id] > 0 || itemFree)) list.push({ ...u, have: up[u.id] });
     const out = [];
-    while (out.length < 3 && list.length) {   // weighted draw: Duplicate and Multishot are rare
-      const w = list.map(o => o.rare || 1), sum = w.reduce((a, b) => a + b, 0);
+    if (first) {   // the very first level up: always 2 weapons and 1 item
+      const takeFrom = (pool, n) => { for (let k = 0; k < n && pool.length; k++) { const o = pool.splice(Math.floor(Math.random() * pool.length), 1)[0]; out.push(o); list.splice(list.indexOf(o), 1); } };
+      takeFrom(list.filter(o => o.weapon), 2); takeFrom(list.filter(o => !o.weapon && !o.free), 1);
+    }
+    while (out.length < 3 && list.length) {   // weighted draw: Duplicate and Multishot are rare, stats are less common early on
+      const w = list.map(o => o.rare || (o.free && P.level < 8 ? 0.45 : 1)), sum = w.reduce((a, b) => a + b, 0);
       let r = Math.random() * sum, i = 0; while (i < list.length - 1 && (r -= w[i]) > 0) i++;
       out.push(list.splice(i, 1)[0]);
     }
@@ -177,7 +182,8 @@ export function startGame(canvas, profile, opts, ui) {
     if (id === 'heal') P.hp = Math.min(P.maxHp, P.hp + P.maxHp * 0.4);
   }
   function showChoices(title) {
-    const opts2 = choices();
+    const first = title === 'Level up!' && !firstLvDone; if (first) firstLvDone = true;
+    const opts2 = choices(first);
     if (opts2.length === 1 && opts2[0].id === 'heal') {   // nothing left to upgrade: heal automatically, no pause
       const before = P.hp; applyChoice('heal'); ui.banner(`${title} Healed ${Math.round(P.hp - before)} HP`); return;
     }
