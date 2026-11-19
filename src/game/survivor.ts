@@ -16,7 +16,7 @@ const LV = {
   potion: [null, 'Flasks make slowing, poisonous puddles', '+1 flask', 'Bigger puddles', '+1 flask', 'Stronger poison (+40%); monsters that die in poison leave a small puddle', 'Puddles last 60% longer and slow harder', 'MAX Toxic Fog: flasks sweep a clockwise ring all around you'],
   axe: [null, 'A heavy swing in a wide arc, left or right of you', 'Double swing: forward, then a backswing', 'A shockwave rolls forward after the swing', 'Wider arc', 'Half-second stun on hit', 'Bigger shockwave that travels further', 'MAX Earthsplitter: the shockwave crosses the whole map'],
   boomerang: [null, 'Thrown at the nearest monster, flies its full range, then returns, hitting both ways (range grows a little each level); the next throw waits for it', '+1 boomerang', 'Ricochet: bounces to 1 other monster after its first hit', '+1 boomerang', 'The return trip hits 50% harder', 'Faster, bigger arc and 2 bounces', 'MAX Rampage: your throws fly 60% farther, bigger, through every monster; extra boomerangs roam the arena on their own, bouncing toward the crowd'],
-  laser: [null, 'An orb circles you and zaps a straight beam toward the nearest monster, full reach', '+1 orb', 'Burn: monsters it hits keep burning. A blaster orb joins and fires fast bolts at the nearest monster', '+1 orb', 'Burning monsters take 40% more beam damage', 'Blaster fires faster and its bolts pierce; shorter rest between beams, longer reach', 'MAX Finger of God: every few seconds a strip glows red, then a beam sweeps it, burning and slowing everything inside'],
+  laser: [null, 'An orb circles you and zaps a straight beam toward the nearest monster, full reach', '+1 orb', 'Burn: monsters it hits keep burning. A blaster orb joins and fires fast bolts at the nearest monster', '+1 blaster orb, which doubles the bolts', 'Burning monsters take 40% more beam damage', 'Blaster fires faster and its bolts pierce; shorter rest between beams, longer reach', 'MAX Finger of God: every few seconds a strip glows red, then a beam sweeps it, burning and slowing everything inside'],
   lightning: [null, 'Lightning strikes and jumps to a nearby monster', '+1 strike', '+1 chain', '+1 strike', 'Wider strike zone', 'Chains keep full damage and +1 chain', 'MAX Thunderstorm: 4 strikes at once, chains to 6'],
 };
 const GENERIC = [
@@ -60,7 +60,7 @@ export function startGame(canvas, profile, opts, ui) {
   const buffs = { inv: 0, speed: 0 };
   const enemies = [], shots = [], gems = [], pops = [], items = [], puddles = [], flasks = [], bolts = [], novas = [], delayed = [];
   const fxs = [], waves = [], swings = [], scars = [], booms = [], loopers = [], beams = [];
-  const fogs = []; let blastCd = 0.5, fogCd = 2.5; let orbL = 0, axeCd = 1.5, boomCd = 1, laserOn = false, laserT = 1, laserTick = 0, loopA = 0;
+  const fogs = []; let blastI = 0, blastCd = 0.5, fogCd = 2.5; let orbL = 0, axeCd = 1.5, boomCd = 1, laserOn = false, laserT = 1, laserTick = 0, loopA = 0;
   const keys = {};
   let joy = null; // {id, ox, oy, x, y}
 
@@ -238,11 +238,12 @@ export function startGame(canvas, profile, opts, ui) {
     }
   }
   /* ----- laser: a beam that locks on and burns the whole line ----- */
-  const laserOrbs = () => 1 + (up.laser >= 2 ? 1 : 0) + (up.laser >= 4 ? 1 : 0) + up.dup;
+  const laserOrbs = () => 1 + (up.laser >= 2 ? 1 : 0) + up.dup;
+  const blasters = () => up.laser >= 4 ? 2 : up.laser >= 3 ? 1 : 0;
   const laserRange = () => [0, 260, 300, 340, 380, 450, 520, 520][up.laser] || 260;   // how far it can lock on AND how far the beam reaches
   const orbPos = i => { const n = laserOrbs(), a = orbL + (i * Math.PI * 2) / n; return [P.x + Math.cos(a) * 46, P.y + Math.sin(a) * 46]; };
   const laserLen = () => laserRange();
-  const blastPos = () => { const a = orbL + Math.PI / laserOrbs(); return [P.x + Math.cos(a) * 46, P.y + Math.sin(a) * 46]; };
+  const blastPos = j => { const a = orbL + Math.PI / laserOrbs() + j * Math.PI * 2 / blasters(); return [P.x + Math.cos(a) * 46, P.y + Math.sin(a) * 46]; };
   const inLaser = e => e.hp > 0 && onScreen(e) && (e.x - P.x) ** 2 + (e.y - P.y) ** 2 < laserRange() ** 2;   // only monsters you can see, and inside its reach
   function pickLaserTarget(i, taken) {   // nearest monster in range that no other beam is using
     let best = null, bd = 1e18; const [ox0, oy0] = orbPos(i);
@@ -417,9 +418,9 @@ export function startGame(canvas, profile, opts, ui) {
       if (L >= 3) {   // blaster orb: small fast bolts at the nearest monster in reach
         blastCd -= dt;
         if (blastCd <= 0) {
-          const [bx, by] = blastPos(); let tg = null, bd = 1e18;
+          blastI = (blastI + 1) % blasters(); const [bx, by] = blastPos(blastI); let tg = null, bd = 1e18;
           for (const e of enemies) { if (!inLaser(e)) continue; const d = (e.x - bx) ** 2 + (e.y - by) ** 2; if (d < bd) { bd = d; tg = e; } }
-          if (tg) { const a = Math.atan2(tg.y - by, tg.x - bx); shots.push({ kind: 'bolt', x: bx, y: by, a, vx: Math.cos(a) * 520, vy: Math.sin(a) * 520, life: 0.8, dmg: dmg() * 0.6 * wl(L), pierce: L >= 6 ? 2 : 1, hit: [] }); blastCd = (L >= 6 ? 0.22 : 0.34) / rate(); }
+          if (tg) { const a = Math.atan2(tg.y - by, tg.x - bx); shots.push({ kind: 'bolt', x: bx, y: by, a, vx: Math.cos(a) * 520, vy: Math.sin(a) * 520, life: 0.8, dmg: dmg() * 0.6 * wl(L), pierce: L >= 6 ? 2 : 1, hit: [] }); blastCd = (L >= 6 ? 0.22 : 0.34) / blasters() / rate(); }
           else blastCd = 0.15;
         }
       }
@@ -655,7 +656,7 @@ export function startGame(canvas, profile, opts, ui) {
     for (const b of booms.concat(loopers)) { if (SP && SP.icons) { c.save(); c.translate(b.x + ox, b.y + oy); c.rotate(b.spin); c.imageSmoothingEnabled = false; if (up.boomerang >= 7) { c.shadowColor = '#ffd36b'; c.shadowBlur = 10; } const z = (b.r || 14) * 3.2; c.drawImage(SP.icons, 6 * 32, 0, 32, 32, -z / 2, -z / 2, z, z); c.restore(); continue; } c.save(); c.translate(b.x + ox, b.y + oy); c.rotate(b.spin); c.strokeStyle = '#d49a5a'; c.lineWidth = 5; c.lineCap = 'round'; c.lineJoin = 'round'; if (up.boomerang >= 7) { c.shadowColor = '#ffd36b'; c.shadowBlur = 10; } c.beginPath(); c.moveTo(-10, -6); c.lineTo(0, 4); c.lineTo(10, -6); c.stroke(); c.restore(); }
     if (up.laser > 0) {
       for (let i = 0; i < laserOrbs(); i++) { const [x0, y0] = orbPos(i); c.fillStyle = '#ff7a5a'; c.shadowColor = '#ff5a3d'; c.shadowBlur = 12; c.beginPath(); c.arc(x0 + ox, y0 + oy, 6, 0, 7); c.fill(); c.shadowBlur = 0; c.fillStyle = '#fff'; c.beginPath(); c.arc(x0 + ox, y0 + oy, 2.5, 0, 7); c.fill(); }
-      if (up.laser >= 3) { const [x0, y0] = blastPos(); c.fillStyle = '#ffd0a0'; c.shadowColor = '#ff8a3d'; c.shadowBlur = 12; c.beginPath(); c.arc(x0 + ox, y0 + oy, 5, 0, 7); c.fill(); c.shadowBlur = 0; c.fillStyle = '#fff'; c.beginPath(); c.arc(x0 + ox, y0 + oy, 2, 0, 7); c.fill(); }
+      for (let j = 0; j < blasters(); j++) { const [x0, y0] = blastPos(j); c.fillStyle = '#ffd0a0'; c.shadowColor = '#ff8a3d'; c.shadowBlur = 12; c.beginPath(); c.arc(x0 + ox, y0 + oy, 5, 0, 7); c.fill(); c.shadowBlur = 0; c.fillStyle = '#fff'; c.beginPath(); c.arc(x0 + ox, y0 + oy, 2, 0, 7); c.fill(); }
       for (const f of fogs) {
         c.save(); c.translate(f.x + ox, f.y + oy); c.rotate(f.a);
         const sw = clamp((f.age - 1.2) / 1.0), s0 = -f.len / 2;
