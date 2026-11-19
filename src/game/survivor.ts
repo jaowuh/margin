@@ -494,7 +494,8 @@ export function startGame(canvas, profile, opts, ui) {
       const f = flasks[i];
       if (t >= f.at) {
         puddles.push({ x: f.x, y: f.y, r: f.r, life: 3.5 * (f.L >= 6 ? 1.6 : 1), tick: 0, L: f.L, dmg: dmg() * 0.45 * wl(f.L) * (f.L >= 5 ? 1.4 : 1) });
-        fx('splash', f.x, f.y - 6, f.r * 3.4); flasks.splice(i, 1);
+        if (f.L < 7) fx('splash', f.x, f.y - 6, f.r * 3.4);   // the max-level ring of flasks lands without the splash, it was too busy
+        flasks.splice(i, 1);
       }
     }
     for (let i = puddles.length - 1; i >= 0; i--) {
